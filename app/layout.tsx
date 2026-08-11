@@ -14,19 +14,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
 
   return {
-    title: "Cloud Architect Study Hub",
+    title: "Daily Learning Log",
     description:
-      "Turn every cloud architecture chapter into notes you can recall, review, and use.",
+      "A quiet daily record of what you learned, what is still unclear, and where to continue tomorrow.",
     openGraph: {
-      title: "Cloud Architect Study Hub",
-      description: "Learn it once. Review it before it fades.",
+      title: "Daily Learning Log",
+      description: "Learn. Reflect. Continue.",
       type: "website",
       images: [`${origin}/og.png`],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Cloud Architect Study Hub",
-      description: "Learn it once. Review it before it fades.",
+      title: "Daily Learning Log",
+      description: "Learn. Reflect. Continue.",
       images: [`${origin}/og.png`],
     },
   };

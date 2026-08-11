@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const chapters = sqliteTable(
   "chapters",
@@ -24,5 +24,27 @@ export const chapters = sqliteTable(
   (table) => [
     index("idx_chapters_user_updated").on(table.userId, table.updatedAt),
     index("idx_chapters_user_review").on(table.userId, table.nextReview),
+  ],
+);
+
+export const dailyNotes = sqliteTable(
+  "daily_notes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    noteDate: text("note_date").notNull(),
+    focus: text("focus").notNull().default(""),
+    learned: text("learned").notNull().default(""),
+    takeaways: text("takeaways").notNull().default(""),
+    questions: text("questions").notNull().default(""),
+    tomorrow: text("tomorrow").notNull().default(""),
+    tags: text("tags").notNull().default(""),
+    minutes: integer("minutes").notNull().default(0),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_daily_notes_user_date_unique").on(table.userId, table.noteDate),
+    index("idx_daily_notes_user_updated").on(table.userId, table.updatedAt),
   ],
 );

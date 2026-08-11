@@ -1,16 +1,15 @@
-# Cloud Architect Study Hub
+# Daily Learning Log
 
-A private, mobile-friendly study app for turning cloud architecture chapters
-into durable notes and scheduled reviews.
+A private, mobile-friendly daily journal for cloud architecture study.
 
 ## Features
 
-- Notes organized by certification section or domain
-- Chapter search and progress filters
-- Autosaved big-picture notes, takeaways, exam traps, and recall questions
-- Active-recall review mode
-- Confidence-based review scheduling
+- One learning note per date
+- Autosaved reflections, takeaways, open questions, and tomorrow's focus
+- Searchable chronological timeline
+- Daily streak, study-day, weekly, and time totals
 - Per-user cloud storage through the Sites platform
+- Existing chapter records preserved in the database
 
 ## Local development
 
@@ -21,4 +20,3 @@ npm run dev
 
 Run `npm run build` for a production build and `npm run db:generate` after a
 database schema change.
-

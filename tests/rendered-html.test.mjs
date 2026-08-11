@@ -13,13 +13,13 @@ async function render() {
   );
 }
 
-test("server-renders the Cloud Architect Study Hub", async () => {
+test("server-renders the Daily Learning Log", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /<title>Cloud Architect Study Hub<\/title>/i);
-  assert.match(html, /data-app="cloud-architect-study-hub"/);
-  assert.match(html, /Turn every chapter into knowledge that sticks/i);
+  assert.match(html, /<title>Daily Learning Log<\/title>/i);
+  assert.match(html, /data-app="daily-learning-log"/);
+  assert.match(html, /What did you learn today/i);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });

@@ -1,174 +1,152 @@
 "use client";
 
-import {
-  FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type Chapter = {
+type DailyNote = {
   id: string;
-  title: string;
-  section: string;
-  summary: string;
-  content: string;
-  keyTakeaways: string;
-  examTraps: string;
-  recallQuestions: string;
+  noteDate: string;
+  focus: string;
+  learned: string;
+  takeaways: string;
+  questions: string;
+  tomorrow: string;
   tags: string;
-  status: "learning" | "reviewing" | "mastered";
-  confidence: number;
-  reviewCount: number;
-  lastReviewed: string | null;
-  nextReview: string;
+  minutes: number;
   createdAt: string;
   updatedAt: string;
 };
 
 type Draft = Pick<
-  Chapter,
-  | "title"
-  | "section"
-  | "summary"
-  | "content"
-  | "keyTakeaways"
-  | "examTraps"
-  | "recallQuestions"
-  | "tags"
-  | "status"
-  | "confidence"
+  DailyNote,
+  "focus" | "learned" | "takeaways" | "questions" | "tomorrow" | "tags" | "minutes"
 >;
 
-const STATUS_LABELS = {
-  learning: "Learning",
-  reviewing: "Reviewing",
-  mastered: "Mastered",
-};
-
 const EMPTY_DRAFT: Draft = {
-  title: "",
-  section: "General",
-  summary: "",
-  content: "",
-  keyTakeaways: "",
-  examTraps: "",
-  recallQuestions: "",
+  focus: "",
+  learned: "",
+  takeaways: "",
+  questions: "",
+  tomorrow: "",
   tags: "",
-  status: "learning",
-  confidence: 1,
+  minutes: 0,
 };
 
-function toDraft(chapter: Chapter): Draft {
+function localDateKey(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dateFromKey(value: string): Date {
+  return new Date(`${value}T12:00:00`);
+}
+
+function shiftDate(value: string, days: number): string {
+  const date = dateFromKey(value);
+  date.setDate(date.getDate() + days);
+  return localDateKey(date);
+}
+
+function formatDate(value: string, options: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat("en", options).format(dateFromKey(value));
+}
+
+function toDraft(note: DailyNote): Draft {
   return {
-    title: chapter.title,
-    section: chapter.section,
-    summary: chapter.summary,
-    content: chapter.content,
-    keyTakeaways: chapter.keyTakeaways,
-    examTraps: chapter.examTraps,
-    recallQuestions: chapter.recallQuestions,
-    tags: chapter.tags,
-    status: chapter.status,
-    confidence: chapter.confidence,
+    focus: note.focus,
+    learned: note.learned,
+    takeaways: note.takeaways,
+    questions: note.questions,
+    tomorrow: note.tomorrow,
+    tags: note.tags,
+    minutes: note.minutes,
   };
 }
 
-function isDue(chapter: Chapter): boolean {
-  return chapter.nextReview <= new Date().toISOString().slice(0, 10);
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return "Not reviewed yet";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: new Date(value).getFullYear() !== new Date().getFullYear()
-      ? "numeric"
-      : undefined,
-  }).format(new Date(`${value}T12:00:00`));
-}
-
-function parseLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.replace(/^[-*\d.)\s]+/, "").trim())
-    .filter(Boolean);
+function calculateStreak(notes: DailyNote[]): number {
+  const dates = new Set(notes.map((note) => note.noteDate));
+  const today = localDateKey();
+  let cursor = dates.has(today) ? today : shiftDate(today, -1);
+  let streak = 0;
+  while (dates.has(cursor)) {
+    streak += 1;
+    cursor = shiftDate(cursor, -1);
+  }
+  return streak;
 }
 
 export function StudyApp() {
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [notes, setNotes] = useState<DailyNote[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "due" | "mastered">("all");
-  const [activeTab, setActiveTab] = useState<"notes" | "review">("notes");
-  const [revealed, setRevealed] = useState(false);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newSection, setNewSection] = useState("Cloud fundamentals");
+  const [dateModalOpen, setDateModalOpen] = useState(false);
+  const [newDate, setNewDate] = useState(localDateKey());
   const [creating, setCreating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [reviewConfidence, setReviewConfidence] = useState(3);
   const revisionRef = useRef(0);
   const savedRevisionRef = useRef(0);
 
-  const selected = chapters.find((chapter) => chapter.id === selectedId) ?? null;
+  const selected = notes.find((note) => note.id === selectedId) ?? null;
+  const today = localDateKey();
 
-  const loadChapters = useCallback(async () => {
+  const loadNotes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/chapters", { cache: "no-store" });
-      const payload = (await response.json()) as { chapters?: Chapter[]; error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not load your chapters.");
-      const rows = payload.chapters ?? [];
-      setChapters(rows);
-      setSelectedId((current) => current ?? rows[0]?.id ?? null);
+      const response = await fetch("/api/daily-notes", { cache: "no-store" });
+      const payload = (await response.json()) as { notes?: DailyNote[]; error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not load your learning log.");
+      const rows = payload.notes ?? [];
+      setNotes(rows);
+      setSelectedId((current) => {
+        if (current && rows.some((note) => note.id === current)) return current;
+        return rows.find((note) => note.noteDate === today)?.id ?? rows[0]?.id ?? null;
+      });
       setLoadError("");
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Could not load your chapters.");
+      setLoadError(error instanceof Error ? error.message : "Could not load your learning log.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [today]);
 
   useEffect(() => {
-    void loadChapters();
-  }, [loadChapters]);
+    void loadNotes();
+  }, [loadNotes]);
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      setDraft(EMPTY_DRAFT);
+      return;
+    }
     setDraft(toDraft(selected));
     revisionRef.current += 1;
     savedRevisionRef.current = revisionRef.current;
     setSaving("idle");
-    setRevealed(false);
-    setReviewConfidence(Math.max(1, selected.confidence));
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const persistDraft = useCallback(
     async (snapshot: Draft, revision: number) => {
-      if (!selectedId || !snapshot.title.trim()) return;
+      if (!selectedId) return;
       setSaving("saving");
       try {
-        const response = await fetch("/api/chapters", {
+        const response = await fetch("/api/daily-notes", {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ id: selectedId, ...snapshot }),
         });
-        const payload = (await response.json()) as { chapter?: Chapter; error?: string };
-        if (!response.ok || !payload.chapter) {
+        const payload = (await response.json()) as { note?: DailyNote; error?: string };
+        if (!response.ok || !payload.note) {
           throw new Error(payload.error ?? "Your changes could not be saved.");
         }
-        setChapters((current) =>
-          current.map((chapter) =>
-            chapter.id === payload.chapter?.id ? payload.chapter : chapter,
-          ),
+        setNotes((current) =>
+          current
+            .map((note) => (note.id === payload.note?.id ? payload.note : note))
+            .sort((a, b) => b.noteDate.localeCompare(a.noteDate)),
         );
         savedRevisionRef.current = Math.max(savedRevisionRef.current, revision);
         if (revisionRef.current === revision) setSaving("saved");
@@ -182,7 +160,7 @@ export function StudyApp() {
   useEffect(() => {
     const revision = revisionRef.current;
     if (!selectedId || revision <= savedRevisionRef.current) return;
-    const timer = window.setTimeout(() => void persistDraft(draft, revision), 900);
+    const timer = window.setTimeout(() => void persistDraft(draft, revision), 850);
     return () => window.clearTimeout(timer);
   }, [draft, persistDraft, selectedId]);
 
@@ -203,187 +181,147 @@ export function StudyApp() {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  async function createChapter(event: FormEvent) {
-    event.preventDefault();
-    if (!newTitle.trim()) return;
+  async function openDate(noteDate: string) {
+    const existing = notes.find((note) => note.noteDate === noteDate);
+    if (existing) {
+      setSelectedId(existing.id);
+      setMenuOpen(false);
+      setDateModalOpen(false);
+      return;
+    }
+
     setCreating(true);
     try {
-      const response = await fetch("/api/chapters", {
+      const response = await fetch("/api/daily-notes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: newTitle, section: newSection }),
+        body: JSON.stringify({ noteDate }),
       });
-      const payload = (await response.json()) as { chapter?: Chapter; error?: string };
-      if (!response.ok || !payload.chapter) {
-        throw new Error(payload.error ?? "Could not create the chapter.");
+      const payload = (await response.json()) as { note?: DailyNote; error?: string };
+      if (!response.ok || !payload.note) {
+        throw new Error(payload.error ?? "Could not create the daily note.");
       }
-      setChapters((current) => [payload.chapter!, ...current]);
-      setSelectedId(payload.chapter.id);
-      setCreateOpen(false);
-      setNewTitle("");
-      setActiveTab("notes");
+      setNotes((current) => {
+        const withoutDuplicate = current.filter((note) => note.id !== payload.note?.id);
+        return [payload.note!, ...withoutDuplicate].sort((a, b) => b.noteDate.localeCompare(a.noteDate));
+      });
+      setSelectedId(payload.note.id);
+      setDateModalOpen(false);
       setMenuOpen(false);
+      setLoadError("");
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Could not create the chapter.");
+      setLoadError(error instanceof Error ? error.message : "Could not create the daily note.");
     } finally {
       setCreating(false);
     }
   }
 
-  async function deleteChapter() {
-    if (!selected || !window.confirm(`Delete “${selected.title}”? This cannot be undone.`)) return;
-    const response = await fetch(`/api/chapters?id=${encodeURIComponent(selected.id)}`, {
-      method: "DELETE",
-    });
+  async function createSelectedDate(event: FormEvent) {
+    event.preventDefault();
+    await openDate(newDate);
+  }
+
+  async function deleteNote() {
+    if (!selected || !window.confirm(`Delete your note for ${formatDate(selected.noteDate, { month: "long", day: "numeric" })}? This cannot be undone.`)) return;
+    const response = await fetch(`/api/daily-notes?id=${encodeURIComponent(selected.id)}`, { method: "DELETE" });
     if (!response.ok) return;
-    const remaining = chapters.filter((chapter) => chapter.id !== selected.id);
-    setChapters(remaining);
+    const remaining = notes.filter((note) => note.id !== selected.id);
+    setNotes(remaining);
     setSelectedId(remaining[0]?.id ?? null);
   }
 
-  async function completeReview() {
-    if (!selected) return;
-    setSaving("saving");
-    try {
-      const response = await fetch("/api/chapters", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          id: selected.id,
-          action: "review",
-          confidence: reviewConfidence,
-        }),
-      });
-      const payload = (await response.json()) as { chapter?: Chapter; error?: string };
-      if (!response.ok || !payload.chapter) throw new Error(payload.error ?? "Review failed.");
-      setChapters((current) =>
-        current.map((chapter) => (chapter.id === payload.chapter?.id ? payload.chapter : chapter)),
-      );
-      setDraft(toDraft(payload.chapter));
-      setSaving("saved");
-      setRevealed(false);
-      setActiveTab("notes");
-    } catch {
-      setSaving("error");
-    }
-  }
-
-  const stats = useMemo(
-    () => ({
-      total: chapters.length,
-      due: chapters.filter(isDue).length,
-      mastered: chapters.filter((chapter) => chapter.confidence >= 4).length,
-    }),
-    [chapters],
-  );
+  const stats = useMemo(() => {
+    const weekStart = shiftDate(today, -6);
+    return {
+      streak: calculateStreak(notes),
+      days: notes.length,
+      thisWeek: notes.filter((note) => note.noteDate >= weekStart && note.noteDate <= today).length,
+      minutes: notes.reduce((total, note) => total + note.minutes, 0),
+    };
+  }, [notes, today]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return chapters.filter((chapter) => {
-      const matchesQuery =
-        !normalized ||
-        [chapter.title, chapter.section, chapter.summary, chapter.tags]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalized);
-      const matchesFilter =
-        filter === "all" ||
-        (filter === "due" && isDue(chapter)) ||
-        (filter === "mastered" && chapter.confidence >= 4);
-      return matchesQuery && matchesFilter;
-    });
-  }, [chapters, filter, query]);
+    if (!normalized) return notes;
+    return notes.filter((note) =>
+      [note.noteDate, note.focus, note.learned, note.takeaways, note.questions, note.tomorrow, note.tags]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized),
+    );
+  }, [notes, query]);
 
   const groups = useMemo(() => {
-    const result = new Map<string, Chapter[]>();
-    for (const chapter of filtered) {
-      const rows = result.get(chapter.section) ?? [];
-      rows.push(chapter);
-      result.set(chapter.section, rows);
+    const result = new Map<string, DailyNote[]>();
+    for (const note of filtered) {
+      const month = formatDate(note.noteDate, { month: "long", year: "numeric" });
+      const rows = result.get(month) ?? [];
+      rows.push(note);
+      result.set(month, rows);
     }
     return result;
   }, [filtered]);
 
-  const questions = parseLines(draft.recallQuestions);
-
   return (
-    <main className="app-shell" data-app="cloud-architect-study-hub">
+    <main className="app-shell" data-app="daily-learning-log">
       <header className="mobile-header">
-        <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="Open chapters">
-          ☰
-        </button>
-        <span className="mobile-brand"><span className="brand-mark">CA</span> Study Hub</span>
-        <button className="mobile-add" onClick={() => setCreateOpen(true)} aria-label="New chapter">＋</button>
+        <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="Open daily notes">☰</button>
+        <span className="mobile-brand"><span className="brand-mark">DL</span> Daily Log</span>
+        <button className="mobile-add" onClick={() => setDateModalOpen(true)} aria-label="New daily note">＋</button>
       </header>
 
-      {menuOpen && <button className="sidebar-backdrop" onClick={() => setMenuOpen(false)} aria-label="Close chapters" />}
+      {menuOpen && <button className="sidebar-backdrop" onClick={() => setMenuOpen(false)} aria-label="Close daily notes" />}
 
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand-row">
-          <span className="brand-mark">CA</span>
-          <div>
-            <strong>Study Hub</strong>
-            <span>Cloud Architect</span>
-          </div>
-          <button className="sidebar-close" onClick={() => setMenuOpen(false)} aria-label="Close chapters">×</button>
+          <span className="brand-mark">DL</span>
+          <div><strong>Daily Log</strong><span>Cloud Architect</span></div>
+          <button className="sidebar-close" onClick={() => setMenuOpen(false)} aria-label="Close daily notes">×</button>
         </div>
 
-        <section className="progress-card" aria-label="Study progress">
-          <div className="progress-copy">
-            <span>Your progress</span>
-            <strong>{stats.total ? Math.round((stats.mastered / stats.total) * 100) : 0}%</strong>
-          </div>
-          <div className="progress-track"><span style={{ width: `${stats.total ? (stats.mastered / stats.total) * 100 : 0}%` }} /></div>
+        <section className="progress-card" aria-label="Learning consistency">
+          <div className="streak-line"><strong>{stats.streak}</strong><span>day streak</span></div>
           <div className="stat-row">
-            <span><strong>{stats.total}</strong> Chapters</span>
-            <span><strong>{stats.due}</strong> Due</span>
-            <span><strong>{stats.mastered}</strong> Strong</span>
+            <span><strong>{stats.days}</strong> Days</span>
+            <span><strong>{stats.thisWeek}</strong> This week</span>
+            <span><strong>{Math.round(stats.minutes / 60)}</strong> Hours</span>
           </div>
         </section>
 
-        <button className="new-button" onClick={() => setCreateOpen(true)}>
-          <span>＋</span> New chapter
+        <button className="new-button" onClick={() => void openDate(today)}>
+          <span>＋</span> Today&apos;s note
         </button>
+        <button className="date-button" onClick={() => { setNewDate(today); setDateModalOpen(true); }}>Choose another date</button>
 
         <label className="search-box">
           <span>⌕</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your notes" aria-label="Search your notes" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your learning" aria-label="Search your learning" />
           {query && <button onClick={() => setQuery("")} aria-label="Clear search">×</button>}
         </label>
 
-        <div className="filter-tabs" aria-label="Chapter filters">
-          {(["all", "due", "mastered"] as const).map((item) => (
-            <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>
-              {item === "all" ? "All" : item === "due" ? `Due ${stats.due || ""}` : "Strong"}
-            </button>
-          ))}
-        </div>
-
-        <nav className="chapter-list" aria-label="Your chapters">
+        <nav className="chapter-list" aria-label="Daily learning notes">
           {loading ? (
-            <div className="list-message">Gathering your chapters…</div>
+            <div className="list-message">Opening your learning log…</div>
           ) : filtered.length === 0 ? (
-            <div className="list-message">{chapters.length ? "No chapters match this view." : "Your first chapter will appear here."}</div>
+            <div className="list-message">{notes.length ? "No entries match your search." : "Your daily notes will appear here."}</div>
           ) : (
-            Array.from(groups).map(([section, rows]) => (
-              <section key={section} className="chapter-group">
-                <h2>{section}</h2>
-                {rows.map((chapter) => (
+            Array.from(groups).map(([month, rows]) => (
+              <section key={month} className="chapter-group">
+                <h2>{month}</h2>
+                {rows.map((note) => (
                   <button
-                    key={chapter.id}
-                    className={`chapter-item ${selectedId === chapter.id ? "active" : ""}`}
-                    onClick={() => {
-                      setSelectedId(chapter.id);
-                      setActiveTab("notes");
-                      setMenuOpen(false);
-                    }}
+                    key={note.id}
+                    className={`chapter-item daily-item ${selectedId === note.id ? "active" : ""}`}
+                    onClick={() => { setSelectedId(note.id); setMenuOpen(false); }}
                   >
-                    <span className={`confidence-dot confidence-${chapter.confidence}`} />
-                    <span className="chapter-copy">
-                      <strong>{chapter.title}</strong>
-                      <small>{isDue(chapter) ? "Review due" : `Review ${formatDate(chapter.nextReview)}`}</small>
+                    <span className="date-tile">
+                      <small>{formatDate(note.noteDate, { weekday: "short" })}</small>
+                      <strong>{formatDate(note.noteDate, { day: "2-digit" })}</strong>
                     </span>
-                    {isDue(chapter) && <span className="due-pip" />}
+                    <span className="chapter-copy">
+                      <strong>{note.focus || "Untitled learning day"}</strong>
+                      <small>{note.noteDate === today ? "Today" : note.minutes ? `${note.minutes} min studied` : "Daily note"}</small>
+                    </span>
                   </button>
                 ))}
               </section>
@@ -394,163 +332,100 @@ export function StudyApp() {
 
       <section className="workspace">
         {loadError && (
-          <div className="error-banner">
-            <span>{loadError}</span>
-            <button onClick={() => void loadChapters()}>Try again</button>
-          </div>
+          <div className="error-banner"><span>{loadError}</span><button onClick={() => void loadNotes()}>Try again</button></div>
         )}
 
         {!selected ? (
           <section className="welcome-panel">
-            <div className="welcome-icon" aria-hidden="true">CA</div>
-            <p className="eyebrow">Cloud Architect Study Hub</p>
-            <h1>Turn every chapter into knowledge that sticks.</h1>
-            <p>Capture the big picture, test yourself from memory, and review each topic right before it fades.</p>
-            <button onClick={() => setCreateOpen(true)}>Create your first chapter <span>→</span></button>
+            <div className="welcome-date" aria-hidden="true">
+              <span>{formatDate(today, { weekday: "long" })}</span>
+              <strong>{formatDate(today, { day: "2-digit" })}</strong>
+            </div>
+            <p className="eyebrow">A quiet record of your progress</p>
+            <h1>What did you learn today?</h1>
+            <p>Write a little each day. Capture what clicked, what is still unclear, and where you want to continue tomorrow.</p>
+            <button onClick={() => void openDate(today)}>Write today&apos;s note <span>→</span></button>
             <div className="welcome-steps">
-              <span><b>01</b> Capture</span>
-              <span><b>02</b> Recall</span>
-              <span><b>03</b> Review</span>
+              <span><b>01</b> Learn</span><span><b>02</b> Reflect</span><span><b>03</b> Continue</span>
             </div>
           </section>
         ) : (
           <>
             <header className="workspace-header">
-              <div className="breadcrumb"><span>{selected.section}</span><b>/</b><span>Chapter note</span></div>
+              <div className="breadcrumb"><span>Daily learning</span><b>/</b><span>{selected.noteDate}</span></div>
               <div className="save-state" role="status">
                 <span className={`save-dot ${saving}`} />
                 {saving === "saving" ? "Saving…" : saving === "error" ? "Save failed" : saving === "saved" ? "Saved" : "Autosave on"}
               </div>
             </header>
 
-            <div className="editor-wrap">
+            <div className="editor-wrap daily-editor">
               <div className="note-heading">
-                <div className="status-line">
-                  <span className={`status-chip ${draft.status}`}>{STATUS_LABELS[draft.status]}</span>
-                  {isDue(selected) ? <span className="due-label">Review due today</span> : <span className="next-label">Next review · {formatDate(selected.nextReview)}</span>}
+                <div className="date-line">
+                  <span>{formatDate(selected.noteDate, { weekday: "long" })}</span>
+                  {selected.noteDate === today && <b>Today</b>}
                 </div>
+                <h1 className="daily-date-title">{formatDate(selected.noteDate, { month: "long", day: "numeric", year: "numeric" })}</h1>
                 <input
-                  className="title-input"
-                  value={draft.title}
-                  onChange={(event) => updateDraft("title", event.target.value)}
-                  aria-label="Chapter title"
-                />
-                <input
-                  className="summary-input"
-                  value={draft.summary}
-                  onChange={(event) => updateDraft("summary", event.target.value)}
-                  placeholder="In one sentence, what is this chapter really about?"
-                  aria-label="One-sentence summary"
+                  className="summary-input daily-focus-input"
+                  value={draft.focus}
+                  onChange={(event) => updateDraft("focus", event.target.value)}
+                  placeholder="Give today a short title — what was your main focus?"
+                  aria-label="Main learning focus"
                 />
               </div>
 
-              <div className="note-toolbar">
-                <div className="view-tabs">
-                  <button className={activeTab === "notes" ? "active" : ""} onClick={() => setActiveTab("notes")}>Chapter notes</button>
-                  <button className={activeTab === "review" ? "active" : ""} onClick={() => setActiveTab("review")}>
-                    Review mode {isDue(selected) && <span />}
-                  </button>
-                </div>
-                <div className="toolbar-actions">
-                  <select value={draft.status} onChange={(event) => updateDraft("status", event.target.value as Draft["status"])} aria-label="Learning status">
-                    <option value="learning">Learning</option>
-                    <option value="reviewing">Reviewing</option>
-                    <option value="mastered">Mastered</option>
-                  </select>
-                  <button className="more-button" onClick={() => void deleteChapter()} aria-label="Delete chapter">Delete</button>
-                </div>
+              <div className="note-toolbar daily-toolbar">
+                <span>Daily reflection</span>
+                <button className="more-button" onClick={() => void deleteNote()} aria-label="Delete daily note">Delete</button>
               </div>
 
-              {activeTab === "notes" ? (
-                <div className="notes-grid">
-                  <section className="field-card wide">
-                    <div className="field-heading"><span className="field-number">01</span><div><h2>Big picture</h2><p>Explain it in your own words.</p></div></div>
-                    <textarea
-                      value={draft.content}
-                      onChange={(event) => updateDraft("content", event.target.value)}
-                      placeholder="What problem does this solve? How do the parts work together? Add examples, commands, or a simple architecture flow…"
-                      rows={10}
-                      aria-label="Big picture notes"
-                    />
-                  </section>
-
-                  <section className="field-card">
-                    <div className="field-heading"><span className="field-number gold">02</span><div><h2>Key takeaways</h2><p>The ideas worth carrying forward.</p></div></div>
-                    <textarea value={draft.keyTakeaways} onChange={(event) => updateDraft("keyTakeaways", event.target.value)} placeholder={"- Main concept\n- Important trade-off\n- When to use it"} rows={8} aria-label="Key takeaways" />
-                  </section>
-
-                  <section className="field-card">
-                    <div className="field-heading"><span className="field-number coral">03</span><div><h2>Exam traps</h2><p>Easy confusions and warning words.</p></div></div>
-                    <textarea value={draft.examTraps} onChange={(event) => updateDraft("examTraps", event.target.value)} placeholder={"Do not confuse…\nWatch for wording like…\nCommon mistake…"} rows={8} aria-label="Exam traps" />
-                  </section>
-
-                  <section className="field-card wide recall-card">
-                    <div className="field-heading"><span className="field-number violet">04</span><div><h2>Recall questions</h2><p>Questions future-you should answer without looking above.</p></div></div>
-                    <textarea value={draft.recallQuestions} onChange={(event) => updateDraft("recallQuestions", event.target.value)} placeholder={"1. What problem does this solve?\n2. When would I choose it over an alternative?\n3. What limitation or cost should I remember?"} rows={6} aria-label="Recall questions" />
-                  </section>
-
-                  <section className="details-row wide">
-                    <label><span>Section</span><input value={draft.section} onChange={(event) => updateDraft("section", event.target.value)} /></label>
-                    <label><span>Tags</span><input value={draft.tags} onChange={(event) => updateDraft("tags", event.target.value)} placeholder="security, iam, policies" /></label>
-                    <label><span>Confidence</span><select value={draft.confidence} onChange={(event) => updateDraft("confidence", Number(event.target.value))}>{[1, 2, 3, 4, 5].map((score) => <option value={score} key={score}>{score} / 5</option>)}</select></label>
-                  </section>
-                </div>
-              ) : (
-                <section className="review-panel">
-                  <div className="review-intro">
-                    <p className="eyebrow">Active recall</p>
-                    <h2>What can you explain without your notes?</h2>
-                    <p>Answer aloud or on paper. Struggling a little is part of what makes the memory stronger.</p>
-                  </div>
-
-                  <div className="question-stack">
-                    {(questions.length ? questions : [
-                      "What problem does this chapter solve?",
-                      "How does it work at a high level?",
-                      "What trade-off or limitation matters most?",
-                    ]).map((question, index) => (
-                      <div className="question-row" key={`${question}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><p>{question}</p></div>
-                    ))}
-                  </div>
-
-                  {!revealed ? (
-                    <button className="reveal-button" onClick={() => setRevealed(true)}>Reveal my notes</button>
-                  ) : (
-                    <div className="revealed-notes">
-                      <div className="answer-sheet">
-                        <p className="eyebrow">Memory check</p>
-                        <h3>{draft.summary || draft.title}</h3>
-                        <p className="preserve-lines">{draft.content || "No big-picture notes yet."}</p>
-                        {draft.keyTakeaways && <div className="takeaway-box"><strong>Key takeaways</strong><p className="preserve-lines">{draft.keyTakeaways}</p></div>}
-                      </div>
-                      <div className="confidence-check">
-                        <h3>How well could you explain it?</h3>
-                        <div className="confidence-options">
-                          {[1, 2, 3, 4, 5].map((score) => (
-                            <button key={score} className={reviewConfidence === score ? "active" : ""} onClick={() => setReviewConfidence(score)}><strong>{score}</strong><span>{score === 1 ? "Lost" : score === 2 ? "Fuzzy" : score === 3 ? "Got it" : score === 4 ? "Strong" : "Teach it"}</span></button>
-                          ))}
-                        </div>
-                        <button className="complete-button" onClick={() => void completeReview()}>Complete review <span>→</span></button>
-                      </div>
-                    </div>
-                  )}
+              <div className="notes-grid daily-grid">
+                <section className="field-card wide learning-card">
+                  <div className="field-heading"><span className="field-number">01</span><div><h2>What I learned</h2><p>Write freely. Explain it as if you were teaching someone else.</p></div></div>
+                  <textarea
+                    value={draft.learned}
+                    onChange={(event) => updateDraft("learned", event.target.value)}
+                    placeholder="Today I learned…"
+                    rows={14}
+                    aria-label="What I learned today"
+                  />
                 </section>
-              )}
+
+                <section className="field-card">
+                  <div className="field-heading"><span className="field-number">02</span><div><h2>Key takeaways</h2><p>The few ideas worth remembering.</p></div></div>
+                  <textarea value={draft.takeaways} onChange={(event) => updateDraft("takeaways", event.target.value)} placeholder={"• The main idea\n• A useful detail\n• A connection I noticed"} rows={8} aria-label="Key takeaways" />
+                </section>
+
+                <section className="field-card">
+                  <div className="field-heading"><span className="field-number">03</span><div><h2>Still unclear</h2><p>Questions to research or ask later.</p></div></div>
+                  <textarea value={draft.questions} onChange={(event) => updateDraft("questions", event.target.value)} placeholder={"• Why does…?\n• How is this different from…?"} rows={8} aria-label="Questions still unclear" />
+                </section>
+
+                <section className="field-card wide tomorrow-card">
+                  <div className="field-heading"><span className="field-number">04</span><div><h2>Tomorrow&apos;s focus</h2><p>Leave yourself one clear place to continue.</p></div></div>
+                  <textarea value={draft.tomorrow} onChange={(event) => updateDraft("tomorrow", event.target.value)} placeholder="Tomorrow, I want to continue with…" rows={4} aria-label="Tomorrow's focus" />
+                </section>
+
+                <section className="details-row wide daily-details">
+                  <label><span>Tags</span><input value={draft.tags} onChange={(event) => updateDraft("tags", event.target.value)} placeholder="networking, iam, storage" /></label>
+                  <label><span>Minutes studied</span><input type="number" min="0" max="1440" value={draft.minutes || ""} onChange={(event) => updateDraft("minutes", Math.max(0, Number(event.target.value) || 0))} placeholder="0" /></label>
+                </section>
+              </div>
             </div>
           </>
         )}
       </section>
 
-      {createOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCreateOpen(false)}>
-          <form className="create-modal" onSubmit={createChapter}>
-            <button type="button" className="modal-close" onClick={() => setCreateOpen(false)} aria-label="Close">×</button>
-            <span className="modal-kicker">New chapter</span>
-            <h2>What are you learning?</h2>
-            <p>Start with the chapter title. You can shape the rest as you study.</p>
-            <label><span>Chapter title</span><input autoFocus value={newTitle} onChange={(event) => setNewTitle(event.target.value)} placeholder="e.g. Shared responsibility model" required /></label>
-            <label><span>Section or domain</span><input value={newSection} onChange={(event) => setNewSection(event.target.value)} placeholder="e.g. Cloud fundamentals" /></label>
-            <div className="modal-actions"><button type="button" onClick={() => setCreateOpen(false)}>Cancel</button><button type="submit" disabled={creating || !newTitle.trim()}>{creating ? "Creating…" : "Create chapter"}</button></div>
+      {dateModalOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setDateModalOpen(false)}>
+          <form className="create-modal" onSubmit={createSelectedDate}>
+            <button type="button" className="modal-close" onClick={() => setDateModalOpen(false)} aria-label="Close">×</button>
+            <span className="modal-kicker">Daily learning note</span>
+            <h2>Choose a date</h2>
+            <p>There is one learning note for each day. Choosing an existing date opens that entry.</p>
+            <label><span>Date</span><input autoFocus type="date" value={newDate} onChange={(event) => setNewDate(event.target.value)} required /></label>
+            <div className="modal-actions"><button type="button" onClick={() => setDateModalOpen(false)}>Cancel</button><button type="submit" disabled={creating || !newDate}>{creating ? "Opening…" : "Open daily note"}</button></div>
           </form>
         </div>
       )}
