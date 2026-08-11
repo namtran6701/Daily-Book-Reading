@@ -402,8 +402,8 @@ export function StudyApp() {
 
         {!selected ? (
           <section className="welcome-panel">
-            <div className="welcome-orbit" aria-hidden="true"><span>☁</span><i /><i /><i /></div>
-            <p className="eyebrow">Your personal knowledge base</p>
+            <div className="welcome-icon" aria-hidden="true">CA</div>
+            <p className="eyebrow">Cloud Architect Study Hub</p>
             <h1>Turn every chapter into knowledge that sticks.</h1>
             <p>Capture the big picture, test yourself from memory, and review each topic right before it fades.</p>
             <button onClick={() => setCreateOpen(true)}>Create your first chapter <span>→</span></button>
