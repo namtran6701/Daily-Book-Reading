@@ -5,6 +5,7 @@ import { BooksTab } from "./BooksTab";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
 import { formatDate, localDateKey, monthKey, shiftMonth } from "./date-keys";
+import { RefreshIcon } from "./icons";
 import type { Quadrant } from "./quadrants";
 import type { Book, BookNote, Thought } from "./types";
 
@@ -247,13 +248,16 @@ export function SecondBrain() {
         <div className="error-banner">
           <span>{error}</span>
           <button
+            className="icon-action"
             onClick={() => {
               setError("");
               setLoading(true);
               void load();
             }}
+            aria-label="Try again"
+            title="Try again"
           >
-            Try again
+            <RefreshIcon />
           </button>
         </div>
       )}

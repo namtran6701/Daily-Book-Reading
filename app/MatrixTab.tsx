@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ThoughtRow } from "./ThoughtRow";
+import { ChevronDownIcon, SubmitIcon } from "./icons";
 import { QUADRANTS, QUADRANT_AXES, QUADRANT_EMPTY, QUADRANT_LABELS, Quadrant } from "./quadrants";
 import type { Thought } from "./types";
 
@@ -79,8 +80,10 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
             className="keep-button"
             onClick={() => void keep()}
             disabled={busy || !text.trim() || !quadrant}
+            aria-label={busy ? "Submitting" : "Submit"}
+            title="Submit"
           >
-            {busy ? "Keeping…" : "Keep it"}
+            <SubmitIcon />
           </button>
         </div>
         {!quadrant && text.trim() ? (
@@ -125,11 +128,14 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
               {bucket.done.length > 0 && (
                 <>
                   <button
-                    className="done-toggle"
+                    className={`done-toggle ${done ? "done-toggle-open" : ""}`}
                     onClick={() => setShowDone({ ...showDone, [key]: !done })}
                     aria-expanded={done}
+                    aria-label={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
+                    title={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
                   >
-                    {done ? "Hide" : "Show"} {bucket.done.length} done
+                    <ChevronDownIcon />
+                    <span>{bucket.done.length}</span>
                   </button>
                   {done && (
                     <ul className="thought-list">

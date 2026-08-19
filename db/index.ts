@@ -40,6 +40,14 @@ async function migrateThoughts(db: D1Database): Promise<void> {
   await db.prepare("UPDATE thoughts SET status = 'open' WHERE status = 'filed'").run();
 }
 
+// Books used to carry an author, which the app no longer records or shows.
+async function migrateBooks(db: D1Database): Promise<void> {
+  const columns = await columnNames(db, "books");
+  if (columns.has("author")) {
+    await db.prepare("ALTER TABLE books DROP COLUMN author").run();
+  }
+}
+
 export async function ensureSchema(): Promise<void> {
   if (schemaPromise) return schemaPromise;
   const db = getD1();
@@ -62,7 +70,6 @@ export async function ensureSchema(): Promise<void> {
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
         title TEXT NOT NULL,
-        author TEXT NOT NULL DEFAULT '',
         finished_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -87,6 +94,7 @@ export async function ensureSchema(): Promise<void> {
     // The quadrant index waits until the migration has guaranteed the column,
     // which an older thoughts table will not have.
     await migrateThoughts(db);
+    await migrateBooks(db);
     await db
       .prepare("CREATE INDEX IF NOT EXISTS idx_thoughts_user_quadrant ON thoughts(user_id, quadrant, status)")
       .run();

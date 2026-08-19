@@ -25,7 +25,6 @@ export const books = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     title: text("title").notNull(),
-    author: text("author").notNull().default(""),
     finishedAt: text("finished_at"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),

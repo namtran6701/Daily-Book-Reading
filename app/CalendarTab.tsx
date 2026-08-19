@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { ThoughtRow } from "./ThoughtRow";
 import { WEEKDAY_INITIALS, dayTitle, formatDate, monthGrid, monthLabel } from "./date-keys";
+import { TodayIcon } from "./icons";
 import type { Book, BookNote, Thought } from "./types";
 
 type Props = {
@@ -83,8 +84,13 @@ export function CalendarTab({
           >
             ‹
           </button>
-          <button className="text-button" onClick={() => onSelectDay(today)}>
-            Today
+          <button
+            className="icon-button"
+            onClick={() => onSelectDay(today)}
+            aria-label="Today"
+            title="Today"
+          >
+            <TodayIcon />
           </button>
           <button className="icon-button" onClick={() => onMonthChange("next")} aria-label="Next month">
             ›

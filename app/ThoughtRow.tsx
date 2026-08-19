@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ageLabel } from "./date-keys";
+import { CheckIcon, CloseIcon, PencilIcon, TrashIcon } from "./icons";
 import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "./quadrants";
 import type { Thought } from "./types";
 
@@ -71,17 +72,24 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
               aria-label="Edit this thought"
             />
             <div className="editor-actions">
-              <button className="text-button" onClick={() => void save()}>
-                Save
+              <button
+                className="icon-action"
+                onClick={() => void save()}
+                aria-label="Save"
+                title="Save"
+              >
+                <CheckIcon />
               </button>
               <button
-                className="text-button quiet"
+                className="icon-action quiet"
                 onClick={() => {
                   setDraft(thought.body);
                   setEditing(false);
                 }}
+                aria-label="Cancel"
+                title="Cancel"
               >
-                Cancel
+                <CloseIcon />
               </button>
             </div>
           </div>
@@ -123,16 +131,23 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
             </button>
           ))}
           <button
-            className="text-button"
+            className="icon-action"
             onClick={() => {
               setExpanded(false);
               startEditing();
             }}
+            aria-label="Edit"
+            title="Edit"
           >
-            Edit
+            <PencilIcon />
           </button>
-          <button className="text-button danger" onClick={() => void onDelete(thought.id)}>
-            Delete
+          <button
+            className="icon-action danger"
+            onClick={() => void onDelete(thought.id)}
+            aria-label="Delete"
+            title="Delete"
+          >
+            <TrashIcon />
           </button>
         </div>
       )}

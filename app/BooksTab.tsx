@@ -2,6 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDate } from "./date-keys";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  CloseIcon,
+  PencilIcon,
+  PlusIcon,
+  SubmitIcon,
+  TrashIcon,
+  UndoIcon,
+} from "./icons";
 import type { Book, BookNote } from "./types";
 
 type Props = {
@@ -67,17 +77,19 @@ function NoteRow({
             aria-label="Edit this note"
           />
           <div className="editor-actions">
-            <button className="text-button" onClick={() => void save()}>
-              Save
+            <button className="icon-action" onClick={() => void save()} aria-label="Save" title="Save">
+              <CheckIcon />
             </button>
             <button
-              className="text-button quiet"
+              className="icon-action quiet"
               onClick={() => {
                 setDraft(note.body);
                 setEditing(false);
               }}
+              aria-label="Cancel"
+              title="Cancel"
             >
-              Cancel
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -89,16 +101,23 @@ function NoteRow({
               {note.dayKey === today ? "today" : formatDate(note.dayKey, { month: "short", day: "numeric" })}
             </span>
             <button
-              className="text-button"
+              className="icon-action"
               onClick={() => {
                 setDraft(note.body);
                 setEditing(true);
               }}
+              aria-label="Edit note"
+              title="Edit note"
             >
-              Edit
+              <PencilIcon />
             </button>
-            <button className="text-button danger" onClick={() => void onDelete(note.id)}>
-              Delete
+            <button
+              className="icon-action danger"
+              onClick={() => void onDelete(note.id)}
+              aria-label="Delete note"
+              title="Delete note"
+            >
+              <TrashIcon />
             </button>
           </div>
         </>
@@ -154,8 +173,13 @@ export function BooksTab({
   if (book) {
     return (
       <section className="book-detail" aria-label={book.title}>
-        <button className="text-button back" onClick={() => onSelectBook("")}>
-          ‹ All books
+        <button
+          className="icon-action back"
+          onClick={() => onSelectBook("")}
+          aria-label="All books"
+          title="All books"
+        >
+          <ChevronLeftIcon />
         </button>
 
         <header className="book-header">
@@ -165,13 +189,20 @@ export function BooksTab({
               {bookNotes.length} {bookNotes.length === 1 ? "note" : "notes"}
             </span>
             <button
-              className="text-button"
+              className="icon-action"
               onClick={() => void onUpdateBook(book.id, { finished: !book.finishedAt })}
+              aria-label={book.finishedAt ? "Move back to reading" : "Mark finished"}
+              title={book.finishedAt ? "Move back to reading" : "Mark finished"}
             >
-              {book.finishedAt ? "Move back to reading" : "Mark finished"}
+              {book.finishedAt ? <UndoIcon /> : <CheckIcon />}
             </button>
-            <button className="text-button danger" onClick={() => void onDeleteBook(book.id)}>
-              Delete book
+            <button
+              className="icon-action danger"
+              onClick={() => void onDeleteBook(book.id)}
+              aria-label="Delete book"
+              title="Delete book"
+            >
+              <TrashIcon />
             </button>
           </div>
         </header>
@@ -197,8 +228,14 @@ export function BooksTab({
             }}
             aria-label="Your note"
           />
-          <button className="keep-button" onClick={() => void addNote()} disabled={busy || !noteText.trim()}>
-            {busy ? "Saving…" : "Add note"}
+          <button
+            className="keep-button"
+            onClick={() => void addNote()}
+            disabled={busy || !noteText.trim()}
+            aria-label={busy ? "Saving note" : "Add note"}
+            title="Add note"
+          >
+            <SubmitIcon />
           </button>
         </div>
 
@@ -236,8 +273,14 @@ export function BooksTab({
             placeholder="Title"
             aria-label="Book title"
           />
-          <button className="keep-button" onClick={() => void addBook()} disabled={busy || !title.trim()}>
-            Add
+          <button
+            className="keep-button"
+            onClick={() => void addBook()}
+            disabled={busy || !title.trim()}
+            aria-label="Add book"
+            title="Add book"
+          >
+            <PlusIcon />
           </button>
         </div>
       </section>
