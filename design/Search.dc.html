@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #1c1b18; } a:hover { color: #5d594f; }
+    .sf { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+    .sr { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; }
+    .cap { font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; }
+    .row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 13px 0; border-top: 1px solid rgba(28, 27, 24, 0.09); }
+    .mark { display: grid; box-sizing: border-box; width: 26px; height: 26px; border: 1px solid transparent; place-items: center; border-radius: 50%; color: #5d594f; font-family: 'Newsreader', Georgia, serif; font-size: 17px; line-height: 1; }
+  </style>
+</helmet>
+
+<div class="sf" style="width: 900px; height: 760px; padding: 54px 60px; background: #faf8f3; color: #1c1b18; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid rgba(28, 27, 24, 0.26);">
+    <svg width="17" height="17" viewBox="0 0 14 14" fill="none" style="color: #5d594f;"><circle cx="6" cy="6" r="4.2" stroke="currentColor" stroke-width="1.3"></circle><path d="M9.2 9.2 12.5 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+    <span class="sr" style="font-size: 27px; font-weight: 400; letter-spacing: -0.5px;">cloud</span>
+    <span class="sr" style="margin-left: auto; font-size: 14px; font-style: italic; color: #928d80;">four matches across three days</span>
+  </div>
+
+  <sc-for list="{{groups}}" as="group" hint-placeholder-count="3">
+    <section style="margin-top: 34px;">
+      <div style="display: flex; align-items: baseline; gap: 14px;">
+        <h2 class="sr" style="margin: 0; font-size: 20px; font-weight: 400; letter-spacing: -0.3px;">{{group.day}}</h2>
+        <span style="flex-grow: 1; height: 1px; background: rgba(28, 27, 24, 0.13);"></span>
+        <span class="sr" style="font-size: 13px; font-style: italic; color: #928d80;">{{group.age}}</span>
+      </div>
+
+      <sc-for list="{{group.items}}" as="item" hint-placeholder-count="2">
+        <div class="row" style="border-top: 1px solid rgba(28, 27, 24, 0.13);">
+          <span class="mark">{{item.mark}}</span>
+          <div>
+            <div style="font-size: 15.5px; line-height: 1.5; letter-spacing: -0.2px;">{{item.body}}</div>
+            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+              <span style="font-size: 11.5px; color: #928d80;">{{item.tag}}</span>
+            </div>
+          </div>
+          <span class="cap" style="color: #928d80;">{{item.status}}</span>
+        </div>
+      </sc-for>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      groups: [
+        { day: 'August 18', age: 'today', items: [
+          { mark: '?', body: 'why does Cloud NAT need a static IP', kind: 'Question', tag: '#networking', status: 'Open' },
+          { mark: '!', body: 'email Sarah about the Cloud NAT quota', kind: 'To do', tag: '#work', status: 'Done' },
+        ] },
+        { day: 'August 15', age: 'three days ago', items: [
+          { mark: '?', body: 'is Cloud Armor worth it for a personal site', kind: 'Question', tag: '#security', status: 'Open' },
+        ] },
+        { day: 'August 8', age: 'last week', items: [
+          { mark: '·', body: 'Cloud Storage lifecycle rules run once a day, not on write', kind: 'Note', tag: '#storage', status: 'Filed' },
+        ] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

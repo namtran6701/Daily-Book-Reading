@@ -4,9 +4,40 @@ let schemaPromise: Promise<void> | null = null;
 
 export function getD1(): D1Database {
   if (!env.DB) {
-    throw new Error("The study database is unavailable.");
+    throw new Error("The database is unavailable.");
   }
   return env.DB;
+}
+
+async function columnNames(db: D1Database, table: string): Promise<Set<string>> {
+  const result = await db.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
+  return new Set(result.results.map((column) => column.name));
+}
+
+// Thoughts predate the Eisenhower matrix: they carried a kind, free tags and a
+// source instead of a quadrant. The tag and source text is folded back into the
+// body so no words are lost, and the old columns are left in place rather than
+// dropped. This runs once because the folding clears what it matches.
+async function migrateThoughts(db: D1Database): Promise<void> {
+  const columns = await columnNames(db, "thoughts");
+  if (!columns.has("quadrant")) {
+    await db.prepare("ALTER TABLE thoughts ADD COLUMN quadrant TEXT NOT NULL DEFAULT 'later'").run();
+  }
+  if (columns.has("tags") && columns.has("source")) {
+    await db
+      .prepare(`UPDATE thoughts SET
+          body = TRIM(
+            body
+            || CASE WHEN tags <> '' THEN ' #' || REPLACE(tags, ', ', ' #') ELSE '' END
+            || CASE WHEN source <> '' THEN ' @' || source ELSE '' END
+          ),
+          tags = '',
+          source = ''
+        WHERE tags <> '' OR source <> ''`)
+      .run();
+  }
+  // 'filed' was the resting status for reading notes, which no longer exist.
+  await db.prepare("UPDATE thoughts SET status = 'open' WHERE status = 'filed'").run();
 }
 
 export async function ensureSchema(): Promise<void> {
@@ -14,48 +45,51 @@ export async function ensureSchema(): Promise<void> {
   const db = getD1();
   schemaPromise = (async () => {
     await db.batch([
-      db.prepare(`CREATE TABLE IF NOT EXISTS chapters (
+      db.prepare(`CREATE TABLE IF NOT EXISTS thoughts (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        body TEXT NOT NULL,
+        quadrant TEXT NOT NULL DEFAULT 'later',
+        status TEXT NOT NULL DEFAULT 'open',
+        day_key TEXT NOT NULL,
+        done_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_thoughts_user_day
+        ON thoughts(user_id, day_key)`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS books (
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
         title TEXT NOT NULL,
-        section TEXT NOT NULL DEFAULT 'General',
-        summary TEXT NOT NULL DEFAULT '',
-        content TEXT NOT NULL DEFAULT '',
-        key_takeaways TEXT NOT NULL DEFAULT '',
-        exam_traps TEXT NOT NULL DEFAULT '',
-        recall_questions TEXT NOT NULL DEFAULT '',
-        tags TEXT NOT NULL DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'learning',
-        confidence INTEGER NOT NULL DEFAULT 1,
-        review_count INTEGER NOT NULL DEFAULT 0,
-        last_reviewed TEXT,
-        next_review TEXT NOT NULL,
+        author TEXT NOT NULL DEFAULT '',
+        finished_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )`),
-      db.prepare(`CREATE INDEX IF NOT EXISTS idx_chapters_user_updated
-        ON chapters(user_id, updated_at)`),
-      db.prepare(`CREATE INDEX IF NOT EXISTS idx_chapters_user_review
-        ON chapters(user_id, next_review)`),
-      db.prepare(`CREATE TABLE IF NOT EXISTS daily_notes (
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_books_user_created
+        ON books(user_id, created_at)`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS book_notes (
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
-        note_date TEXT NOT NULL,
-        focus TEXT NOT NULL DEFAULT '',
-        learned TEXT NOT NULL DEFAULT '',
-        takeaways TEXT NOT NULL DEFAULT '',
-        questions TEXT NOT NULL DEFAULT '',
-        tomorrow TEXT NOT NULL DEFAULT '',
-        tags TEXT NOT NULL DEFAULT '',
-        minutes INTEGER NOT NULL DEFAULT 0,
+        book_id TEXT NOT NULL,
+        body TEXT NOT NULL,
+        page TEXT NOT NULL DEFAULT '',
+        day_key TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )`),
-      db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_notes_user_date_unique
-        ON daily_notes(user_id, note_date)`),
-      db.prepare(`CREATE INDEX IF NOT EXISTS idx_daily_notes_user_updated
-        ON daily_notes(user_id, updated_at)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_book_notes_user_book
+        ON book_notes(user_id, book_id, created_at)`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_book_notes_user_day
+        ON book_notes(user_id, day_key)`),
     ]);
+    // The quadrant index waits until the migration has guaranteed the column,
+    // which an older thoughts table will not have.
+    await migrateThoughts(db);
+    await db
+      .prepare("CREATE INDEX IF NOT EXISTS idx_thoughts_user_quadrant ON thoughts(user_id, quadrant, status)")
+      .run();
     await db.prepare("PRAGMA optimize").run();
   })().catch((error) => {
     schemaPromise = null;

@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #1c1b18; } a:hover { color: #5d594f; }
+    .sf { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+    .sr { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; }
+    .cap { font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: #928d80; }
+    .sec { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; }
+    .sec h2 { margin: 0; font-family: 'Newsreader', Georgia, serif; font-size: 23px; font-weight: 400; letter-spacing: -0.3px; }
+    .sec .rule { flex-grow: 1; height: 1px; background: rgba(28, 27, 24, 0.22); }
+    .mark { display: grid; box-sizing: border-box; width: 26px; height: 26px; place-items: center; border: 1px solid transparent; border-radius: 50%; color: #5d594f; font-family: 'Newsreader', Georgia, serif; font-size: 17px; line-height: 1; }
+  </style>
+</helmet>
+
+<div class="sf" style="width: 880px; height: 1220px; padding: 50px 54px; background: #faf8f3; color: #1c1b18; overflow: hidden;">
+
+  <div class="cap" style="color: #928d80;">Second brain</div>
+  <h1 class="sr" style="margin: 8px 0 40px; font-size: 40px; font-weight: 400; line-height: 1; letter-spacing: -1.1px;">Paper and ink</h1>
+
+  <section style="margin-bottom: 40px;">
+    <div class="sec"><h2>Palette</h2><span class="rule"></span></div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+      <sc-for list="{{colors}}" as="c" hint-placeholder-count="8">
+        <div>
+          <div style="height: 58px; border: 1px solid rgba(28, 27, 24, 0.13); border-radius: 4px; background: {{c.hex}};"></div>
+          <div style="margin-top: 8px; font-size: 12px; font-weight: 600;">{{c.name}}</div>
+          <div class="mono">{{c.hex}}</div>
+          <div style="margin-top: 2px; font-size: 11px; color: #928d80;">{{c.use}}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="margin-bottom: 40px;">
+    <div class="sec"><h2>Type</h2><span class="rule"></span><span class="sr" style="flex-grow: 0; font-size: 13px; font-style: italic; color: #928d80;">Newsreader + system sans</span></div>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">Newsreader 52 / 400 / -1.4</div>
+        <div class="sr" style="font-size: 52px; line-height: 1; letter-spacing: -1.4px;">August 18</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">Newsreader 23 / 400</div>
+        <div class="sr" style="font-size: 23px; letter-spacing: -0.4px;">Loose ends</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">Newsreader 20 / 400</div>
+        <div class="sr" style="font-size: 20px; letter-spacing: -0.3px;">August 15</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">Newsreader 14 italic<br>section captions</div>
+        <div class="sr" style="font-size: 14px; font-style: italic; color: #928d80;">three from earlier · saved a moment ago</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">Newsreader 13 italic<br>row age and source</div>
+        <div class="sr" style="font-size: 13px; font-style: italic; color: #928d80;">yesterday · Thinking, Fast and Slow</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">System sans 15.5 / 1.5</div>
+        <div style="font-size: 15.5px; line-height: 1.5; letter-spacing: -0.2px;">why does Cloud NAT need a static IP</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: baseline;">
+        <div class="mono">System sans 10 / 600 / 1.4</div>
+        <div class="cap" style="color: #5d594f;">Captured today</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-bottom: 40px;">
+    <div class="sec"><h2>Margin marks</h2><span class="rule"></span><span class="sr" style="flex-grow: 0; font-size: 13px; font-style: italic; color: #928d80;">the capture syntax, set in type</span></div>
+    <div style="display: flex; gap: 34px;">
+      <sc-for list="{{marks}}" as="m" hint-placeholder-count="4">
+        <div style="text-align: center;">
+          <div class="mark" style="margin: 0 auto;">{{m.g}}</div>
+          <div class="cap" style="margin-top: 8px; color: #928d80;">{{m.label}}</div>
+        </div>
+      </sc-for>
+      <div style="text-align: center;">
+        <div class="mark" style="margin: 0 auto; border-color: rgba(28, 27, 24, 0.3);">!</div>
+        <div class="cap" style="margin-top: 8px; color: #928d80;">Hover</div>
+      </div>
+      <div style="text-align: center;">
+        <div class="mark" style="margin: 0 auto; background: #1c1b18; color: #faf8f3;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2 4.8 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </div>
+        <div class="cap" style="margin-top: 8px; color: #928d80;">Done</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec"><h2>Row anatomy</h2><span class="rule"></span></div>
+    <div style="display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 13px 0; border-top: 1px solid rgba(28, 27, 24, 0.13);">
+      <span class="mark">?</span>
+      <div>
+        <div style="font-size: 15.5px; line-height: 1.5; letter-spacing: -0.2px;">is Cloud Armor worth it for a personal site</div>
+        <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+          <span style="font-size: 11.5px; color: #928d80;">#security</span>
+        </div>
+      </div>
+      <span class="sr" style="font-size: 13px; font-style: italic; color: #928d80;">three days ago</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 13px 0; border-top: 1px solid rgba(28, 27, 24, 0.09);">
+      <span class="mark" style="background: #1c1b18; color: #faf8f3;">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2 4.8 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </span>
+      <div>
+        <div style="font-size: 15.5px; line-height: 1.5; letter-spacing: -0.2px; color: #928d80; text-decoration: line-through;">email Sarah about the GCP quota</div>
+        <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+          <span style="font-size: 11.5px; color: #928d80;">#work</span>
+        </div>
+      </div>
+      <span class="sr" style="font-size: 13px; font-style: italic; color: #928d80;">yesterday</span>
+    </div>
+    <div style="margin-top: 22px; padding: 14px 16px; border-left: 2px solid rgba(28, 27, 24, 0.26); background: rgba(28, 27, 24, 0.028);">
+      <div style="font-size: 12.5px; line-height: 1.6; color: #5d594f;">Rules replace cards. Hairlines of ink at 9% separate rows, 13% open a group, 22% carry the section spacer, and 26% frame the capture band and underline the search query and the entry title. Nothing carries a shadow. On the phone every step drops half a pixel.</div>
+    </div>
+  </section>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      colors: [
+        { name: 'Paper', hex: '#faf8f3', use: 'page ground' },
+        { name: 'Sheet', hex: '#fffefb', use: 'raised surface' },
+        { name: 'Ink', hex: '#1c1b18', use: 'text, marks' },
+        { name: 'Ink soft', hex: '#5d594f', use: 'secondary' },
+        { name: 'Ink faint', hex: '#928d80', use: 'meta, age' },
+        { name: 'Rule 9%', hex: '#e6e4df', use: 'between rows' },
+        { name: 'Rule 13%', hex: '#dddbd7', use: 'opens a group' },
+        { name: 'Rule 22%', hex: '#c9c7c3', use: 'section spacer' },
+        { name: 'Rule 26%', hex: '#c0bfba', use: 'capture band' },
+        { name: 'Sidebar', hex: '#f4f2ed', use: 'left column' },
+      ],
+      marks: [
+        { g: '!', label: 'To do' },
+        { g: '?', label: 'Question' },
+        { g: '*', label: 'Idea' },
+        { g: '·', label: 'Note' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #1c1b18; } a:hover { color: #5d594f; }
+    .sf { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+    .sr { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; }
+    .cap { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; }
+    .row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid rgba(28, 27, 24, 0.09); }
+    .mark { display: grid; box-sizing: border-box; width: 24px; height: 24px; border: 1px solid transparent; place-items: center; border-radius: 50%; color: #5d594f; font-family: 'Newsreader', Georgia, serif; font-size: 16px; line-height: 1; }
+  </style>
+</helmet>
+
+<div class="sf" style="display: flex; flex-direction: column; width: 390px; height: 900px; background: #faf8f3; color: #1c1b18; overflow: hidden;">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; height: 54px; padding: 0 18px; border-bottom: 1px solid rgba(28, 27, 24, 0.13);">
+    <div style="display: flex; flex-direction: column; gap: 4px; width: 17px;">
+      <span style="height: 1.4px; background: #1c1b18;"></span>
+      <span style="height: 1.4px; background: #1c1b18;"></span>
+    </div>
+    <span class="sr" style="font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">Second brain</span>
+    <span class="cap" style="color: #928d80;">Today</span>
+  </header>
+
+  <div style="flex-grow: 1; padding: 26px 20px 0; overflow: hidden;">
+
+    <div class="cap" style="color: #928d80;">Tuesday</div>
+    <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+      <h1 class="sr" style="margin: 0; font-size: 38px; font-weight: 400; line-height: 1; letter-spacing: -1px;">August 18</h1>
+      <span class="sr" style="font-size: 14px; font-style: italic; color: #928d80;">today</span>
+    </div>
+
+    <section style="margin-top: 26px; padding: 18px 0 14px; border-top: 1px solid rgba(28, 27, 24, 0.26); border-bottom: 1px solid rgba(28, 27, 24, 0.26);">
+      <div class="sr" style="font-size: 19px; font-style: italic; color: #928d80;">What is on your mind?</div>
+      <div style="display: flex; align-items: baseline; gap: 15px; margin-top: 40px;">
+        <sc-for list="{{hints}}" as="hint" hint-placeholder-count="5">
+          <div style="display: flex; align-items: baseline; gap: 5px;">
+            <span class="sr" style="font-size: 14px;">{{hint.m}}</span>
+            <span style="font-size: 10.5px; color: #928d80;">{{hint.label}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="margin-top: 30px;">
+      <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 2px;">
+        <h2 class="sr" style="margin: 0; font-size: 20px; font-weight: 400; letter-spacing: -0.3px;">Loose ends</h2>
+        <span style="flex-grow: 1; height: 1px; background: rgba(28, 27, 24, 0.22);"></span>
+        <span class="sr" style="font-size: 13px; font-style: italic; color: #928d80;">three open</span>
+      </div>
+
+      <sc-for list="{{loose}}" as="item" hint-placeholder-count="3">
+        <div>
+          <div class="sr" style="margin-top: 18px; margin-bottom: 2px; font-size: 12.5px; font-style: italic; color: #928d80;">{{item.bucket}}</div>
+          <div class="row" style="border-top: 1px solid rgba(28, 27, 24, 0.13);">
+            <span class="mark">{{item.mark}}</span>
+            <div>
+              <div style="font-size: 15px; line-height: 1.45; letter-spacing: -0.2px;">{{item.body}}</div>
+              <div style="display: flex; align-items: baseline; gap: 9px; margin-top: 5px;">
+                <span style="font-size: 11px; color: #928d80;">{{item.tag}}</span>
+                <span class="sr" style="margin-left: auto; font-size: 12.5px; font-style: italic; color: #928d80;">{{item.age}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="margin-top: 30px;">
+      <span class="cap" style="color: #928d80;">Captured today</span>
+      <div class="row" style="border-top: 1px solid rgba(28, 27, 24, 0.13);">
+        <span class="mark" style="background: #1c1b18; color: #faf8f3;">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2 4.8 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span>
+        <div>
+          <div style="font-size: 15px; line-height: 1.45; color: #928d80; text-decoration: line-through;">email Sarah about the Cloud NAT quota</div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="mark">?</span>
+        <div>
+          <div style="font-size: 15px; line-height: 1.45; letter-spacing: -0.2px;">why does Cloud NAT need a static IP</div>
+          <div style="display: flex; align-items: baseline; gap: 9px; margin-top: 5px;">
+            <span style="font-size: 11px; color: #928d80;">#networking</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      hints: [
+        { m: '!', label: 'to do' },
+        { m: '?', label: 'question' },
+        { m: '*', label: 'idea' },
+        { m: '#', label: 'tag' },
+        { m: '@', label: 'source' },
+      ],
+      loose: [
+        { bucket: 'earlier this month', mark: '*', body: 'an app that reminds me what I was thinking last month', kind: 'Idea', tag: '#product', age: 'last week' },
+        { bucket: 'earlier this week', mark: '?', body: 'is Cloud Armor worth it for a personal site', kind: 'Question', tag: '', age: 'three days ago' },
+        { bucket: 'yesterday', mark: '!', body: 'book the dentist', kind: 'To do', tag: '#life', age: 'yesterday' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -13,13 +13,15 @@ async function render() {
   );
 }
 
-test("server-renders the Daily Learning Log", async () => {
+test("server-renders the Second Brain shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /<title>Daily Learning Log<\/title>/i);
-  assert.match(html, /data-app="daily-learning-log"/);
-  assert.match(html, /What did you learn today/i);
+  assert.match(html, /<title>Second Brain<\/title>/i);
+  assert.match(html, /data-app="second-brain"/);
+  for (const tab of ["Calendar", "Thoughts", "Books"]) {
+    assert.match(html, new RegExp(`>${tab}<`));
+  }
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });

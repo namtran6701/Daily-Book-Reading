@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #1c1b18; } a:hover { color: #5d594f; }
+    .sf { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+    .sr { font-family: 'Newsreader', Georgia, 'Times New Roman', serif; }
+    .cap { font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; }
+    .field { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 18px; padding: 22px 0; border-top: 1px solid rgba(28, 27, 24, 0.13); }
+    .num { font-family: 'Newsreader', Georgia, serif; font-size: 15px; font-style: italic; color: #928d80; text-align: right; }
+    .lede { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: #928d80; }
+    .body { margin: 13px 0 0; font-size: 15px; line-height: 1.7; color: #3c3931; }
+  </style>
+</helmet>
+
+<div class="sf" style="width: 900px; height: 1080px; padding: 54px 60px; background: #faf8f3; color: #1c1b18; overflow: hidden;">
+
+  <div class="cap" style="color: #928d80;">Tuesday</div>
+  <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 8px; margin-bottom: 36px;">
+    <h1 class="sr" style="margin: 0; font-size: 52px; font-weight: 400; line-height: 1; letter-spacing: -1.4px;">August 18</h1>
+    <span class="sr" style="padding: 3px 10px; border: 1px solid rgba(28, 27, 24, 0.26); border-radius: 20px; font-size: 13px; font-style: italic; color: #5d594f;">today</span>
+  </div>
+
+  <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px;">
+    <h2 class="sr" style="margin: 0; font-size: 23px; font-weight: 400; letter-spacing: -0.4px;">Close the day</h2>
+    <span style="flex-grow: 1; height: 1px; background: rgba(28, 27, 24, 0.22);"></span>
+    <span class="sr" style="font-size: 14px; font-style: italic; color: #928d80;">saved a moment ago</span>
+  </div>
+
+  <div style="padding-bottom: 14px; border-bottom: 1px solid rgba(28, 27, 24, 0.26);">
+    <span class="sr" style="font-size: 28px; font-weight: 400; letter-spacing: -0.6px;">VPC networking deep dive</span>
+  </div>
+
+  <div class="field" style="border-top: 0;">
+    <span class="num">i</span>
+    <div>
+      <h3 class="sr" style="margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">What I learned</h3>
+      <p class="lede">Write freely. Explain it as if you were teaching someone else.</p>
+      <p class="body">Cloud NAT gives instances outbound access without handing each one an external IP. It is regional, so a multi-region service needs one gateway per region, and the gateway itself is not something you scale by hand.</p>
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="num">ii</span>
+    <div>
+      <h3 class="sr" style="margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Key takeaways</h3>
+      <p class="lede">The few ideas worth remembering.</p>
+      <p class="body">NAT is regional, never global<br>Outbound only, never inbound<br>Ports are allocated per instance</p>
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="num">iii</span>
+    <div>
+      <h3 class="sr" style="margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Still unclear</h3>
+      <p class="lede">Questions to research or ask later.</p>
+      <p class="body sr" style="font-size: 17px; font-style: italic; color: #5d594f;">Why does Cloud NAT need a static IP?<br>How is this different from a bastion host?</p>
+    </div>
+  </div>
+
+  <div class="field">
+    <span class="num">iv</span>
+    <div>
+      <h3 class="sr" style="margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.3px;">Tomorrow&#39;s focus</h3>
+      <p class="lede">Leave yourself one clear place to continue.</p>
+      <p class="body">Start on load balancers, then come back to the two open questions above.</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 18px; padding-top: 20px; border-top: 1px solid rgba(28, 27, 24, 0.26);">
+    <span></span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px;">
+      <div>
+        <div class="cap" style="color: #928d80;">Tags</div>
+        <div style="margin-top: 8px; font-size: 13px; color: #5d594f;">#networking</div>
+      </div>
+      <div>
+        <div class="cap" style="color: #928d80;">Minutes studied</div>
+        <div class="sr" style="margin-top: 5px; font-size: 20px;">75</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

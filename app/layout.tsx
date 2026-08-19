@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
+import { Newsreader } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-newsreader",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -14,19 +22,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
 
   return {
-    title: "Daily Learning Log",
+    title: "Second Brain",
     description:
-      "A quiet daily record of what you learned, what is still unclear, and where to continue tomorrow.",
+      "A calendar, an Eisenhower matrix, and your book notes. Nothing else.",
     openGraph: {
-      title: "Daily Learning Log",
-      description: "Learn. Reflect. Continue.",
+      title: "Second Brain",
+      description: "Think it. Place it. Find it.",
       type: "website",
       images: [`${origin}/og.png`],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Daily Learning Log",
-      description: "Learn. Reflect. Continue.",
+      title: "Second Brain",
+      description: "Think it. Place it. Find it.",
       images: [`${origin}/og.png`],
     },
   };
@@ -38,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={newsreader.variable}>
       <body>{children}</body>
     </html>
   );

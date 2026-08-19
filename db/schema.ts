@@ -1,50 +1,52 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const chapters = sqliteTable(
-  "chapters",
+export const thoughts = sqliteTable(
+  "thoughts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    body: text("body").notNull(),
+    quadrant: text("quadrant").notNull().default("later"),
+    status: text("status").notNull().default("open"),
+    dayKey: text("day_key").notNull(),
+    doneAt: text("done_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("idx_thoughts_user_day").on(table.userId, table.dayKey),
+    index("idx_thoughts_user_quadrant").on(table.userId, table.quadrant, table.status),
+  ],
+);
+
+export const books = sqliteTable(
+  "books",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     title: text("title").notNull(),
-    section: text("section").notNull().default("General"),
-    summary: text("summary").notNull().default(""),
-    content: text("content").notNull().default(""),
-    keyTakeaways: text("key_takeaways").notNull().default(""),
-    examTraps: text("exam_traps").notNull().default(""),
-    recallQuestions: text("recall_questions").notNull().default(""),
-    tags: text("tags").notNull().default(""),
-    status: text("status").notNull().default("learning"),
-    confidence: integer("confidence").notNull().default(1),
-    reviewCount: integer("review_count").notNull().default(0),
-    lastReviewed: text("last_reviewed"),
-    nextReview: text("next_review").notNull(),
+    author: text("author").notNull().default(""),
+    finishedAt: text("finished_at"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
-  (table) => [
-    index("idx_chapters_user_updated").on(table.userId, table.updatedAt),
-    index("idx_chapters_user_review").on(table.userId, table.nextReview),
-  ],
+  (table) => [index("idx_books_user_created").on(table.userId, table.createdAt)],
 );
 
-export const dailyNotes = sqliteTable(
-  "daily_notes",
+export const bookNotes = sqliteTable(
+  "book_notes",
   {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
-    noteDate: text("note_date").notNull(),
-    focus: text("focus").notNull().default(""),
-    learned: text("learned").notNull().default(""),
-    takeaways: text("takeaways").notNull().default(""),
-    questions: text("questions").notNull().default(""),
-    tomorrow: text("tomorrow").notNull().default(""),
-    tags: text("tags").notNull().default(""),
-    minutes: integer("minutes").notNull().default(0),
+    bookId: text("book_id").notNull(),
+    body: text("body").notNull(),
+    page: text("page").notNull().default(""),
+    dayKey: text("day_key").notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
   (table) => [
-    uniqueIndex("idx_daily_notes_user_date_unique").on(table.userId, table.noteDate),
-    index("idx_daily_notes_user_updated").on(table.userId, table.updatedAt),
+    index("idx_book_notes_user_book").on(table.userId, table.bookId, table.createdAt),
+    index("idx_book_notes_user_day").on(table.userId, table.dayKey),
   ],
 );
