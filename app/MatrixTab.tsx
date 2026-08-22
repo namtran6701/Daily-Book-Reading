@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
-import { ChevronDownIcon, SubmitIcon } from "./icons";
+import { ChevronDownIcon, QuadrantGlyph, SubmitIcon } from "./icons";
 import { QUADRANTS, QUADRANT_AXES, QUADRANT_EMPTY, QUADRANT_LABELS, Quadrant } from "./quadrants";
+import { bouncy, gentle } from "./springs";
 import type { Thought } from "./types";
 
 type Props = {
@@ -17,6 +19,30 @@ type Props = {
 
 function byNewest(a: Thought, b: Thought): number {
   return b.dayKey.localeCompare(a.dayKey) || b.createdAt.localeCompare(a.createdAt);
+}
+
+function QuadrantRing({ open, done }: { open: number; done: number }) {
+  const total = open + done;
+  const progress = total === 0 ? 0 : done / total;
+  return (
+    <span className="q-ring" title={`${done} of ${total} done`}>
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <circle className="q-ring-track" cx="18" cy="18" r="15" />
+        <motion.circle
+          className="q-ring-fill"
+          cx="18"
+          cy="18"
+          r="15"
+          pathLength={1}
+          strokeDasharray="1 1"
+          initial={false}
+          animate={{ strokeDashoffset: 1 - progress }}
+          transition={{ type: "spring", stiffness: 120, damping: 26 }}
+        />
+      </svg>
+      <b>{open}</b>
+    </span>
+  );
 }
 
 export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete }: Props) {
@@ -48,8 +74,8 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
 
   return (
     <>
-      <section className="capture" aria-label="Capture a thought">
-        <h2>What is on your mind?</h2>
+      <section className={`capture card ${quadrant ? `capture-${quadrant}` : ""}`} aria-label="Capture a thought">
+        <h2>What&rsquo;s on your mind?</h2>
         <textarea
           value={text}
           rows={2}
@@ -66,95 +92,138 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
         <div className="capture-foot">
           <div className="quadrant-picker" role="group" aria-label="Where does this belong?">
             {QUADRANTS.map((key) => (
-              <button
+              <motion.button
                 key={key}
-                className={quadrant === key ? "picked" : ""}
+                className={`chip q-${key} ${quadrant === key ? "picked" : ""}`}
                 onClick={() => setQuadrant(key)}
+                whileTap={{ scale: 0.92 }}
+                transition={bouncy}
                 aria-pressed={quadrant === key}
               >
-                {QUADRANT_LABELS[key]}
-              </button>
+                <QuadrantGlyph quadrant={key} />
+                <span>{QUADRANT_LABELS[key]}</span>
+              </motion.button>
             ))}
           </div>
-          <button
+          <motion.button
             className="keep-button"
             onClick={() => void keep()}
             disabled={busy || !text.trim() || !quadrant}
+            whileTap={{ scale: 0.88 }}
+            transition={bouncy}
             aria-label={busy ? "Submitting" : "Submit"}
             title="Submit"
           >
             <SubmitIcon />
-          </button>
+          </motion.button>
         </div>
-        {!quadrant && text.trim() ? (
-          <p className="capture-hint">Pick where it belongs, then press Enter.</p>
-        ) : null}
+        <AnimatePresence>
+          {!quadrant && text.trim() ? (
+            <motion.p
+              className="capture-hint"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={gentle}
+            >
+              Pick where it belongs, then press Enter.
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
       </section>
 
-      <div className="matrix-axis" aria-hidden="true">
-        <span>Urgent</span>
-        <span>Not urgent</span>
-      </div>
+      <div className="matrix-frame">
+        <div className="matrix-cols" aria-hidden="true">
+          <span>Urgent</span>
+          <span>Not urgent</span>
+        </div>
+        <div className="matrix-rows" aria-hidden="true">
+          <span>Important</span>
+          <span>Not important</span>
+        </div>
 
-      <div className="matrix">
-        {QUADRANTS.map((key) => {
-          const bucket = grouped.get(key)!;
-          const done = showDone[key] ?? false;
-          return (
-            <section key={key} className={`quadrant quadrant-${key}`} aria-label={QUADRANT_LABELS[key]}>
-              <header>
-                <h3>{QUADRANT_LABELS[key]}</h3>
-                <span className="quadrant-axis">{QUADRANT_AXES[key]}</span>
-                {bucket.open.length > 0 && <span className="quadrant-count">{bucket.open.length}</span>}
-              </header>
+        <div className="matrix">
+          {QUADRANTS.map((key) => {
+            const bucket = grouped.get(key)!;
+            const done = showDone[key] ?? false;
+            return (
+              <motion.section
+                key={key}
+                layout
+                className={`quadrant card q-${key}`}
+                transition={gentle}
+                aria-label={QUADRANT_LABELS[key]}
+              >
+                <header className="q-head">
+                  <span className="q-glyph" aria-hidden="true">
+                    <QuadrantGlyph quadrant={key} size={17} />
+                  </span>
+                  <div className="q-title">
+                    <h3>{QUADRANT_LABELS[key]}</h3>
+                    <span className="quadrant-axis">{QUADRANT_AXES[key]}</span>
+                  </div>
+                  <QuadrantRing open={bucket.open.length} done={bucket.done.length} />
+                </header>
 
-              {bucket.open.length === 0 ? (
-                <p className="empty-line">{QUADRANT_EMPTY[key]}</p>
-              ) : (
-                <ul className="thought-list">
-                  {bucket.open.map((thought) => (
-                    <ThoughtRow
-                      key={thought.id}
-                      thought={thought}
-                      today={today}
-                      showAge
-                      onUpdate={onUpdate}
-                      onDelete={onDelete}
-                    />
-                  ))}
-                </ul>
-              )}
-
-              {bucket.done.length > 0 && (
-                <>
-                  <button
-                    className={`done-toggle ${done ? "done-toggle-open" : ""}`}
-                    onClick={() => setShowDone({ ...showDone, [key]: !done })}
-                    aria-expanded={done}
-                    aria-label={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
-                    title={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
-                  >
-                    <ChevronDownIcon />
-                    <span>{bucket.done.length}</span>
-                  </button>
-                  {done && (
-                    <ul className="thought-list">
-                      {bucket.done.map((thought) => (
+                {bucket.open.length === 0 ? (
+                  <p className="empty-line">{QUADRANT_EMPTY[key]}</p>
+                ) : (
+                  <ul className="thought-list">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {bucket.open.map((thought) => (
                         <ThoughtRow
                           key={thought.id}
                           thought={thought}
                           today={today}
+                          showAge
                           onUpdate={onUpdate}
                           onDelete={onDelete}
                         />
                       ))}
-                    </ul>
-                  )}
-                </>
-              )}
-            </section>
-          );
-        })}
+                    </AnimatePresence>
+                  </ul>
+                )}
+
+                {bucket.done.length > 0 && (
+                  <>
+                    <button
+                      className={`done-toggle ${done ? "done-toggle-open" : ""}`}
+                      onClick={() => setShowDone({ ...showDone, [key]: !done })}
+                      aria-expanded={done}
+                      aria-label={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
+                      title={`${done ? "Hide" : "Show"} ${bucket.done.length} done`}
+                    >
+                      <ChevronDownIcon />
+                      <span>{bucket.done.length} done</span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {done && (
+                        <motion.ul
+                          className="thought-list"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={gentle}
+                          style={{ overflow: "hidden" }}
+                        >
+                          {bucket.done.map((thought) => (
+                            <ThoughtRow
+                              key={thought.id}
+                              thought={thought}
+                              today={today}
+                              onUpdate={onUpdate}
+                              onDelete={onDelete}
+                            />
+                          ))}
+                        </motion.ul>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </motion.section>
+            );
+          })}
+        </div>
       </div>
     </>
   );

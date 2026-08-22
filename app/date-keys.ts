@@ -46,6 +46,22 @@ export function monthKey(dayKey: string): string {
   return dayKey.slice(0, 7);
 }
 
+// Monday-first week, so a "this week" recap matches how a work week feels.
+export function startOfWeek(dayKey: string): string {
+  const offset = (dateFromKey(dayKey).getDay() + 6) % 7;
+  return shiftDate(dayKey, -offset);
+}
+
+export function startOfMonth(dayKey: string): string {
+  return `${monthKey(dayKey)}-01`;
+}
+
+export function rangeDays(from: string, to: string): string[] {
+  const days: string[] = [];
+  for (let day = from; day <= to; day = shiftDate(day, 1)) days.push(day);
+  return days;
+}
+
 export function shiftMonth(month: string, delta: number): string {
   const [year, monthNumber] = month.split("-").map(Number);
   const date = new Date(year, monthNumber - 1 + delta, 1);

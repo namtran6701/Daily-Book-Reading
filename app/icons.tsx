@@ -1,3 +1,5 @@
+import type { Quadrant } from "./quadrants";
+
 type IconProps = { size?: number };
 
 const stroke = {
@@ -64,6 +66,14 @@ export function ChevronLeftIcon({ size = 16 }: IconProps) {
   );
 }
 
+export function ChevronRightIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M9.5 5l7 7-7 7" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon({ size = 14 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>
@@ -99,6 +109,81 @@ export function UndoIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function SearchIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+  );
+}
+
+export function FlameIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M12 3.5c1 2.6 4.5 4.6 4.5 8.5a4.5 4.5 0 0 1-9 0c0-1.5.6-2.7 1.4-3.8.3 1 .9 1.8 1.8 2.3-.3-2.6.2-5 1.3-7z" />
+    </svg>
+  );
+}
+
+export function CompassIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
+    </svg>
+  );
+}
+
+export function BoltIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M13 3L5.5 13.5H11L10 21l7.5-10.5H12L13 3z" />
+    </svg>
+  );
+}
+
+export function MoonIcon({ size = 14 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5 7.5 7.5 0 1 0 19 14.5z" />
+    </svg>
+  );
+}
+
+export function MatrixGlyph({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <rect x="4" y="4" width="6.6" height="6.6" rx="1.6" />
+      <rect x="13.4" y="4" width="6.6" height="6.6" rx="1.6" />
+      <rect x="4" y="13.4" width="6.6" height="6.6" rx="1.6" />
+      <rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.6" />
+    </svg>
+  );
+}
+
+export function BookGlyph({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M12 6.5c-1.6-1.4-3.8-2-7-2v13c3.2 0 5.4.6 7 2 1.6-1.4 3.8-2 7-2v-13c-3.2 0-5.4.6-7 2z" />
+      <path d="M12 6.5v13" />
+    </svg>
+  );
+}
+
+export function ReviewGlyph({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M4.5 19.5v-5" />
+      <path d="M9.5 19.5v-9" />
+      <path d="M14.5 19.5v-6.5" />
+      <path d="M19.5 19.5V6.5" />
+      <path d="M4.5 9.5c4-.5 8-2.5 10.5-5" />
+      <path d="M12.5 4l2.8.3-.5 2.8" />
+    </svg>
+  );
+}
+
 export function TodayIcon({ size = 16 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>
@@ -109,4 +194,16 @@ export function TodayIcon({ size = 16 }: IconProps) {
       <circle cx="12" cy="14.5" r="1.4" fill="currentColor" stroke="none" />
     </svg>
   );
+}
+
+const QUADRANT_GLYPHS: Record<Quadrant, (props: IconProps) => React.JSX.Element> = {
+  do: FlameIcon,
+  plan: CompassIcon,
+  quick: BoltIcon,
+  later: MoonIcon,
+};
+
+export function QuadrantGlyph({ quadrant, size }: { quadrant: Quadrant; size?: number }) {
+  const Glyph = QUADRANT_GLYPHS[quadrant];
+  return <Glyph size={size} />;
 }

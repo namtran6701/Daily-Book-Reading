@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import { Newsreader } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
-
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  display: "swap",
-  variable: "--font-newsreader",
-});
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -46,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={newsreader.variable}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

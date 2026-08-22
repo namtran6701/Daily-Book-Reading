@@ -9,7 +9,7 @@ Two unrelated things live side by side:
 1. **Second Brain** (`app/`, `db/`, `worker/`, root config) — a Next.js app that runs on Cloudflare Workers via `vinext`, storing data in a Cloudflare D1 (SQLite) database. This is the actively developed product.
 2. **`work/markdown-notes/`** — a standalone Python CLI (`notes.py`) for the user's own cert study notes (spaced-repetition review of Markdown chapter notes). It has no dependency on the app and isn't built/deployed with it. See `work/markdown-notes/README.md` for its own workflow.
 
-Second Brain is a calendar + Eisenhower-matrix thought capture tool + book notes, described in the root `README.md`. There are exactly three tabs: Calendar, Thoughts, Books.
+Second Brain is a calendar + Eisenhower-matrix thought capture tool + book notes, described in the root `README.md`. There are exactly four tabs: Calendar, Thoughts, Books, Review (a client-side weekly/monthly recap computed from existing data).
 
 ## Commands (Second Brain app)
 

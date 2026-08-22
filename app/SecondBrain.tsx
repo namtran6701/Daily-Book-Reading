@@ -1,21 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useMotionValueEvent,
+  useScroll,
+  useTransform,
+} from "motion/react";
 import { BooksTab } from "./BooksTab";
+import { Briefing } from "./Briefing";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
+import { ReviewTab } from "./ReviewTab";
+import { ToastStack, type Toast } from "./Toast";
 import { formatDate, localDateKey, monthKey, shiftMonth } from "./date-keys";
-import { RefreshIcon } from "./icons";
+import { BookGlyph, MatrixGlyph, RefreshIcon, ReviewGlyph, TodayIcon } from "./icons";
 import type { Quadrant } from "./quadrants";
+import { gentle, snappy } from "./springs";
 import type { Book, BookNote, Thought } from "./types";
 
-type Tab = "calendar" | "thoughts" | "books";
+type Tab = "calendar" | "thoughts" | "books" | "review";
 
-const TABS: { value: Tab; label: string }[] = [
-  { value: "calendar", label: "Calendar" },
-  { value: "thoughts", label: "Thoughts" },
-  { value: "books", label: "Books" },
+const TABS: { value: Tab; label: string; glyph: (props: { size?: number }) => React.JSX.Element }[] = [
+  { value: "calendar", label: "Calendar", glyph: TodayIcon },
+  { value: "thoughts", label: "Thoughts", glyph: MatrixGlyph },
+  { value: "books", label: "Books", glyph: BookGlyph },
+  { value: "review", label: "Review", glyph: ReviewGlyph },
 ];
+
+const UNDO_WINDOW = 4500;
 
 function subscribeToNothing(): () => void {
   return () => {};
@@ -35,15 +50,25 @@ export function SecondBrain() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("calendar");
+  const [tabDirection, setTabDirection] = useState(1);
   const [month, setMonth] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedBookId, setSelectedBookId] = useState("");
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const toastCounter = useRef(0);
+  const deleteTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   // The server runs in UTC and the browser does not, so the current date is
   // read on the client only. It stays empty through the server render.
   const today = useSyncExternalStore(subscribeToNothing, localDateKey, () => "");
   const activeDay = selectedDay || today;
   const activeMonth = month || (today ? monthKey(today) : "");
+
+  const { scrollY } = useScroll();
+  const wordmarkScale = useTransform(scrollY, [0, 72], [1, 0.78]);
+  const [scrolled, setScrolled] = useState(false);
+  useMotionValueEvent(scrollY, "change", (value) => setScrolled(value > 8));
 
   const load = useCallback(async () => {
     try {
@@ -68,6 +93,39 @@ export function SecondBrain() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  // Deletes are optimistic with an undo window: the row disappears at once,
+  // the API call only fires after the toast times out.
+  const scheduleDelete = useCallback(
+    (message: string, commit: () => void, restore: () => void) => {
+      const id = ++toastCounter.current;
+      const timer = setTimeout(() => {
+        deleteTimers.current.delete(id);
+        dismissToast(id);
+        commit();
+      }, UNDO_WINDOW);
+      deleteTimers.current.set(id, timer);
+      setToasts((current) => [
+        ...current,
+        {
+          id,
+          message,
+          undo: () => {
+            const pending = deleteTimers.current.get(id);
+            if (pending) clearTimeout(pending);
+            deleteTimers.current.delete(id);
+            dismissToast(id);
+            restore();
+          },
+        },
+      ]);
+    },
+    [dismissToast],
+  );
 
   const captureThought = useCallback(
     async (text: string, quadrant: Quadrant) => {
@@ -108,15 +166,26 @@ export function SecondBrain() {
     }
   }, [load]);
 
-  const deleteThought = useCallback(async (id: string) => {
-    if (!window.confirm("Delete this thought for good?")) return;
-    setThoughts((current) => current.filter((item) => item.id !== id));
-    const response = await fetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!response.ok) {
-      setError("Could not delete that thought.");
-      void load();
-    }
-  }, [load]);
+  const deleteThought = useCallback(
+    async (id: string) => {
+      const thought = thoughts.find((item) => item.id === id);
+      if (!thought) return;
+      setThoughts((current) => current.filter((item) => item.id !== id));
+      scheduleDelete(
+        "Thought deleted",
+        () => {
+          void fetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+            if (!response.ok) {
+              setError("Could not delete that thought.");
+              void load();
+            }
+          });
+        },
+        () => setThoughts((current) => [thought, ...current]),
+      );
+    },
+    [thoughts, scheduleDelete, load],
+  );
 
   const addBook = useCallback(async (title: string) => {
     setBusy(true);
@@ -152,17 +221,37 @@ export function SecondBrain() {
     }
   }, []);
 
-  const deleteBook = useCallback(async (id: string) => {
-    if (!window.confirm("Delete this book and every note under it?")) return;
-    const response = await fetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!response.ok) {
-      setError("Could not delete that book.");
-      return;
-    }
-    setSelectedBookId("");
-    setBooks((current) => current.filter((item) => item.id !== id));
-    setNotes((current) => current.filter((item) => item.bookId !== id));
-  }, []);
+  const deleteBook = useCallback(
+    async (id: string) => {
+      const book = books.find((item) => item.id === id);
+      if (!book) return;
+      const index = books.indexOf(book);
+      const bookNotes = notes.filter((note) => note.bookId === id);
+      setSelectedBookId("");
+      setBooks((current) => current.filter((item) => item.id !== id));
+      setNotes((current) => current.filter((item) => item.bookId !== id));
+      scheduleDelete(
+        bookNotes.length > 0 ? `"${book.title}" and ${bookNotes.length} notes deleted` : `"${book.title}" deleted`,
+        () => {
+          void fetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+            if (!response.ok) {
+              setError("Could not delete that book.");
+              void load();
+            }
+          });
+        },
+        () => {
+          setBooks((current) => {
+            const copy = [...current];
+            copy.splice(Math.min(index, copy.length), 0, book);
+            return copy;
+          });
+          setNotes((current) => [...current, ...bookNotes]);
+        },
+      );
+    },
+    [books, notes, scheduleDelete, load],
+  );
 
   const addNote = useCallback(
     async (bookId: string, text: string, page: string) => {
@@ -203,15 +292,26 @@ export function SecondBrain() {
     }
   }, [load]);
 
-  const deleteNote = useCallback(async (id: string) => {
-    if (!window.confirm("Delete this note for good?")) return;
-    setNotes((current) => current.filter((item) => item.id !== id));
-    const response = await fetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!response.ok) {
-      setError("Could not delete that note.");
-      void load();
-    }
-  }, [load]);
+  const deleteNote = useCallback(
+    async (id: string) => {
+      const note = notes.find((item) => item.id === id);
+      if (!note) return;
+      setNotes((current) => current.filter((item) => item.id !== id));
+      scheduleDelete(
+        "Note deleted",
+        () => {
+          void fetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+            if (!response.ok) {
+              setError("Could not delete that note.");
+              void load();
+            }
+          });
+        },
+        () => setNotes((current) => [note, ...current]),
+      );
+    },
+    [notes, scheduleDelete, load],
+  );
 
   const openCount = useMemo(() => thoughts.filter((thought) => !thought.done).length, [thoughts]);
 
@@ -220,92 +320,138 @@ export function SecondBrain() {
     setMonth(monthKey(day));
   }
 
+  function selectTab(next: Tab) {
+    if (next === tab) return;
+    const from = TABS.findIndex((entry) => entry.value === tab);
+    const to = TABS.findIndex((entry) => entry.value === next);
+    setTabDirection(to > from ? 1 : -1);
+    setTab(next);
+  }
+
+  const ready = Boolean(today) && !loading;
+
   return (
-    <main className="app" data-app="second-brain">
-      <header className="masthead">
-        <div className="masthead-top">
-          <span className="wordmark">Second Brain</span>
-          <span className="masthead-date">
-            {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
-          </span>
-        </div>
-        <nav className="tabs" aria-label="Sections">
-          {TABS.map(({ value, label }) => (
+    <MotionConfig reducedMotion="user">
+      <main className="app" data-app="second-brain">
+        <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
+          <div className="masthead-top">
+            <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+              Second Brain
+            </motion.span>
+            <span className="masthead-date">
+              {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
+            </span>
+          </div>
+          <nav className="segmented" aria-label="Sections">
+            {TABS.map(({ value, label, glyph: Glyph }) => (
+              <button
+                key={value}
+                className={`seg-btn ${tab === value ? "active" : ""}`}
+                onClick={() => selectTab(value)}
+                aria-current={tab === value ? "page" : undefined}
+              >
+                {tab === value && <motion.span className="seg-pill" layoutId="seg-pill" transition={snappy} />}
+                <span className="seg-label">
+                  <span className="seg-glyph" aria-hidden="true">
+                    <Glyph size={14} />
+                  </span>
+                  <span className="seg-text">{label}</span>
+                  {value === "thoughts" && openCount > 0 && <span className="seg-badge">{openCount}</span>}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </header>
+
+        {error && (
+          <div className="error-banner">
+            <span>{error}</span>
             <button
-              key={value}
-              className={tab === value ? "active" : ""}
-              onClick={() => setTab(value)}
-              aria-current={tab === value ? "page" : undefined}
+              className="icon-action pressable"
+              onClick={() => {
+                setError("");
+                setLoading(true);
+                void load();
+              }}
+              aria-label="Try again"
+              title="Try again"
             >
-              {label}
-              {value === "thoughts" && openCount > 0 && <sup>{openCount}</sup>}
+              <RefreshIcon />
             </button>
-          ))}
-        </nav>
-      </header>
-
-      {error && (
-        <div className="error-banner">
-          <span>{error}</span>
-          <button
-            className="icon-action"
-            onClick={() => {
-              setError("");
-              setLoading(true);
-              void load();
-            }}
-            aria-label="Try again"
-            title="Try again"
-          >
-            <RefreshIcon />
-          </button>
-        </div>
-      )}
-
-      <div className={`page page-${tab}`}>
-        {!today || loading ? (
-          <p className="empty-line">Opening your second brain…</p>
-        ) : tab === "calendar" ? (
-          <CalendarTab
-            thoughts={thoughts}
-            notes={notes}
-            books={books}
-            today={today}
-            month={activeMonth}
-            selectedDay={activeDay}
-            onMonthChange={(direction) =>
-              setMonth(shiftMonth(activeMonth, direction === "next" ? 1 : -1))
-            }
-            onSelectDay={selectDay}
-            onUpdate={updateThought}
-            onDelete={deleteThought}
-          />
-        ) : tab === "thoughts" ? (
-          <MatrixTab
-            thoughts={thoughts}
-            today={today}
-            busy={busy}
-            onCapture={captureThought}
-            onUpdate={updateThought}
-            onDelete={deleteThought}
-          />
-        ) : (
-          <BooksTab
-            books={books}
-            notes={notes}
-            today={today}
-            busy={busy}
-            selectedBookId={selectedBookId}
-            onSelectBook={setSelectedBookId}
-            onAddBook={addBook}
-            onUpdateBook={updateBook}
-            onDeleteBook={deleteBook}
-            onAddNote={addNote}
-            onUpdateNote={updateNote}
-            onDeleteNote={deleteNote}
-          />
+          </div>
         )}
-      </div>
-    </main>
+
+        <div className={`page page-${tab}`}>
+          {!ready ? (
+            <div className="loading-line">
+              <span className="loading-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              Opening your second brain
+            </div>
+          ) : (
+            <>
+              {tab === "calendar" && <Briefing thoughts={thoughts} books={books} notes={notes} today={today} />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={tab}
+                  initial={{ opacity: 0, x: 28 * tabDirection }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -28 * tabDirection }}
+                  transition={gentle}
+                >
+                  {tab === "calendar" ? (
+                    <CalendarTab
+                      thoughts={thoughts}
+                      notes={notes}
+                      books={books}
+                      today={today}
+                      month={activeMonth}
+                      selectedDay={activeDay}
+                      onMonthChange={(direction) =>
+                        setMonth(shiftMonth(activeMonth, direction === "next" ? 1 : -1))
+                      }
+                      onSelectDay={selectDay}
+                      onUpdate={updateThought}
+                      onDelete={deleteThought}
+                    />
+                  ) : tab === "thoughts" ? (
+                    <MatrixTab
+                      thoughts={thoughts}
+                      today={today}
+                      busy={busy}
+                      onCapture={captureThought}
+                      onUpdate={updateThought}
+                      onDelete={deleteThought}
+                    />
+                  ) : tab === "books" ? (
+                    <BooksTab
+                      books={books}
+                      notes={notes}
+                      today={today}
+                      busy={busy}
+                      selectedBookId={selectedBookId}
+                      onSelectBook={setSelectedBookId}
+                      onAddBook={addBook}
+                      onUpdateBook={updateBook}
+                      onDeleteBook={deleteBook}
+                      onAddNote={addNote}
+                      onUpdateNote={updateNote}
+                      onDeleteNote={deleteNote}
+                    />
+                  ) : (
+                    <ReviewTab thoughts={thoughts} books={books} notes={notes} today={today} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </>
+          )}
+        </div>
+
+        <ToastStack toasts={toasts} onUndo={(toast) => toast.undo?.()} />
+      </main>
+    </MotionConfig>
   );
 }
