@@ -29,7 +29,6 @@ function serialize(row: ThoughtRow) {
 }
 
 export async function GET() {
-  const userId = OWNER_ID;
   try {
     await ensureSchema();
     const result = await getD1()
@@ -37,7 +36,7 @@ export async function GET() {
         WHERE user_id = ?
         ORDER BY created_at DESC
         LIMIT ?`)
-      .bind(userId, MAX_ROWS)
+      .bind(OWNER_ID, MAX_ROWS)
       .all<ThoughtRow>();
     return Response.json({ thoughts: result.results.map(serialize) });
   } catch (error) {
@@ -46,7 +45,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     if (!validDate(payload.dayKey)) {
@@ -70,7 +68,7 @@ export async function POST(request: Request) {
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
-            userId,
+            OWNER_ID,
             body.slice(0, 4000),
             payload.quadrant,
             payload.dayKey,
@@ -89,7 +87,6 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = text(payload.id);
@@ -99,7 +96,7 @@ export async function PATCH(request: Request) {
     const db = getD1();
     const current = await db
       .prepare(`SELECT ${COLUMNS} FROM thoughts WHERE id = ? AND user_id = ?`)
-      .bind(id, userId)
+      .bind(id, OWNER_ID)
       .first<ThoughtRow>();
     if (!current) return Response.json({ error: "Thought not found." }, { status: 404 });
 
@@ -117,7 +114,7 @@ export async function PATCH(request: Request) {
         done ? (current.done_at ?? timestamp) : null,
         timestamp,
         id,
-        userId,
+        OWNER_ID,
       )
       .first<ThoughtRow>();
     if (!row) throw new Error("The thought was not returned after update.");
@@ -128,14 +125,13 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = OWNER_ID;
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });
     await ensureSchema();
     const result = await getD1()
       .prepare("DELETE FROM thoughts WHERE id = ? AND user_id = ?")
-      .bind(id, userId)
+      .bind(id, OWNER_ID)
       .run();
     if (!result.meta.changes) return Response.json({ error: "Thought not found." }, { status: 404 });
     return Response.json({ deleted: true });

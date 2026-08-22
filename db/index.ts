@@ -53,6 +53,10 @@ export async function ensureSchema(): Promise<void> {
   const db = getD1();
   schemaPromise = (async () => {
     await db.batch([
+      // Legacy tables from the retired study-app incarnation, dropped for good.
+      // IF EXISTS keeps this a no-op once they are gone.
+      db.prepare("DROP TABLE IF EXISTS chapters"),
+      db.prepare("DROP TABLE IF EXISTS daily_notes"),
       db.prepare(`CREATE TABLE IF NOT EXISTS thoughts (
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,

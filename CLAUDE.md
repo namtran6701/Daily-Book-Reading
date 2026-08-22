@@ -30,7 +30,7 @@ There is no separate unit-test runner or watch mode — `tests/rendered-html.tes
 
 **Data layer — two sources of truth that must stay in sync by hand**:
 - `db/index.ts`'s `ensureSchema()` runs on every cold start (memoized in `schemaPromise`) and is what actually creates/migrates tables in D1 via raw SQL (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE`, backfill `UPDATE`s). This is the real source of truth for the live schema.
-- `db/schema.ts` is a parallel Drizzle description of the *same* tables, used only by `drizzle-kit generate` to produce migration files under `drizzle/`. It intentionally omits the legacy `chapters` and `daily_notes` tables from an earlier "study app" incarnation, which still have rows in D1 — so `db:generate` will propose dropping them; don't do that.
+- `db/schema.ts` is a parallel Drizzle description of the *same* three tables (`thoughts`, `books`, `book_notes`), used only by `drizzle-kit generate` to produce migration files under `drizzle/`.
 - When changing a table shape: add the migration logic to `ensureSchema()`/its `migrate*` helpers in `db/index.ts` first (that's what actually runs), then mirror the final shape in `db/schema.ts`, then run `npm run db:generate` to record it.
 
 **API routes** (`app/api/*/route.ts`: `thoughts`, `books`, `book-notes`) are plain Next.js Route Handlers, all following the same shape:

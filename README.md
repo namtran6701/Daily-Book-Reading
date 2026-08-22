@@ -44,6 +44,4 @@ the server-rendered HTML.
 
 The database schema is created and migrated at runtime by `ensureSchema()` in
 `db/index.ts`, which is the source of truth. `db/schema.ts` describes the same
-tables for `drizzle-kit`, but the old `chapters` and `daily_notes` tables from
-the earlier study app still hold their rows in D1 and are deliberately no
-longer described there, so `npm run db:generate` would propose dropping them.
+tables for `drizzle-kit generate`.

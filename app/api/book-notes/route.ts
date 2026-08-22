@@ -26,12 +26,11 @@ function serialize(row: BookNoteRow) {
 }
 
 export async function GET() {
-  const userId = OWNER_ID;
   try {
     await ensureSchema();
     const result = await getD1()
       .prepare(`SELECT ${COLUMNS} FROM book_notes WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`)
-      .bind(userId, MAX_ROWS)
+      .bind(OWNER_ID, MAX_ROWS)
       .all<BookNoteRow>();
     return Response.json({ notes: result.results.map(serialize) });
   } catch (error) {
@@ -40,7 +39,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const bookId = text(payload.bookId);
@@ -55,7 +53,7 @@ export async function POST(request: Request) {
     const db = getD1();
     const book = await db
       .prepare("SELECT id FROM books WHERE id = ? AND user_id = ?")
-      .bind(bookId, userId)
+      .bind(bookId, OWNER_ID)
       .first<{ id: string }>();
     if (!book) return Response.json({ error: "Book not found." }, { status: 404 });
 
@@ -70,7 +68,7 @@ export async function POST(request: Request) {
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
-            userId,
+            OWNER_ID,
             bookId,
             body.slice(0, 4000),
             page,
@@ -90,7 +88,6 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = text(payload.id);
@@ -100,7 +97,7 @@ export async function PATCH(request: Request) {
     const db = getD1();
     const current = await db
       .prepare(`SELECT ${COLUMNS} FROM book_notes WHERE id = ? AND user_id = ?`)
-      .bind(id, userId)
+      .bind(id, OWNER_ID)
       .first<BookNoteRow>();
     if (!current) return Response.json({ error: "Note not found." }, { status: 404 });
 
@@ -113,7 +110,7 @@ export async function PATCH(request: Request) {
         text(payload.page, current.page).slice(0, 40),
         new Date().toISOString(),
         id,
-        userId,
+        OWNER_ID,
       )
       .first<BookNoteRow>();
     if (!row) throw new Error("The note was not returned after update.");
@@ -124,14 +121,13 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = OWNER_ID;
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) return Response.json({ error: "A note id is required." }, { status: 400 });
     await ensureSchema();
     const result = await getD1()
       .prepare("DELETE FROM book_notes WHERE id = ? AND user_id = ?")
-      .bind(id, userId)
+      .bind(id, OWNER_ID)
       .run();
     if (!result.meta.changes) return Response.json({ error: "Note not found." }, { status: 404 });
     return Response.json({ deleted: true });

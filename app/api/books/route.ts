@@ -22,12 +22,11 @@ function serialize(row: BookRow) {
 }
 
 export async function GET() {
-  const userId = OWNER_ID;
   try {
     await ensureSchema();
     const result = await getD1()
       .prepare(`SELECT ${COLUMNS} FROM books WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`)
-      .bind(userId, MAX_ROWS)
+      .bind(OWNER_ID, MAX_ROWS)
       .all<BookRow>();
     return Response.json({ books: result.results.map(serialize) });
   } catch (error) {
@@ -36,7 +35,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const title = text(payload.title).slice(0, 300);
@@ -48,7 +46,7 @@ export async function POST(request: Request) {
       .prepare(`INSERT INTO books (id, user_id, title, finished_at, created_at, updated_at)
         VALUES (?, ?, ?, NULL, ?, ?)
         RETURNING ${COLUMNS}`)
-      .bind(crypto.randomUUID(), userId, title, timestamp, timestamp)
+      .bind(crypto.randomUUID(), OWNER_ID, title, timestamp, timestamp)
       .first<BookRow>();
     if (!row) throw new Error("The book was not returned after insert.");
     return Response.json({ book: serialize(row) }, { status: 201 });
@@ -58,7 +56,6 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = text(payload.id);
@@ -68,7 +65,7 @@ export async function PATCH(request: Request) {
     const db = getD1();
     const current = await db
       .prepare(`SELECT ${COLUMNS} FROM books WHERE id = ? AND user_id = ?`)
-      .bind(id, userId)
+      .bind(id, OWNER_ID)
       .first<BookRow>();
     if (!current) return Response.json({ error: "Book not found." }, { status: 404 });
 
@@ -85,7 +82,7 @@ export async function PATCH(request: Request) {
         finished ? (current.finished_at ?? timestamp) : null,
         timestamp,
         id,
-        userId,
+        OWNER_ID,
       )
       .first<BookRow>();
     if (!row) throw new Error("The book was not returned after update.");
@@ -96,7 +93,6 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = OWNER_ID;
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) return Response.json({ error: "A book id is required." }, { status: 400 });
@@ -104,8 +100,8 @@ export async function DELETE(request: Request) {
     await ensureSchema();
     const db = getD1();
     const [, removal] = await db.batch([
-      db.prepare("DELETE FROM book_notes WHERE book_id = ? AND user_id = ?").bind(id, userId),
-      db.prepare("DELETE FROM books WHERE id = ? AND user_id = ?").bind(id, userId),
+      db.prepare("DELETE FROM book_notes WHERE book_id = ? AND user_id = ?").bind(id, OWNER_ID),
+      db.prepare("DELETE FROM books WHERE id = ? AND user_id = ?").bind(id, OWNER_ID),
     ]);
     if (!removal.meta.changes) return Response.json({ error: "Book not found." }, { status: 404 });
     return Response.json({ deleted: true });
