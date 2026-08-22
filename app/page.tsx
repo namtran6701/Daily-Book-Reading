@@ -1,4 +1,4 @@
-import { SecondBrain } from "./SecondBrain";
+import { SecondBrain } from "@/components/SecondBrain";
 
 export const dynamic = "force-dynamic";
 

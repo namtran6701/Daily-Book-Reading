@@ -15,11 +15,11 @@ import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
 import { ReviewTab } from "./ReviewTab";
 import { ToastStack, type Toast } from "./Toast";
-import { formatDate, localDateKey, monthKey, shiftMonth } from "./date-keys";
+import { formatDate, localDateKey, monthKey, shiftMonth } from "@/lib/date-keys";
 import { BookGlyph, MatrixGlyph, RefreshIcon, ReviewGlyph, TodayIcon } from "./icons";
-import type { Quadrant } from "./quadrants";
-import { gentle, snappy } from "./springs";
-import type { Book, BookNote, Thought } from "./types";
+import type { Quadrant } from "@/lib/quadrants";
+import { gentle, snappy } from "@/lib/springs";
+import type { Book, BookNote, Thought } from "@/lib/types";
 
 type Tab = "calendar" | "thoughts" | "books" | "review";
 
@@ -335,9 +335,13 @@ export function SecondBrain() {
       <main className="app" data-app="second-brain">
         <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
           <div className="masthead-top">
-            <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
-              Second Brain
-            </motion.span>
+            <span className="brand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
+              <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+                Second Brain
+              </motion.span>
+            </span>
             <span className="masthead-date">
               {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
             </span>

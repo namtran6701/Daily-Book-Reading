@@ -1,5 +1,5 @@
 import { ensureSchema, getD1 } from "@/db";
-import { isQuadrant } from "@/app/quadrants";
+import { isQuadrant } from "@/lib/quadrants";
 import { MAX_ROWS, apiUserId, captureLines, failure, stagger, text, validDate } from "@/app/api/shared";
 
 type ThoughtRow = {

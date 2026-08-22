@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
 import { ChevronDownIcon, QuadrantGlyph, SubmitIcon } from "./icons";
-import { QUADRANTS, QUADRANT_AXES, QUADRANT_EMPTY, QUADRANT_LABELS, Quadrant } from "./quadrants";
-import { bouncy, gentle } from "./springs";
-import type { Thought } from "./types";
+import { QUADRANTS, QUADRANT_AXES, QUADRANT_EMPTY, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
+import { bouncy, gentle } from "@/lib/springs";
+import type { Thought } from "@/lib/types";
 
 type Props = {
   thoughts: Thought[];
@@ -49,6 +49,19 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   const [text, setText] = useState("");
   const [quadrant, setQuadrant] = useState<Quadrant | null>(null);
   const [showDone, setShowDone] = useState<Record<string, boolean>>({});
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overQuad, setOverQuad] = useState<Quadrant | null>(null);
+
+  function endDrag() {
+    setDragId(null);
+    setOverQuad(null);
+  }
+
+  function drop(target: Quadrant) {
+    const thought = thoughts.find((t) => t.id === dragId);
+    if (thought && thought.quadrant !== target) void onUpdate(thought.id, { quadrant: target });
+    endDrag();
+  }
 
   const grouped = useMemo(() => {
     const map = new Map<Quadrant, { open: Thought[]; done: Thought[] }>(
@@ -150,9 +163,20 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
               <motion.section
                 key={key}
                 layout
-                className={`quadrant card q-${key}`}
+                className={`quadrant card q-${key} ${dragId && overQuad === key ? "drop-active" : ""}`}
                 transition={gentle}
                 aria-label={QUADRANT_LABELS[key]}
+                data-quadrant={key}
+                onDragOver={(event) => {
+                  if (!dragId) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (overQuad !== key) setOverQuad(key);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  drop(key);
+                }}
               >
                 <header className="q-head">
                   <span className="q-glyph" aria-hidden="true">
@@ -178,6 +202,11 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                           showAge
                           onUpdate={onUpdate}
                           onDelete={onDelete}
+                          onDragStart={setDragId}
+                          onDragEnd={endDrag}
+                          onDragOverQuadrant={(q) => setOverQuad(q as Quadrant | null)}
+                          onDropQuadrant={(q) => (q ? drop(q as Quadrant) : endDrag())}
+                          isDragging={dragId === thought.id}
                         />
                       ))}
                     </AnimatePresence>
@@ -213,6 +242,11 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                               today={today}
                               onUpdate={onUpdate}
                               onDelete={onDelete}
+                              onDragStart={setDragId}
+                              onDragEnd={endDrag}
+                              onDragOverQuadrant={(q) => setOverQuad(q as Quadrant | null)}
+                              onDropQuadrant={(q) => (q ? drop(q as Quadrant) : endDrag())}
+                              isDragging={dragId === thought.id}
                             />
                           ))}
                         </motion.ul>

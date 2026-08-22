@@ -2,10 +2,10 @@
 
 import { useMemo } from "react";
 import { motion } from "motion/react";
-import { daysBetween } from "./date-keys";
+import { daysBetween } from "@/lib/date-keys";
 import { BookGlyph, FlameIcon, MatrixGlyph, PlusIcon } from "./icons";
-import { gentle } from "./springs";
-import type { Book, BookNote, Thought } from "./types";
+import { gentle } from "@/lib/springs";
+import type { Book, BookNote, Thought } from "@/lib/types";
 
 type Props = {
   thoughts: Thought[];

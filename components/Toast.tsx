@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { bouncy } from "./springs";
+import { bouncy } from "@/lib/springs";
 
 export type Toast = {
   id: number;

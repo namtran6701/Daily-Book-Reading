@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, animate, motion } from "motion/react";
 import { QuadrantGlyph } from "./icons";
-import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "./quadrants";
-import { ageLabel, formatDate, monthLabel, monthKey, rangeDays, shiftDate, startOfMonth, startOfWeek } from "./date-keys";
-import { gentle } from "./springs";
-import type { Book, BookNote, Thought } from "./types";
+import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
+import { ageLabel, formatDate, monthLabel, monthKey, rangeDays, shiftDate, startOfMonth, startOfWeek } from "@/lib/date-keys";
+import { gentle } from "@/lib/springs";
+import type { Book, BookNote, Thought } from "@/lib/types";
 
 type Props = {
   thoughts: Thought[];

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ageLabel, dayTitle, formatDate } from "./date-keys";
+import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -14,8 +14,8 @@ import {
   TrashIcon,
   UndoIcon,
 } from "./icons";
-import { bouncy, gentle, snappy } from "./springs";
-import type { Book, BookNote } from "./types";
+import { bouncy, gentle, snappy } from "@/lib/springs";
+import type { Book, BookNote } from "@/lib/types";
 
 type Props = {
   books: Book[];

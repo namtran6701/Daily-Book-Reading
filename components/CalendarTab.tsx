@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
-import { WEEKDAY_INITIALS, dayTitle, formatDate, monthGrid, monthKey, monthLabel } from "./date-keys";
+import { WEEKDAY_INITIALS, dayTitle, formatDate, monthGrid, monthKey, monthLabel } from "@/lib/date-keys";
 import { TodayIcon } from "./icons";
-import { gentle, snappy } from "./springs";
-import type { Book, BookNote, Thought } from "./types";
+import { gentle, snappy } from "@/lib/springs";
+import type { Book, BookNote, Thought } from "@/lib/types";
 
 type Props = {
   thoughts: Thought[];

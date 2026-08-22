@@ -1,4 +1,4 @@
-import type { Quadrant } from "./quadrants";
+import type { Quadrant } from "@/lib/quadrants";
 
 type IconProps = { size?: number };
 

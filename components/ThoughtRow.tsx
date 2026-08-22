@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { ageLabel, daysBetween } from "./date-keys";
+import { createPortal } from "react-dom";
+import { motion } from "motion/react";
+import { ageLabel, daysBetween } from "@/lib/date-keys";
 import { CheckIcon, CloseIcon, PencilIcon, QuadrantGlyph, TrashIcon } from "./icons";
-import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "./quadrants";
-import { gentle, snappy } from "./springs";
-import type { Thought } from "./types";
+import { QUADRANT_LABELS } from "@/lib/quadrants";
+import { snappy } from "@/lib/springs";
+import type { Thought } from "@/lib/types";
 
 type Props = {
   thought: Thought;
@@ -15,16 +16,83 @@ type Props = {
   showAge?: boolean;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
+  onDragOverQuadrant?: (quadrant: string | null) => void;
+  onDropQuadrant?: (quadrant: string | null) => void;
+  isDragging?: boolean;
 };
+
+const LONG_PRESS_MS = 400;
+const SCROLL_SLOP = 10;
 
 const BURST_RAYS = 7;
 
-export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, onDelete }: Props) {
-  const [expanded, setExpanded] = useState(false);
+export function ThoughtRow({
+  thought,
+  today,
+  showQuadrant,
+  showAge,
+  onUpdate,
+  onDelete,
+  onDragStart,
+  onDragEnd,
+  onDragOverQuadrant,
+  onDropQuadrant,
+  isDragging,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(thought.body);
   const [burst, setBurst] = useState(0);
   const editor = useRef<HTMLTextAreaElement>(null);
+
+  // Touch: long-press to pick up, then drag onto another quadrant card. A
+  // floating ghost follows the finger (the cards clip overflow, so the row
+  // itself can't visibly cross between them).
+  const pressTimer = useRef<number | null>(null);
+  const startTouch = useRef<{ x: number; y: number } | null>(null);
+  const lastQuad = useRef<string | null>(null);
+  const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
+  const touchDragging = ghost !== null;
+
+  function clearPress() {
+    if (pressTimer.current !== null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  useEffect(() => clearPress, []);
+
+  function engageTouchDrag() {
+    const start = startTouch.current;
+    if (!start) return;
+    onDragStart?.(thought.id);
+    setGhost(start);
+    navigator.vibrate?.(10);
+
+    const onMove = (event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      if (!touch) return;
+      setGhost({ x: touch.clientX, y: touch.clientY });
+      const under = document.elementFromPoint(touch.clientX, touch.clientY);
+      lastQuad.current = under?.closest("[data-quadrant]")?.getAttribute("data-quadrant") ?? null;
+      onDragOverQuadrant?.(lastQuad.current);
+    };
+    const onEnd = () => {
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      setGhost(null);
+      onDropQuadrant?.(lastQuad.current);
+      lastQuad.current = null;
+      startTouch.current = null;
+    };
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+    document.addEventListener("touchcancel", onEnd);
+  }
 
   useEffect(() => {
     if (editing) editor.current?.focus();
@@ -55,7 +123,7 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
 
   return (
     <motion.li
-      className={`thought ${thought.done ? "is-done" : ""}`}
+      className={`thought ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""}`}
       layout
       layoutId={`thought-${thought.id}`}
       initial={{ opacity: 0, y: 10 }}
@@ -63,7 +131,37 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
       exit={{ opacity: 0, scale: 0.96 }}
       transition={snappy}
     >
-      <div className="thought-main">
+      <div
+        className="thought-main"
+        draggable={!!onDragStart && !editing}
+        onDragStart={(event) => {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", thought.id);
+          onDragStart?.(thought.id);
+        }}
+        onDragEnd={() => onDragEnd?.()}
+        onTouchStart={(event) => {
+          if (!onDragStart || editing) return;
+          if ((event.target as HTMLElement).closest("button")) return;
+          const touch = event.touches[0];
+          startTouch.current = { x: touch.clientX, y: touch.clientY };
+          clearPress();
+          pressTimer.current = window.setTimeout(engageTouchDrag, LONG_PRESS_MS);
+        }}
+        onTouchMove={(event) => {
+          if (touchDragging || !startTouch.current) return;
+          const touch = event.touches[0];
+          if (
+            Math.abs(touch.clientX - startTouch.current.x) > SCROLL_SLOP ||
+            Math.abs(touch.clientY - startTouch.current.y) > SCROLL_SLOP
+          ) {
+            clearPress();
+          }
+        }}
+        onTouchEnd={() => {
+          if (!touchDragging) clearPress();
+        }}
+      >
         <motion.button
           className={`mark ${thought.done ? "mark-done" : ""}`}
           onClick={toggleDone}
@@ -150,47 +248,10 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
         )}
 
         {!editing && (
-          <button
-            className={`more ${expanded ? "more-open" : ""}`}
-            onClick={() => setExpanded(!expanded)}
-            aria-label={expanded ? "Hide actions" : "Show actions"}
-            aria-expanded={expanded}
-          >
-            ⋯
-          </button>
-        )}
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded && !editing && (
-          <motion.div
-            className="thought-actions"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={gentle}
-            style={{ overflow: "hidden" }}
-          >
-            <span>Move to</span>
-            {QUADRANTS.filter((quadrant) => quadrant !== thought.quadrant).map((quadrant: Quadrant) => (
-              <button
-                key={quadrant}
-                className={`move-chip q-${quadrant} pressable`}
-                onClick={() => {
-                  setExpanded(false);
-                  void onUpdate(thought.id, { quadrant });
-                }}
-              >
-                <QuadrantGlyph quadrant={quadrant} size={11} />
-                {QUADRANT_LABELS[quadrant]}
-              </button>
-            ))}
+          <div className="row-actions">
             <button
               className="icon-action pressable"
-              onClick={() => {
-                setExpanded(false);
-                startEditing();
-              }}
+              onClick={startEditing}
               aria-label="Edit"
               title="Edit"
             >
@@ -204,9 +265,17 @@ export function ThoughtRow({ thought, today, showQuadrant, showAge, onUpdate, on
             >
               <TrashIcon />
             </button>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {ghost &&
+        createPortal(
+          <div className="drag-ghost" style={{ left: ghost.x, top: ghost.y }}>
+            {thought.body}
+          </div>,
+          document.body,
+        )}
     </motion.li>
   );
 }
