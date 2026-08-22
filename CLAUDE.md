@@ -26,7 +26,7 @@ There is no separate unit-test runner or watch mode — `tests/rendered-html.tes
 
 ## Architecture
 
-**Runtime**: `vinext` (a Next.js-on-Vite adapter) compiles the App Router app in `app/` for Cloudflare Workers. `worker/index.ts` is the actual Workers entry point — it handles `/_vinext/image` itself and otherwise delegates to vinext's `app-router-entry` handler. `vite.config.ts` wires up the `vinext()`, a custom `sites()` plugin, and the `@cloudflare/vite-plugin`, binding a D1 database and (optionally) an R2 bucket per `.openai/hosting.json`.
+**Runtime**: `vinext` (a Next.js-on-Vite adapter) compiles the App Router app in `app/` for Cloudflare Workers. `worker/index.ts` is the actual Workers entry point — it handles `/_vinext/image` itself and otherwise delegates to vinext's `app-router-entry` handler. `vite.config.ts` wires up `vinext()` and the `@cloudflare/vite-plugin`, binding a D1 database (`DB`) via an inline `localBindingConfig`.
 
 **Data layer — two sources of truth that must stay in sync by hand**:
 - `db/index.ts`'s `ensureSchema()` runs on every cold start (memoized in `schemaPromise`) and is what actually creates/migrates tables in D1 via raw SQL (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE`, backfill `UPDATE`s). This is the real source of truth for the live schema.
@@ -34,7 +34,7 @@ There is no separate unit-test runner or watch mode — `tests/rendered-html.tes
 - When changing a table shape: add the migration logic to `ensureSchema()`/its `migrate*` helpers in `db/index.ts` first (that's what actually runs), then mirror the final shape in `db/schema.ts`, then run `npm run db:generate` to record it.
 
 **API routes** (`app/api/*/route.ts`: `thoughts`, `books`, `book-notes`) are plain Next.js Route Handlers, all following the same shape:
-- Auth is header-based, not a session/cookie system: `apiUserId()` in `app/api/shared.ts` reads `oai-authenticated-user-id` (set upstream by the ChatGPT connector integration), falling back to a fixed `local-preview-user` id on `localhost`/`127.0.0.1` for local dev.
+- Single-user app: there is no login. Every request maps to the one `OWNER_ID` (`local-preview-user`) exported from `app/api/shared.ts`; all rows are keyed to it. Add real auth (or a header set by an auth proxy) there if it ever goes multi-user.
 - Every handler calls `ensureSchema()` before touching the DB, binds parameters into raw SQL via `getD1().prepare(...)`, and wraps the body in try/catch → `failure()` (shared.ts) for a generic 500.
 - Multi-line paste-to-capture (thoughts and book notes) is handled by `captureLines()` + `stagger()` in `shared.ts`: each newline becomes its own row, and `stagger()` mints strictly increasing millisecond timestamps so a batch insert reads back in the order it was typed.
 

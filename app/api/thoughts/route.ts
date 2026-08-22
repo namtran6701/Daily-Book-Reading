@@ -1,6 +1,6 @@
 import { ensureSchema, getD1 } from "@/db";
 import { isQuadrant } from "@/lib/quadrants";
-import { MAX_ROWS, apiUserId, captureLines, failure, stagger, text, validDate } from "@/app/api/shared";
+import { MAX_ROWS, OWNER_ID, captureLines, failure, stagger, text, validDate } from "@/app/api/shared";
 
 type ThoughtRow = {
   id: string;
@@ -28,9 +28,8 @@ function serialize(row: ThoughtRow) {
   };
 }
 
-export async function GET(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to view your thoughts." }, { status: 401 });
+export async function GET() {
+  const userId = OWNER_ID;
   try {
     await ensureSchema();
     const result = await getD1()
@@ -47,8 +46,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to capture a thought." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     if (!validDate(payload.dayKey)) {
@@ -91,8 +89,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to update a thought." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = text(payload.id);
@@ -131,8 +128,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to delete a thought." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });

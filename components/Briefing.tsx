@@ -124,8 +124,10 @@ export function Briefing({ thoughts, books, notes, today }: Props) {
       animate="show"
       variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.08 } } }}
     >
-      <motion.div
+      <motion.img
         className="orb"
+        src="/hero_img.svg"
+        alt=""
         aria-hidden="true"
         variants={{ hidden: { opacity: 0, scale: 0.4 }, show: { opacity: 1, scale: 1 } }}
         transition={gentle}

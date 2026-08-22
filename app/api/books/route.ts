@@ -1,5 +1,5 @@
 import { ensureSchema, getD1 } from "@/db";
-import { MAX_ROWS, apiUserId, failure, text } from "@/app/api/shared";
+import { MAX_ROWS, OWNER_ID, failure, text } from "@/app/api/shared";
 
 type BookRow = {
   id: string;
@@ -21,9 +21,8 @@ function serialize(row: BookRow) {
   };
 }
 
-export async function GET(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to view your books." }, { status: 401 });
+export async function GET() {
+  const userId = OWNER_ID;
   try {
     await ensureSchema();
     const result = await getD1()
@@ -37,8 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to add a book." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const title = text(payload.title).slice(0, 300);
@@ -60,8 +58,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to update a book." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const id = text(payload.id);
@@ -99,8 +96,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const userId = apiUserId(request);
-  if (!userId) return Response.json({ error: "Please sign in to delete a book." }, { status: 401 });
+  const userId = OWNER_ID;
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
     if (!id) return Response.json({ error: "A book id is required." }, { status: 400 });

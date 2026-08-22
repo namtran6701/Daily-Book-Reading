@@ -1,12 +1,9 @@
 export const MAX_ROWS = 3000;
 export const MAX_CAPTURE_LINES = 50;
 
-export function apiUserId(request: Request): string | null {
-  const userId = request.headers.get("oai-authenticated-user-id");
-  if (userId) return userId;
-  const hostname = new URL(request.url).hostname;
-  return hostname === "localhost" || hostname === "127.0.0.1" ? "local-preview-user" : null;
-}
+// Single-user app: every request maps to the one owner. If this ever grows real
+// accounts, resolve identity here (e.g. from a header set by an auth proxy).
+export const OWNER_ID = "local-preview-user";
 
 export function text(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value.trim() : fallback;
