@@ -1,6 +1,6 @@
 // Second Brain service worker: offline app shell + fast static assets.
 // Bump CACHE when the shell or this file changes to evict the old cache.
-const CACHE = "second-brain-v1";
+const CACHE = "second-brain-v2";
 const SHELL = [
   "/",
   "/manifest.webmanifest",

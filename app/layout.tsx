@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Second Brain",
     description:
-      "A calendar, an Eisenhower matrix, and your book notes. Nothing else.",
+      "Capture thoughts, organize priorities, keep book notes, and review your progress.",
     openGraph: {
       title: "Second Brain",
       description: "Think it. Place it. Find it.",

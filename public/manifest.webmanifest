@@ -1,7 +1,7 @@
 {
   "name": "Second Brain",
   "short_name": "Second Brain",
-  "description": "A calendar, an Eisenhower matrix, and your book notes. Nothing else.",
+  "description": "Capture thoughts, organize priorities, keep book notes, and review your progress.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

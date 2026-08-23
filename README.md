@@ -1,47 +1,145 @@
 # Second Brain
 
-A private place to offload a thought in seconds, put it where it belongs, and
-still find it months later. Three screens, nothing else.
+A focused, single-user place to capture thoughts, sort them by priority, keep
+reading notes, and review your recent progress. The app has four tabs:
+Calendar, Thoughts, Books, and Review.
 
 ## Calendar
 
-The home screen. A month at a time, today marked, and a small dot under every
-day you wrote something (solid for a thought, hollow for a book note). Tap any
-day to read back what you put down that day.
+The home screen opens with a daily briefing: open-thought and capture counts,
+the current book, and a warning when an urgent item has been waiting for at
+least two days.
+
+The calendar shows one month at a time. Today is marked, solid dots represent
+thoughts, and hollow dots represent book notes. Select a date to read its
+thoughts and book notes together; thoughts can also be completed, edited, or
+deleted from the day panel.
 
 ## Thoughts
 
-Type the thought, pick one of four boxes, press Enter. It is out of your head
-and it is placed.
+Type a thought, choose one of four Eisenhower-matrix quadrants, and press Enter
+or use the submit button:
 
 |  | Urgent | Not urgent |
 | --- | --- | --- |
 | **Important** | Do now | Schedule |
 | **Not important** | Quick | Later |
 
-Paste several lines at once and each line becomes its own thought in that box.
+Pasting multiple lines creates one thought per non-empty line in the selected
+quadrant. Thoughts can be completed, reopened, edited, deleted, or dragged to a
+different quadrant. Completed thoughts remain available behind each
+quadrant's **Show done** control.
 
-Nothing ever disappears. Checking something off leaves it in its box, struck
-through, tucked behind a "show done" line. Any thought can be moved to another
-box, edited, or deleted on purpose.
+Deletes are delayed briefly and can be reversed from the Undo toast. Deleting
+a book also deletes its notes after the same undo window.
 
 ## Books
 
-What you are reading, and what you are finished with. Open a book to see every
-note you took from it, newest first, with an optional page number. Those notes
-show up on their calendar day too, so a day of reading is visible from the
-month view.
+Add books to the **Reading now** shelf, open a book to record notes with an
+optional page number, and mark it finished when you are done. Multi-line input
+creates one note per non-empty line. Notes are grouped by day and can be
+edited, deleted, and searched once a book has more than four notes. Finished
+books can be moved back to the reading shelf.
+
+Book notes also appear on the Calendar and contribute to Review activity.
+
+## Review
+
+Review summarizes either the current week or current month from the data
+already loaded by the app. It shows completion progress, thoughts captured,
+book notes, finished books, activity by day and quadrant, older open carryover,
+and the next open items by priority. Review is computed entirely in the
+browser; it does not have a separate API or table.
+
+## Installable app and offline behavior
+
+Second Brain is a Progressive Web App. On a supported browser, use the
+browser's **Install** or **Add to Home Screen** action after opening the app.
+It launches in a standalone window and includes install icons for desktop and
+mobile devices.
+
+The service worker caches the app shell and static assets after the first
+successful visit. Navigations use the network when available and fall back to
+that cached shell offline. API responses are deliberately never cached, so
+loading or changing thoughts, books, and notes still requires a network
+connection.
 
 ## Local development
+
+Requirements:
+
+- Node.js 22.13 or newer
+- npm
+
+Install dependencies and start the Cloudflare-backed vinext development
+server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm run build` produces a production build and `npm test` builds then checks
-the server-rendered HTML.
+The app uses the `DB` D1 binding configured in `vite.config.ts`. Local Wrangler
+and Miniflare state is kept under the ignored `.wrangler/` directory; no app
+environment variables are required for the current single-user setup.
+
+Available commands:
+
+```bash
+npm run dev          # start the development server
+npm run build        # create the production build in dist/
+npm run start        # serve an existing production build locally
+npm test             # build, then run the rendered-HTML test
+npm run lint         # lint the source tree
+npm run db:generate  # generate Drizzle SQL from db/schema.ts
+```
 
 The database schema is created and migrated at runtime by `ensureSchema()` in
-`db/index.ts`, which is the source of truth. `db/schema.ts` describes the same
-tables for `drizzle-kit generate`.
+`db/index.ts`, which is the live source of truth. `db/schema.ts` mirrors the
+same `thoughts`, `books`, and `book_notes` tables for Drizzle migration
+generation.
+
+## Deployment
+
+The production target is Cloudflare Workers with a Cloudflare D1 database.
+`vite.config.ts` supplies the `DB` binding and database ID during the build;
+`wrangler.jsonc` supplies the Worker, asset, compatibility, and cache settings.
+The build combines them in `dist/server/wrangler.json`.
+
+The GitHub Actions workflow in `.github/workflows/deploy.yml` deploys every
+push to `main`. Configure these repository secrets before using it:
+
+- `CLOUDFLARE_API_TOKEN` with permission to deploy the Worker and use its D1
+  database
+- `CLOUDFLARE_ACCOUNT_ID` for the target account
+
+To target a different D1 database, update `DATABASE_ID` and the database name
+in `vite.config.ts` before building. A local authenticated manual deployment
+uses the same generated configuration as CI:
+
+```bash
+npm run build
+npx wrangler deploy --config dist/server/wrangler.json
+```
+
+The first API request in each Worker isolate runs `ensureSchema()` against the
+bound database.
+
+> [!IMPORTANT]
+> The app does not implement authentication. Every request uses the fixed
+> `OWNER_ID` in `app/api/shared.ts`, so protect any public deployment at the
+> Cloudflare edge (or add authentication) before storing private information.
+
+## Repository layout
+
+```text
+app/                    Next-style routes, API handlers, metadata, and global CSS
+components/             Client UI, tab views, animation, toasts, and PWA registration
+db/                     Runtime D1 schema management and Drizzle schema mirror
+drizzle/                Generated Drizzle migration snapshot
+lib/                    Shared date, quadrant, animation, and data types
+public/                 PWA manifest, service worker, icons, and static artwork
+tests/                   Production-worker rendered-HTML test
+worker/                  Cloudflare Worker entry point and image optimization
+work/markdown-notes/     Separate, ignored certificate-notes CLI workspace
+```

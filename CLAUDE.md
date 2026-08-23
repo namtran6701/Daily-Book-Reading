@@ -1,43 +1,141 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file gives coding agents repository-specific guidance.
 
-## What this repo is
+## Repository scope
 
-Two unrelated things live side by side:
+Two unrelated projects live side by side:
 
-1. **Second Brain** (`app/`, `db/`, `worker/`, root config) — a Next.js app that runs on Cloudflare Workers via `vinext`, storing data in a Cloudflare D1 (SQLite) database. This is the actively developed product.
-2. **`work/markdown-notes/`** — a standalone Python CLI (`notes.py`) for the user's own cert study notes (spaced-repetition review of Markdown chapter notes). It has no dependency on the app and isn't built/deployed with it. See `work/markdown-notes/README.md` for its own workflow.
+1. **Second Brain** (`app/`, `components/`, `db/`, `lib/`, `public/`,
+   `worker/`, and root configuration) is the actively developed product. It is
+   a Next-style App Router application compiled by vinext for Cloudflare
+   Workers and backed by Cloudflare D1.
+2. **`work/markdown-notes/`** is a standalone, ignored Python CLI for
+   spaced-repetition review of certificate study notes. It is not installed,
+   built, tested, or deployed with Second Brain. Its own workflow is documented
+   in `work/markdown-notes/README.md`.
 
-Second Brain is a calendar + Eisenhower-matrix thought capture tool + book notes, described in the root `README.md`. There are exactly four tabs: Calendar, Thoughts, Books, Review (a client-side weekly/monthly recap computed from existing data).
+Second Brain has exactly four tabs: Calendar, Thoughts, Books, and Review. The
+Calendar also renders a daily `Briefing` above the month view. See `README.md`
+for the user-facing behavior.
 
-## Commands (Second Brain app)
+## Commands
+
+The app requires Node.js 22.13 or newer.
 
 ```bash
 npm install
-npm run dev          # vinext dev (Cloudflare Workers dev server via wrangler/miniflare)
+npm run dev          # vinext dev through Wrangler/Miniflare
 npm run build        # vinext build -> dist/
+npm run start        # serve an existing production build locally
 npm test             # build, then node --test tests/rendered-html.test.mjs
-npm run lint         # eslint .
-npm run db:generate  # drizzle-kit generate (writes drizzle/*.sql from db/schema.ts)
+npm run lint         # eslint source files; generated build directories are ignored
+npm run db:generate  # drizzle-kit generate from db/schema.ts -> drizzle/
 ```
 
-There is no separate unit-test runner or watch mode — `tests/rendered-html.test.mjs` is the only test file, and it imports the built worker from `dist/server/index.js`, so it only works after `npm run build` (which `npm test` does for you). To run it directly after a build: `node --test tests/rendered-html.test.mjs`.
+`tests/rendered-html.test.mjs` is the only automated test. It imports the built
+worker from `dist/server/index.js` and verifies the server-rendered shell, so it
+must run after a build; `npm test` handles that ordering. It supplies only a
+mock `ASSETS` binding and does not exercise D1 or the client-side APIs.
 
-## Architecture
+## Runtime and deployment
 
-**Runtime**: `vinext` (a Next.js-on-Vite adapter) compiles the App Router app in `app/` for Cloudflare Workers. `worker/index.ts` is the actual Workers entry point — it handles `/_vinext/image` itself and otherwise delegates to vinext's `app-router-entry` handler. `vite.config.ts` wires up `vinext()` and the `@cloudflare/vite-plugin`, binding a D1 database (`DB`) via an inline `localBindingConfig`.
+- `vinext` compiles the route tree in `app/` into a Cloudflare Worker build.
+- `worker/index.ts` is the actual Worker entry point. It handles
+  `/_vinext/image` with Cloudflare image transforms and otherwise delegates to
+  vinext's `app-router-entry` handler.
+- `vite.config.ts` configures vinext and `@cloudflare/vite-plugin`. Its inline
+  binding config supplies the `DB` D1 name and ID and uses `worker/index.ts` as
+  the entry point. It also moves Wrangler/Miniflare logs and state under the
+  ignored `.wrangler/` directory; Codex Seatbelt previews use polling for HMR.
+- `wrangler.jsonc` owns the Worker name, compatibility settings, static-assets
+  binding, asset-cache setting, and source entry point. The build merges this
+  with the Vite D1 binding into `dist/server/wrangler.json`.
+- `.github/workflows/deploy.yml` installs with Node 22, builds on every push to
+  `main`, and deploys the generated Wrangler config. It requires the GitHub
+  secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
-**Data layer — two sources of truth that must stay in sync by hand**:
-- `db/index.ts`'s `ensureSchema()` runs on every cold start (memoized in `schemaPromise`) and is what actually creates/migrates tables in D1 via raw SQL (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE`, backfill `UPDATE`s). This is the real source of truth for the live schema.
-- `db/schema.ts` is a parallel Drizzle description of the *same* three tables (`thoughts`, `books`, `book_notes`), used only by `drizzle-kit generate` to produce migration files under `drizzle/`.
-- When changing a table shape: add the migration logic to `ensureSchema()`/its `migrate*` helpers in `db/index.ts` first (that's what actually runs), then mirror the final shape in `db/schema.ts`, then run `npm run db:generate` to record it.
+Deploy the generated config, not the root config directly:
 
-**API routes** (`app/api/*/route.ts`: `thoughts`, `books`, `book-notes`) are plain Next.js Route Handlers, all following the same shape:
-- Single-user app: there is no login. Every request maps to the one `OWNER_ID` (`local-preview-user`) exported from `app/api/shared.ts`; all rows are keyed to it. Add real auth (or a header set by an auth proxy) there if it ever goes multi-user.
-- Every handler calls `ensureSchema()` before touching the DB, binds parameters into raw SQL via `getD1().prepare(...)`, and wraps the body in try/catch → `failure()` (shared.ts) for a generic 500.
-- Multi-line paste-to-capture (thoughts and book notes) is handled by `captureLines()` + `stagger()` in `shared.ts`: each newline becomes its own row, and `stagger()` mints strictly increasing millisecond timestamps so a batch insert reads back in the order it was typed.
+```bash
+npm run build
+npx wrangler deploy --config dist/server/wrangler.json
+```
 
-**Frontend**: React components live in `components/`, shared pure utilities (dates, quadrants, spring presets, shared types) in `lib/`; `app/` holds only route files (`page.tsx`, `layout.tsx`, `api/`) plus `globals.css` and `icon.svg`. `components/SecondBrain.tsx` is the single client-side container — it owns all state (thoughts/books/notes), does one `Promise.all` fetch on mount, and passes data + callbacks down to `CalendarTab`, `MatrixTab`, and `BooksTab`. There's no client-side data-fetching library; it's plain `fetch` + `useState`, with optimistic local updates on PATCH/DELETE that roll back by re-`load()`ing on failure. `app/page.tsx` renders `<SecondBrain />` under `dynamic = "force-dynamic"` (no static generation — the app is inherently per-user/dynamic). The current wall-clock day (`today`) is deliberately only computed client-side via `useSyncExternalStore` since the Worker runs in UTC.
+## Data layer
 
-**Quadrants**: the Eisenhower matrix has exactly four fixed buckets defined once in `lib/quadrants.ts` (`do`, `plan`, `quick`, `later`) — this is the module to touch if quadrant labels/semantics ever change, everything else imports from it.
+The schema has two representations that must stay synchronized by hand:
+
+- `db/index.ts` is the live source of truth. `ensureSchema()` is memoized per
+  Worker isolate and creates or migrates `thoughts`, `books`, and `book_notes`
+  on first use. It also removes retired `chapters` and `daily_notes` tables,
+  folds legacy thought metadata into the body, and removes the retired book
+  `author` column when those older shapes are encountered.
+- `db/schema.ts` describes the same final three-table shape for Drizzle only.
+  `npm run db:generate` records changes under `drizzle/`; those generated SQL
+  files are not executed by the app at runtime.
+
+For a schema change, implement safe runtime creation/migration in
+`ensureSchema()` or its migration helpers first, mirror the final shape in
+`db/schema.ts`, and then run `npm run db:generate`.
+
+## API and identity
+
+The three route handlers are `app/api/thoughts/route.ts`,
+`app/api/books/route.ts`, and `app/api/book-notes/route.ts`. Each handler:
+
+- calls `ensureSchema()` before accessing D1;
+- uses prepared raw SQL from `getD1()`;
+- scopes every query to the fixed `OWNER_ID` exported by
+  `app/api/shared.ts`;
+- catches failures and returns the shared generic 500 response; and
+- caps list responses with the shared `MAX_ROWS` limit.
+
+There is no login, cookie session, or multi-user isolation: all traffic shares
+`local-preview-user`. If authentication is added, resolve the identity once in
+`app/api/shared.ts` and keep every query owner-scoped.
+
+Thought and book-note POST handlers pass input through `captureLines()` and
+`stagger()`: each non-empty line becomes a row, and strictly increasing
+millisecond timestamps preserve input order. A capture accepts at most the
+shared `MAX_CAPTURE_LINES` limit (currently 50). Both bodies are capped at
+4,000 characters per row; a note page value is capped at 40 characters.
+
+Deleting a book removes its notes and book row in one D1 batch. A completed
+thought stores both `status = 'done'` and `done_at`; Review uses `done_at` for
+period completion statistics.
+
+## Frontend
+
+- `app/page.tsx` force-renders dynamically and mounts
+  `components/SecondBrain.tsx`.
+- `SecondBrain` is the client-side state and network container. It loads
+  thoughts, books, and notes together once on mount, selects among the four
+  tabs, renders the Calendar's `Briefing`, and passes state and callbacks to
+  the tab components.
+- Data fetching uses plain `fetch` and React state. Thought/note PATCH actions
+  update locally first and reload after a failure. Deletes disappear locally,
+  wait 4.5 seconds for the Undo window, and only then call DELETE; a failed
+  delete reloads server state. Book completion waits for the server response.
+- The browser's current `today` value comes from `useSyncExternalStore` and is
+  empty during server rendering. Do not compute it on the Worker, which runs in
+  UTC and may differ from the user's local date.
+- `ReviewTab` has no API or persisted state. It derives the current week/month
+  recap, carryover, daily activity, and priority list from the already-loaded
+  arrays.
+- Fixed quadrant keys and labels live in `lib/quadrants.ts`: `do`, `plan`,
+  `quick`, and `later`. Change that module first if quadrant semantics change.
+- Shared date helpers, spring presets, and API data types live in `lib/`.
+
+## PWA behavior
+
+`app/layout.tsx` declares the manifest, theme, Apple mobile metadata, favicon,
+and absolute social-image metadata. `components/ServiceWorkerRegister.tsx`
+registers `public/sw.js` after window load.
+
+The service worker precaches the shell and core icons. It uses network-first
+navigation with a cached `/` fallback and cache-first static assets with a
+background refresh. It deliberately bypasses every `/api/` request, so no user
+data is cached for offline use. When changing the cached shell or service
+worker behavior, bump the `CACHE` value in `public/sw.js` so old caches are
+evicted during activation.
