@@ -39,3 +39,7 @@ yarn-error.log*
 /outputs/
 /work/
 *.tsbuildinfo
+
+# skills
+skills-lock.json
+.agents/
