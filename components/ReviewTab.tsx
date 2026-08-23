@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, animate, motion } from "motion/react";
 import { QuadrantGlyph } from "./icons";
 import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
-import { ageLabel, formatDate, monthLabel, monthKey, rangeDays, shiftDate, startOfMonth, startOfWeek } from "@/lib/date-keys";
+import { ageLabel, formatDate, monthLabel, monthKey, rangeDays, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
 import { gentle } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
 
@@ -70,14 +70,27 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
     }));
     const maxBar = Math.max(1, ...byQuadrant.map((row) => row.done + row.open));
 
-    const activityEnd = range === "week" ? shiftDate(start, 6) : today;
-    const activity = rangeDays(start, activityEnd).map((day) => {
-      const count =
-        thoughts.filter((thought) => thought.dayKey === day || doneDay(thought) === day).length +
-        notes.filter((note) => note.dayKey === day).length;
-      return { day, count };
-    });
-    const maxActivity = Math.max(1, ...activity.map((cell) => cell.count));
+    const dayCount = (day: string) =>
+      thoughts.filter((thought) => thought.dayKey === day || doneDay(thought) === day).length +
+      notes.filter((note) => note.dayKey === day).length;
+
+    let activity: { day: string; count: number; inMonth: boolean }[];
+    if (range === "week") {
+      activity = rangeDays(start, shiftDate(start, 6)).map((day) => ({
+        day,
+        count: dayCount(day),
+        inMonth: true,
+      }));
+    } else {
+      const monthEnd = shiftDate(`${shiftMonth(monthKey(today), 1)}-01`, -1);
+      const days = rangeDays(startOfWeek(start), shiftDate(startOfWeek(monthEnd), 6));
+      activity = days.map((day) => ({
+        day,
+        count: dayCount(day),
+        inMonth: day >= start && day <= monthEnd,
+      }));
+    }
+    const maxActivity = Math.max(1, ...activity.filter((cell) => cell.inMonth).map((cell) => cell.count));
 
     const carryover = open
       .filter((thought) => thought.dayKey < start)
@@ -236,17 +249,40 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
 
           <section className="review-section card" aria-label="Daily activity">
             <h3>Your rhythm</h3>
-            <div className={`heat-strip ${range === "month" ? "heat-month" : ""}`}>
-              {review.activity.map(({ day, count }) => (
-                <span
-                  key={day}
-                  className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}${day === today ? " today" : ""}`}
-                  title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}${day === today ? " · today" : ""}`}
-                >
-                  {range === "week" && <em>{formatDate(day, { weekday: "narrow" })}</em>}
-                </span>
-              ))}
-            </div>
+            {range === "week" ? (
+              <div className="heat-strip">
+                {review.activity.map(({ day, count }) => (
+                  <span
+                    key={day}
+                    className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}${day === today ? " today" : ""}`}
+                    title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}${day === today ? " · today" : ""}`}
+                  >
+                    <em>{formatDate(day, { weekday: "narrow" })}</em>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="heat-graph">
+                <div className="heat-weekdays" aria-hidden="true">
+                  {["M", "T", "W", "T", "F", "S", "S"].map((label, i) => (
+                    <span key={i}>{label}</span>
+                  ))}
+                </div>
+                <div className="heat-grid">
+                  {review.activity.map(({ day, count, inMonth }) =>
+                    inMonth ? (
+                      <span
+                        key={day}
+                        className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}${day === today ? " today" : ""}`}
+                        title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}${day === today ? " · today" : ""}`}
+                      />
+                    ) : (
+                      <span key={day} className="heat-cell heat-empty" aria-hidden="true" />
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
           </section>
 
           {review.carryover.length > 0 && (
