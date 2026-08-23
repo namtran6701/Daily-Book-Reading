@@ -146,7 +146,7 @@ ul {
 .app {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 0 20px 120px;
+  padding: 0 20px calc(120px + env(safe-area-inset-bottom));
 }
 
 .masthead {
@@ -154,7 +154,7 @@ ul {
   top: 0;
   z-index: 30;
   margin: 0 -20px;
-  padding: 18px 20px 12px;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 12px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -368,6 +368,8 @@ ul {
 /* ---------- shared controls ---------- */
 
 .icon-action {
+  position: relative;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -393,6 +395,7 @@ ul {
 }
 
 .icon-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -979,6 +982,30 @@ input:focus {
 @media (hover: none) {
   .row-actions {
     opacity: 1;
+  }
+
+  /* keep the visual size but expand the tap area to ~44px */
+  .mark::before,
+  .icon-action::before,
+  .icon-button::before {
+    content: "";
+    position: absolute;
+  }
+
+  .mark::before {
+    inset: -12px;
+  }
+
+  .icon-action::before {
+    inset: -8px;
+  }
+
+  .icon-button::before {
+    inset: -6px;
+  }
+
+  .seg-btn {
+    min-height: 44px;
   }
 }
 
@@ -1965,7 +1992,9 @@ input:focus {
   }
 
   .book-header {
-    flex-direction: row;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 
   .quad-bar-row {
@@ -1979,12 +2008,12 @@ input:focus {
 
 @media (max-width: 560px) {
   .app {
-    padding: 0 14px 100px;
+    padding: 0 14px calc(100px + env(safe-area-inset-bottom));
   }
 
   .masthead {
     margin: 0 -14px;
-    padding: 14px 14px 10px;
+    padding: calc(14px + env(safe-area-inset-top)) 14px 10px;
   }
 
   .wordmark {
@@ -2002,16 +2031,25 @@ input:focus {
 
   .seg-btn {
     flex: 1;
+    min-width: 0;
     padding: 8px 6px;
+  }
+
+  .seg-glyph {
+    display: none;
   }
 
   .seg-label {
     justify-content: center;
     gap: 5px;
+    min-width: 0;
   }
 
   .seg-text {
     font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .shelf {
