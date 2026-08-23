@@ -216,6 +216,7 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
             </div>
           </div>
 
+          <div className="review-duo">
           <section className="review-section card" aria-label="Progress by quadrant">
             <h3>Where the work landed</h3>
             <div className="quad-bars">
@@ -284,6 +285,7 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
               </div>
             )}
           </section>
+          </div>
 
           {review.carryover.length > 0 && (
             <section className="review-section card" aria-label="Carried over">
