@@ -801,6 +801,14 @@ input:focus {
   border-color: color-mix(in srgb, var(--q) 55%, transparent);
 }
 
+/* With text in the composer, pills submit into their quadrant; preview that
+   target on hover so the one-tap "send here" affordance reads clearly. */
+.composer-picker.armed .pill:hover {
+  color: var(--q);
+  background: var(--q-soft);
+  border-color: color-mix(in srgb, var(--q) 45%, transparent);
+}
+
 .pill-dot {
   width: 9px;
   height: 9px;

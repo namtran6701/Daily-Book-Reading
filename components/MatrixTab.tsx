@@ -176,6 +176,22 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
     }
   }
 
+  // One-click capture: with text in the composer, tapping a quadrant pill sends
+  // straight into it (and remembers it as the default for the Enter/send path).
+  // With an empty composer the pill just picks the default and focuses.
+  async function pickOrSend(next: Quadrant) {
+    if (!text.trim()) {
+      focusQuadrant(next);
+      return;
+    }
+    if (busy) return;
+    pickQuadrant(next);
+    if (await onCapture(text, next)) {
+      setText("");
+      haptic(8);
+    }
+  }
+
   async function keepInSheet() {
     if (!sheetText.trim() || !sheetQuad) return;
     if (await onCapture(sheetText, sheetQuad)) {
@@ -225,28 +241,18 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
             }}
             aria-label="Your thought"
           />
-          <motion.button
-            className="composer-send"
-            onClick={() => void keep()}
-            disabled={busy || !text.trim()}
-            whileTap={{ scale: 0.86 }}
-            transition={bouncy}
-            aria-label="Add thought"
-            title="Add thought"
-          >
-            <SubmitIcon />
-          </motion.button>
         </div>
-        <div className="composer-picker" role="group" aria-label="Priority">
-          <span className="eyebrow">Into</span>
+        <div className={`composer-picker ${text.trim() ? "armed" : ""}`} role="group" aria-label="Priority">
+          <span className="eyebrow">{text.trim() ? "Send to" : "Into"}</span>
           {QUADRANTS.map((key) => (
             <motion.button
               key={key}
               className={`pill q-${key} ${quadrant === key ? "picked" : ""}`}
-              onClick={() => pickQuadrant(key)}
+              onClick={() => void pickOrSend(key)}
               whileTap={{ scale: 0.94 }}
               transition={bouncy}
               aria-pressed={quadrant === key}
+              aria-label={text.trim() ? `Send to ${QUADRANT_LABELS[key]}` : QUADRANT_LABELS[key]}
             >
               <span className="pill-dot" aria-hidden="true" />
               <span>{QUADRANT_LABELS[key]}</span>
