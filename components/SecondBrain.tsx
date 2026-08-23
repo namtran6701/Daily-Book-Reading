@@ -42,6 +42,33 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
   return payload;
 }
 
+// Cloudflare Access expires the session after a period of inactivity and then
+// 302s same-origin API calls to its cross-origin login page. redirect: "manual"
+// surfaces that as an opaque redirect (rather than a CORS error we could not
+// tell apart from an offline blip), so we can reload and let the browser follow
+// Access's login flow. The sessionStorage guard stops a reload that lands back
+// on a cached shell from spinning.
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  const response = await fetch(input, { ...init, redirect: "manual" });
+  if (response.type === "opaqueredirect") {
+    let reloaded = false;
+    try {
+      reloaded = sessionStorage.getItem("sb-access-reload") === "1";
+      if (!reloaded) sessionStorage.setItem("sb-access-reload", "1");
+    } catch {
+      // sessionStorage can be unavailable (private mode); the guard is best-effort.
+    }
+    if (!reloaded) window.location.reload();
+    throw new Error("Your session expired. Refresh to sign in again.");
+  }
+  try {
+    sessionStorage.removeItem("sb-access-reload");
+  } catch {
+    // sessionStorage can be unavailable (private mode); the guard is best-effort.
+  }
+  return response;
+}
+
 export function SecondBrain() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
@@ -73,9 +100,9 @@ export function SecondBrain() {
   const load = useCallback(async () => {
     try {
       const [thoughtsResponse, booksResponse, notesResponse] = await Promise.all([
-        fetch("/api/thoughts", { cache: "no-store" }),
-        fetch("/api/books", { cache: "no-store" }),
-        fetch("/api/book-notes", { cache: "no-store" }),
+        apiFetch("/api/thoughts", { cache: "no-store" }),
+        apiFetch("/api/books", { cache: "no-store" }),
+        apiFetch("/api/book-notes", { cache: "no-store" }),
       ]);
       setThoughts((await readJson<{ thoughts: Thought[] }>(thoughtsResponse, "Could not load your thoughts.")).thoughts);
       setBooks((await readJson<{ books: Book[] }>(booksResponse, "Could not load your books.")).books);
@@ -131,7 +158,7 @@ export function SecondBrain() {
     async (text: string, quadrant: Quadrant) => {
       setBusy(true);
       try {
-        const response = await fetch("/api/thoughts", {
+        const response = await apiFetch("/api/thoughts", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ text, quadrant, dayKey: today }),
@@ -153,7 +180,7 @@ export function SecondBrain() {
   const updateThought = useCallback(async (id: string, patch: Partial<Thought>) => {
     setThoughts((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
     try {
-      const response = await fetch("/api/thoughts", {
+      const response = await apiFetch("/api/thoughts", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, ...patch }),
@@ -174,7 +201,7 @@ export function SecondBrain() {
       scheduleDelete(
         "Thought deleted",
         () => {
-          void fetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+          void apiFetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
             if (!response.ok) {
               setError("Could not delete that thought.");
               void load();
@@ -190,7 +217,7 @@ export function SecondBrain() {
   const addBook = useCallback(async (title: string) => {
     setBusy(true);
     try {
-      const response = await fetch("/api/books", {
+      const response = await apiFetch("/api/books", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ title }),
@@ -209,7 +236,7 @@ export function SecondBrain() {
 
   const updateBook = useCallback(async (id: string, patch: { finished?: boolean }) => {
     try {
-      const response = await fetch("/api/books", {
+      const response = await apiFetch("/api/books", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, ...patch }),
@@ -233,7 +260,7 @@ export function SecondBrain() {
       scheduleDelete(
         bookNotes.length > 0 ? `"${book.title}" and ${bookNotes.length} notes deleted` : `"${book.title}" deleted`,
         () => {
-          void fetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+          void apiFetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
             if (!response.ok) {
               setError("Could not delete that book.");
               void load();
@@ -257,7 +284,7 @@ export function SecondBrain() {
     async (bookId: string, text: string, page: string) => {
       setBusy(true);
       try {
-        const response = await fetch("/api/book-notes", {
+        const response = await apiFetch("/api/book-notes", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ bookId, text, page, dayKey: today }),
@@ -279,7 +306,7 @@ export function SecondBrain() {
   const updateNote = useCallback(async (id: string, patch: Partial<BookNote>) => {
     setNotes((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
     try {
-      const response = await fetch("/api/book-notes", {
+      const response = await apiFetch("/api/book-notes", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, ...patch }),
@@ -300,7 +327,7 @@ export function SecondBrain() {
       scheduleDelete(
         "Note deleted",
         () => {
-          void fetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
+          void apiFetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
             if (!response.ok) {
               setError("Could not delete that note.");
               void load();
