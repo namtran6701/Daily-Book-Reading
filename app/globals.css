@@ -2318,6 +2318,11 @@ button.quadrant-tag .caret {
 .heat-cell.level-2 em,
 .heat-cell.level-3 em { color: #ffffff; font-weight: 640; }
 
+.heat-cell.today {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .carry-list {
   display: flex;
   flex-direction: column;

@@ -240,8 +240,8 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
               {review.activity.map(({ day, count }) => (
                 <span
                   key={day}
-                  className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}`}
-                  title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}`}
+                  className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}${day === today ? " today" : ""}`}
+                  title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}${day === today ? " · today" : ""}`}
                 >
                   {range === "week" && <em>{formatDate(day, { weekday: "narrow" })}</em>}
                 </span>
