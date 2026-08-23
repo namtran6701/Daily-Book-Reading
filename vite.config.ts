@@ -1,7 +1,7 @@
 import vinext from "vinext";
 import { defineConfig } from "vite";
 
-const PLACEHOLDER_DATABASE_ID = "00000000-0000-4000-8000-000000000000";
+const DATABASE_ID = "0dcf84c4-a83e-4b15-ae6c-5190e8c6078b";
 
 // macOS Seatbelt blocks FSEvents, so sandboxed previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
@@ -13,7 +13,7 @@ const localBindingConfig = {
     {
       binding: "DB",
       database_name: "second-brain-d1",
-      database_id: PLACEHOLDER_DATABASE_ID,
+      database_id: DATABASE_ID,
     },
   ],
   r2_buckets: [],

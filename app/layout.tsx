@@ -39,6 +39,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* vinext streams file-convention metadata (app/icon.svg) via a hidden
+            body div instead of real head elements, so it never gets hoisted
+            into <head> and browsers ignore it for favicon purposes. */}
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+      </head>
       <body>{children}</body>
     </html>
   );
