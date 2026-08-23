@@ -49,6 +49,13 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
+        <link
+          rel="preload"
+          href="/fonts/fraunces-var.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#fbfbfd" />

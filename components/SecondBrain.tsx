@@ -361,37 +361,37 @@ export function SecondBrain() {
     <MotionConfig reducedMotion="user">
       <main className="app" data-app="second-brain">
         <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
-          <div className="masthead-top">
-            <span className="brand">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
-              <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
-                Second Brain
-              </motion.span>
-            </span>
+          <span className="brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
+            <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+              Second Brain
+            </motion.span>
+          </span>
+          <div className="masthead-meta">
             <span className="masthead-date">
               {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
             </span>
-          </div>
-          <nav className="segmented" aria-label="Sections">
-            {TABS.map(({ value, label, glyph: Glyph }) => (
-              <button
-                key={value}
-                className={`seg-btn ${tab === value ? "active" : ""}`}
-                onClick={() => selectTab(value)}
-                aria-current={tab === value ? "page" : undefined}
-              >
-                {tab === value && <motion.span className="seg-pill" layoutId="seg-pill" transition={snappy} />}
-                <span className="seg-label">
-                  <span className="seg-glyph" aria-hidden="true">
-                    <Glyph size={14} />
+            <nav className="nav-top" aria-label="Sections">
+              {TABS.map(({ value, label, glyph: Glyph }) => (
+                <button
+                  key={value}
+                  className={`seg-btn ${tab === value ? "active" : ""}`}
+                  onClick={() => selectTab(value)}
+                  aria-current={tab === value ? "page" : undefined}
+                >
+                  {tab === value && <motion.span className="seg-pill" layoutId="seg-pill" transition={snappy} />}
+                  <span className="seg-label">
+                    <span className="seg-glyph" aria-hidden="true">
+                      <Glyph size={14} />
+                    </span>
+                    <span>{label}</span>
+                    {value === "thoughts" && openCount > 0 && <span className="seg-badge">{openCount}</span>}
                   </span>
-                  <span className="seg-text">{label}</span>
-                  {value === "thoughts" && openCount > 0 && <span className="seg-badge">{openCount}</span>}
-                </span>
-              </button>
-            ))}
-          </nav>
+                </button>
+              ))}
+            </nav>
+          </div>
         </header>
 
         {error && (
@@ -480,6 +480,24 @@ export function SecondBrain() {
             </>
           )}
         </div>
+
+        <nav className="tabbar" aria-label="Sections">
+          {TABS.map(({ value, label, glyph: Glyph }) => (
+            <button
+              key={value}
+              className={`tab-btn ${tab === value ? "active" : ""}`}
+              onClick={() => selectTab(value)}
+              aria-current={tab === value ? "page" : undefined}
+            >
+              {tab === value && <motion.span className="tab-pill" layoutId="tab-pill" transition={snappy} />}
+              <span className="tab-glyph" aria-hidden="true">
+                <Glyph size={20} />
+              </span>
+              <span className="tab-text">{label}</span>
+              {value === "thoughts" && openCount > 0 && <span className="tab-badge">{openCount}</span>}
+            </button>
+          ))}
+        </nav>
 
         <ToastStack toasts={toasts} onUndo={(toast) => toast.undo?.()} />
       </main>

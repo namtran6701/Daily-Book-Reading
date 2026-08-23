@@ -151,6 +151,19 @@ export function MoonIcon({ size = 14 }: IconProps) {
   );
 }
 
+export function MoveIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M12 3v18" />
+      <path d="M3 12h18" />
+      <path d="M9 6l3-3 3 3" />
+      <path d="M9 18l3 3 3-3" />
+      <path d="M6 9l-3 3 3 3" />
+      <path d="M18 9l3 3-3 3" />
+    </svg>
+  );
+}
+
 export function MatrixGlyph({ size = 15 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

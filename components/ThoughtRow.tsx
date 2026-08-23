@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { ageLabel, daysBetween } from "@/lib/date-keys";
-import { CheckIcon, CloseIcon, PencilIcon, QuadrantGlyph, TrashIcon } from "./icons";
+import { CheckIcon, CloseIcon, MoveIcon, PencilIcon, QuadrantGlyph, TrashIcon } from "./icons";
 import { QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -16,17 +15,23 @@ type Props = {
   showAge?: boolean;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onMove?: (id: string) => void;
+  // Desktop-only native drag between quadrant cards. Touch never engages this,
+  // so there is no custom touch-drag code and nothing to lag.
   onDragStart?: (id: string) => void;
   onDragEnd?: () => void;
-  onDragOverQuadrant?: (quadrant: string | null) => void;
-  onDropQuadrant?: (quadrant: string | null) => void;
   isDragging?: boolean;
 };
 
-const LONG_PRESS_MS = 400;
-const SCROLL_SLOP = 10;
-
 const BURST_RAYS = 7;
+
+function haptic(pattern: number) {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    // Vibration is best-effort and unsupported on most desktops.
+  }
+}
 
 export function ThoughtRow({
   thought,
@@ -35,64 +40,15 @@ export function ThoughtRow({
   showAge,
   onUpdate,
   onDelete,
+  onMove,
   onDragStart,
   onDragEnd,
-  onDragOverQuadrant,
-  onDropQuadrant,
   isDragging,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(thought.body);
   const [burst, setBurst] = useState(0);
   const editor = useRef<HTMLTextAreaElement>(null);
-
-  // Touch: long-press to pick up, then drag onto another quadrant card. A
-  // floating ghost follows the finger (the cards clip overflow, so the row
-  // itself can't visibly cross between them).
-  const pressTimer = useRef<number | null>(null);
-  const startTouch = useRef<{ x: number; y: number } | null>(null);
-  const lastQuad = useRef<string | null>(null);
-  const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null);
-  const touchDragging = ghost !== null;
-
-  function clearPress() {
-    if (pressTimer.current !== null) {
-      window.clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-  }
-
-  useEffect(() => clearPress, []);
-
-  function engageTouchDrag() {
-    const start = startTouch.current;
-    if (!start) return;
-    onDragStart?.(thought.id);
-    setGhost(start);
-    navigator.vibrate?.(10);
-
-    const onMove = (event: TouchEvent) => {
-      event.preventDefault();
-      const touch = event.touches[0];
-      if (!touch) return;
-      setGhost({ x: touch.clientX, y: touch.clientY });
-      const under = document.elementFromPoint(touch.clientX, touch.clientY);
-      lastQuad.current = under?.closest("[data-quadrant]")?.getAttribute("data-quadrant") ?? null;
-      onDragOverQuadrant?.(lastQuad.current);
-    };
-    const onEnd = () => {
-      document.removeEventListener("touchmove", onMove);
-      document.removeEventListener("touchend", onEnd);
-      document.removeEventListener("touchcancel", onEnd);
-      setGhost(null);
-      onDropQuadrant?.(lastQuad.current);
-      lastQuad.current = null;
-      startTouch.current = null;
-    };
-    document.addEventListener("touchmove", onMove, { passive: false });
-    document.addEventListener("touchend", onEnd);
-    document.addEventListener("touchcancel", onEnd);
-  }
 
   useEffect(() => {
     if (editing) editor.current?.focus();
@@ -114,21 +70,24 @@ export function ThoughtRow({
   }
 
   function toggleDone() {
-    if (!thought.done) setBurst((count) => count + 1);
+    if (!thought.done) {
+      setBurst((count) => count + 1);
+      haptic(12);
+    }
     void onUpdate(thought.id, { done: !thought.done });
   }
 
   const age = daysBetween(thought.dayKey, today);
   const heat = thought.done || !showAge ? "" : age >= 7 ? "heat-2" : age >= 3 ? "heat-1" : "";
+  const movableTag = showQuadrant && onMove;
 
   return (
     <motion.li
-      className={`thought ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""}`}
-      layout
-      layoutId={`thought-${thought.id}`}
-      initial={{ opacity: 0, y: 10 }}
+      className={`thought q-${thought.quadrant} ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""}`}
+      layout="position"
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96 }}
+      exit={{ opacity: 0, scale: 0.97 }}
       transition={snappy}
     >
       <div
@@ -140,27 +99,6 @@ export function ThoughtRow({
           onDragStart?.(thought.id);
         }}
         onDragEnd={() => onDragEnd?.()}
-        onTouchStart={(event) => {
-          if (!onDragStart || editing) return;
-          if ((event.target as HTMLElement).closest("button")) return;
-          const touch = event.touches[0];
-          startTouch.current = { x: touch.clientX, y: touch.clientY };
-          clearPress();
-          pressTimer.current = window.setTimeout(engageTouchDrag, LONG_PRESS_MS);
-        }}
-        onTouchMove={(event) => {
-          if (touchDragging || !startTouch.current) return;
-          const touch = event.touches[0];
-          if (
-            Math.abs(touch.clientX - startTouch.current.x) > SCROLL_SLOP ||
-            Math.abs(touch.clientY - startTouch.current.y) > SCROLL_SLOP
-          ) {
-            clearPress();
-          }
-        }}
-        onTouchEnd={() => {
-          if (!touchDragging) clearPress();
-        }}
       >
         <motion.button
           className={`mark ${thought.done ? "mark-done" : ""}`}
@@ -211,12 +149,7 @@ export function ThoughtRow({
               aria-label="Edit this thought"
             />
             <div className="editor-actions">
-              <button
-                className="icon-action pressable"
-                onClick={() => void save()}
-                aria-label="Save"
-                title="Save"
-              >
+              <button className="icon-action pressable" onClick={() => void save()} aria-label="Save" title="Save">
                 <CheckIcon />
               </button>
               <button
@@ -236,12 +169,25 @@ export function ThoughtRow({
           <div className="thought-body">
             <p>{thought.body}</p>
             <div className="thought-meta">
-              {showQuadrant && (
-                <span className={`quadrant-tag q-${thought.quadrant}`}>
-                  <QuadrantGlyph quadrant={thought.quadrant} size={11} />
-                  {QUADRANT_LABELS[thought.quadrant]}
-                </span>
-              )}
+              {showQuadrant &&
+                (movableTag ? (
+                  <button
+                    className={`quadrant-tag q-${thought.quadrant}`}
+                    onClick={() => onMove!(thought.id)}
+                    aria-label={`In ${QUADRANT_LABELS[thought.quadrant]}. Move to another quadrant`}
+                  >
+                    <QuadrantGlyph quadrant={thought.quadrant} size={11} />
+                    {QUADRANT_LABELS[thought.quadrant]}
+                    <span className="caret" aria-hidden="true">
+                      ⌄
+                    </span>
+                  </button>
+                ) : (
+                  <span className={`quadrant-tag q-${thought.quadrant}`}>
+                    <QuadrantGlyph quadrant={thought.quadrant} size={11} />
+                    {QUADRANT_LABELS[thought.quadrant]}
+                  </span>
+                ))}
               {showAge && <span className={`thought-age ${heat}`}>{ageLabel(thought.dayKey, today)}</span>}
             </div>
           </div>
@@ -249,12 +195,17 @@ export function ThoughtRow({
 
         {!editing && (
           <div className="row-actions">
-            <button
-              className="icon-action pressable"
-              onClick={startEditing}
-              aria-label="Edit"
-              title="Edit"
-            >
+            {onMove && !showQuadrant && (
+              <button
+                className="icon-action pressable"
+                onClick={() => onMove(thought.id)}
+                aria-label="Move to another quadrant"
+                title="Move"
+              >
+                <MoveIcon />
+              </button>
+            )}
+            <button className="icon-action pressable" onClick={startEditing} aria-label="Edit" title="Edit">
               <PencilIcon />
             </button>
             <button
@@ -268,14 +219,6 @@ export function ThoughtRow({
           </div>
         )}
       </div>
-
-      {ghost &&
-        createPortal(
-          <div className="drag-ghost" style={{ left: ghost.x, top: ghost.y }}>
-            {thought.body}
-          </div>,
-          document.body,
-        )}
     </motion.li>
   );
 }

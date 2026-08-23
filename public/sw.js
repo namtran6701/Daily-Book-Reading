@@ -1,11 +1,13 @@
 // Second Brain service worker: offline app shell + fast static assets.
 // Bump CACHE when the shell or this file changes to evict the old cache.
-const CACHE = "second-brain-v3";
+const CACHE = "second-brain-v4";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
   "/animated.svg",
   "/icon.svg",
+  "/fonts/fraunces-var.woff2",
+  "/fonts/fraunces-var-italic.woff2",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/apple-touch-icon-180.png",
