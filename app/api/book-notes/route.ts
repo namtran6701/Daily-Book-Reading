@@ -1,5 +1,17 @@
 import { ensureSchema, getD1 } from "@/db";
-import { MAX_ROWS, OWNER_ID, captureLines, failure, stagger, text, validDate } from "@/app/api/shared";
+import {
+  MAX_NOTES_PER_BOOK,
+  MAX_PAGE_LENGTH,
+  MAX_ROWS,
+  OWNER_ID,
+  captureError,
+  captureLines,
+  failure,
+  readJsonBody,
+  stagger,
+  text,
+  validDate,
+} from "@/app/api/shared";
 
 type BookNoteRow = {
   id: string;
@@ -28,9 +40,17 @@ function serialize(row: BookNoteRow) {
 export async function GET() {
   try {
     await ensureSchema();
+    // Cap notes per book (a window over each book_id) so a book with many notes
+    // can never crowd older books out of the shared list; MAX_ROWS is a backstop.
     const result = await getD1()
-      .prepare(`SELECT ${COLUMNS} FROM book_notes WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`)
-      .bind(OWNER_ID, MAX_ROWS)
+      .prepare(`SELECT ${COLUMNS} FROM (
+          SELECT ${COLUMNS},
+            ROW_NUMBER() OVER (PARTITION BY book_id ORDER BY created_at DESC) AS rn
+          FROM book_notes WHERE user_id = ?
+        ) WHERE rn <= ?
+        ORDER BY created_at DESC
+        LIMIT ?`)
+      .bind(OWNER_ID, MAX_NOTES_PER_BOOK, MAX_ROWS)
       .all<BookNoteRow>();
     return Response.json({ notes: result.results.map(serialize) });
   } catch (error) {
@@ -40,14 +60,20 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const bookId = text(payload.bookId);
     if (!bookId) return Response.json({ error: "A book is required." }, { status: 400 });
     if (!validDate(payload.dayKey)) {
       return Response.json({ error: "A valid capture date is required." }, { status: 400 });
     }
     const lines = captureLines(payload.text);
-    if (!lines.length) return Response.json({ error: "Write something first." }, { status: 400 });
+    const problem = captureError(lines);
+    if (problem) return Response.json({ error: problem }, { status: 400 });
+    const page = text(payload.page);
+    if (page.length > MAX_PAGE_LENGTH) {
+      return Response.json({ error: `Page is too long: ${MAX_PAGE_LENGTH} characters max.` }, { status: 400 });
+    }
 
     await ensureSchema();
     const db = getD1();
@@ -57,7 +83,6 @@ export async function POST(request: Request) {
       .first<{ id: string }>();
     if (!book) return Response.json({ error: "Book not found." }, { status: 404 });
 
-    const page = text(payload.page).slice(0, 40);
     const timestamps = stagger(lines.length);
     const results = await db.batch<BookNoteRow>(
       lines.map((body, index) =>
@@ -70,7 +95,7 @@ export async function POST(request: Request) {
             crypto.randomUUID(),
             OWNER_ID,
             bookId,
-            body.slice(0, 4000),
+            body,
             page,
             payload.dayKey,
             timestamps[index],
@@ -89,7 +114,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
     if (!id) return Response.json({ error: "A note id is required." }, { status: 400 });
 

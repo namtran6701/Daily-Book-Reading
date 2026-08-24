@@ -1,5 +1,5 @@
 import { ensureSchema, getD1 } from "@/db";
-import { MAX_ROWS, OWNER_ID, failure, text } from "@/app/api/shared";
+import { MAX_ROWS, MAX_TITLE_LENGTH, OWNER_ID, failure, readJsonBody, text } from "@/app/api/shared";
 
 type BookRow = {
   id: string;
@@ -36,9 +36,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
-    const title = text(payload.title).slice(0, 300);
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    const title = text(payload.title);
     if (!title) return Response.json({ error: "A book needs a title." }, { status: 400 });
+    if (title.length > MAX_TITLE_LENGTH) {
+      return Response.json({ error: `A title is too long: ${MAX_TITLE_LENGTH} characters max.` }, { status: 400 });
+    }
 
     await ensureSchema();
     const timestamp = new Date().toISOString();
@@ -57,7 +61,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
     if (!id) return Response.json({ error: "A book id is required." }, { status: 400 });
 

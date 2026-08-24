@@ -1,6 +1,6 @@
 // Second Brain service worker: offline app shell + fast static assets.
 // Bump CACHE when the shell or this file changes to evict the old cache.
-const CACHE = "second-brain-v4";
+const CACHE = "second-brain-v5";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -42,8 +42,13 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put("/", copy));
+          // Only cache a real, same-origin 200 as the shell. Skip errors (500)
+          // and redirected responses (e.g. an Access login page) so the offline
+          // shell can't be poisoned. waitUntil keeps the write alive.
+          if (res.ok && !res.redirected) {
+            const copy = res.clone();
+            event.waitUntil(caches.open(CACHE).then((cache) => cache.put("/", copy)));
+          }
           return res;
         })
         .catch(() => caches.match("/"))
@@ -58,7 +63,7 @@ self.addEventListener("fetch", (event) => {
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
+            event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
           }
           return res;
         })

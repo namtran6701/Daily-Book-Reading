@@ -1546,6 +1546,12 @@ button.quadrant-tag .caret {
   gap: 2px;
 }
 
+/* Week wrappers exist only for the ARIA grid rows; contents keeps the day
+   cells as direct grid items so the 7-column layout is unchanged. */
+.week-row {
+  display: contents;
+}
+
 .day-cell {
   position: relative;
   display: flex;

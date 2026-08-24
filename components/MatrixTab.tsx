@@ -86,22 +86,71 @@ function Overlay({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const scrimRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // Make the app behind the dialog inert (out of the tab order and hidden from
+    // assistive tech). A depth counter keeps it inert while a nested overlay
+    // (e.g. the move menu opened from inside the sheet) is still open.
+    const app = document.querySelector<HTMLElement>('[data-app="second-brain"]');
+    if (app) {
+      app.dataset.overlayDepth = String(Number(app.dataset.overlayDepth ?? "0") + 1);
+      app.setAttribute("inert", "");
+    }
+    const restoreFocus = document.activeElement as HTMLElement | null;
+
+    const focusable = () =>
+      Array.from(
+        scrimRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+
+    (focusable()[0] ?? scrimRef.current)?.focus();
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
+      if (app) {
+        const remaining = Number(app.dataset.overlayDepth ?? "1") - 1;
+        if (remaining > 0) {
+          app.dataset.overlayDepth = String(remaining);
+        } else {
+          delete app.dataset.overlayDepth;
+          app.removeAttribute("inert");
+        }
+      }
       window.removeEventListener("keydown", onKey);
+      restoreFocus?.focus?.();
     };
   }, [onClose]);
 
   return createPortal(
     <motion.div
+      ref={scrimRef}
       className={`scrim ${center ? "center" : ""}`}
+      tabIndex={-1}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -169,7 +218,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   }
 
   async function keep() {
-    if (!text.trim()) return;
+    if (busy || !text.trim()) return;
     if (await onCapture(text, quadrant)) {
       setText("");
       haptic(8);
@@ -193,7 +242,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   }
 
   async function keepInSheet() {
-    if (!sheetText.trim() || !sheetQuad) return;
+    if (busy || !sheetText.trim() || !sheetQuad) return;
     if (await onCapture(sheetText, sheetQuad)) {
       setSheetText("");
       haptic(8);

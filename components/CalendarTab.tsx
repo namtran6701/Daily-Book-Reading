@@ -140,53 +140,59 @@ export function CalendarTab({
           <motion.div
             key={month}
             className="day-grid"
+            role="rowgroup"
             custom={direction}
             initial={{ opacity: 0, x: 56 * direction }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -56 * direction }}
             transition={snappy}
           >
-            {cells.map(({ dayKey, inMonth }) => {
-              const counts = activity.get(dayKey);
-              const total = (counts?.thoughts ?? 0) + (counts?.notes ?? 0);
-              const classes = [
-                "day-cell",
-                "pressable",
-                inMonth ? "" : "outside",
-                dayKey === today ? "is-today" : "",
-                total ? "has-activity" : "",
-              ]
-                .filter(Boolean)
-                .join(" ");
-              return (
-                <button
-                  key={dayKey}
-                  className={classes}
-                  onClick={() => onSelectDay(dayKey)}
-                  aria-current={dayKey === today ? "date" : undefined}
-                  aria-label={`${formatDate(dayKey, { month: "long", day: "numeric" })}, ${total} ${
-                    total === 1 ? "entry" : "entries"
-                  }`}
-                >
-                  {dayKey === selectedDay && (
-                    <motion.span className="day-select-ring" layoutId="day-select-ring" transition={snappy} />
-                  )}
-                  <span className="day-number">{formatDate(dayKey, { day: "numeric" })}</span>
-                  <span className="day-dots">
-                    {Array.from({ length: Math.min(counts?.thoughts ?? 0, MAX_DOTS) }, (_, index) => (
-                      <i key={`t${index}`} />
-                    ))}
-                    {Array.from(
-                      { length: Math.min(counts?.notes ?? 0, Math.max(0, MAX_DOTS - (counts?.thoughts ?? 0))) },
-                      (_, index) => (
-                        <i key={`n${index}`} className="hollow" />
-                      ),
-                    )}
-                    {total > MAX_DOTS && <em>+</em>}
-                  </span>
-                </button>
-              );
-            })}
+            {Array.from({ length: cells.length / 7 }, (_, week) => (
+              <div key={week} className="week-row" role="row">
+                {cells.slice(week * 7, week * 7 + 7).map(({ dayKey, inMonth }) => {
+                  const counts = activity.get(dayKey);
+                  const total = (counts?.thoughts ?? 0) + (counts?.notes ?? 0);
+                  const classes = [
+                    "day-cell",
+                    "pressable",
+                    inMonth ? "" : "outside",
+                    dayKey === today ? "is-today" : "",
+                    total ? "has-activity" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return (
+                    <button
+                      key={dayKey}
+                      className={classes}
+                      role="gridcell"
+                      onClick={() => onSelectDay(dayKey)}
+                      aria-current={dayKey === today ? "date" : undefined}
+                      aria-label={`${formatDate(dayKey, { month: "long", day: "numeric" })}, ${total} ${
+                        total === 1 ? "entry" : "entries"
+                      }`}
+                    >
+                      {dayKey === selectedDay && (
+                        <motion.span className="day-select-ring" layoutId="day-select-ring" transition={snappy} />
+                      )}
+                      <span className="day-number">{formatDate(dayKey, { day: "numeric" })}</span>
+                      <span className="day-dots">
+                        {Array.from({ length: Math.min(counts?.thoughts ?? 0, MAX_DOTS) }, (_, index) => (
+                          <i key={`t${index}`} />
+                        ))}
+                        {Array.from(
+                          { length: Math.min(counts?.notes ?? 0, Math.max(0, MAX_DOTS - (counts?.thoughts ?? 0))) },
+                          (_, index) => (
+                            <i key={`n${index}`} className="hollow" />
+                          ),
+                        )}
+                        {total > MAX_DOTS && <em>+</em>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </motion.div>
         </AnimatePresence>
       </div>

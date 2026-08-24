@@ -1,6 +1,16 @@
 import { ensureSchema, getD1 } from "@/db";
 import { isQuadrant } from "@/lib/quadrants";
-import { MAX_ROWS, OWNER_ID, captureLines, failure, stagger, text, validDate } from "@/app/api/shared";
+import {
+  MAX_ROWS,
+  OWNER_ID,
+  captureError,
+  captureLines,
+  failure,
+  readJsonBody,
+  stagger,
+  text,
+  validDate,
+} from "@/app/api/shared";
 
 type ThoughtRow = {
   id: string;
@@ -46,7 +56,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     if (!validDate(payload.dayKey)) {
       return Response.json({ error: "A valid capture date is required." }, { status: 400 });
     }
@@ -54,7 +65,8 @@ export async function POST(request: Request) {
       return Response.json({ error: "Pick where this belongs first." }, { status: 400 });
     }
     const lines = captureLines(payload.text);
-    if (!lines.length) return Response.json({ error: "Write something first." }, { status: 400 });
+    const problem = captureError(lines);
+    if (problem) return Response.json({ error: problem }, { status: 400 });
 
     await ensureSchema();
     const db = getD1();
@@ -69,7 +81,7 @@ export async function POST(request: Request) {
           .bind(
             crypto.randomUUID(),
             OWNER_ID,
-            body.slice(0, 4000),
+            body,
             payload.quadrant,
             payload.dayKey,
             timestamps[index],
@@ -88,7 +100,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = await readJsonBody(request);
+    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
     if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });
 

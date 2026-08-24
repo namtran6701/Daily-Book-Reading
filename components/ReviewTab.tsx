@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, animate, motion } from "motion/react";
 import { QuadrantGlyph } from "./icons";
 import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
-import { ageLabel, formatDate, monthLabel, monthKey, rangeDays, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
+import { ageLabel, formatDate, localDayFromInstant, monthLabel, monthKey, rangeDays, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
 import { gentle } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
 
@@ -44,7 +44,7 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
     const prevEnd = shiftDate(start, -1);
     const prevStart = range === "week" ? shiftDate(start, -7) : startOfMonth(prevEnd);
 
-    const doneDay = (thought: Thought) => thought.doneAt?.slice(0, 10) ?? "";
+    const doneDay = (thought: Thought) => (thought.doneAt ? localDayFromInstant(thought.doneAt) : "");
     const inRange = (day: string, from: string, to: string) => day >= from && day <= to;
 
     const completed = thoughts
@@ -57,7 +57,7 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
     const captured = thoughts.filter((thought) => inRange(thought.dayKey, start, today)).length;
     const notesInRange = notes.filter((note) => inRange(note.dayKey, start, today)).length;
     const booksFinished = books.filter(
-      (book) => book.finishedAt && inRange(book.finishedAt.slice(0, 10), start, today),
+      (book) => book.finishedAt && inRange(localDayFromInstant(book.finishedAt), start, today),
     ).length;
 
     const open = thoughts.filter((thought) => !thought.done);

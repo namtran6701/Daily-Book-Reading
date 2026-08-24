@@ -85,6 +85,7 @@ export function SecondBrain() {
 
   const toastCounter = useRef(0);
   const deleteTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const pendingDeletes = useRef(new Map<number, () => void>());
 
   // The server runs in UTC and the browser does not, so the current date is
   // read on the client only. It stays empty through the server render.
@@ -121,6 +122,20 @@ export function SecondBrain() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    // If the tab closes mid-undo, commit pending deletes now rather than dropping
+    // them; keepalive on the DELETE lets the request outlive the page.
+    const flush = () => {
+      for (const timer of deleteTimers.current.values()) clearTimeout(timer);
+      deleteTimers.current.clear();
+      const commits = [...pendingDeletes.current.values()];
+      pendingDeletes.current.clear();
+      for (const commit of commits) commit();
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
+
   const dismissToast = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
@@ -132,10 +147,12 @@ export function SecondBrain() {
       const id = ++toastCounter.current;
       const timer = setTimeout(() => {
         deleteTimers.current.delete(id);
+        pendingDeletes.current.delete(id);
         dismissToast(id);
         commit();
       }, UNDO_WINDOW);
       deleteTimers.current.set(id, timer);
+      pendingDeletes.current.set(id, commit);
       setToasts((current) => [
         ...current,
         {
@@ -145,6 +162,7 @@ export function SecondBrain() {
             const pending = deleteTimers.current.get(id);
             if (pending) clearTimeout(pending);
             deleteTimers.current.delete(id);
+            pendingDeletes.current.delete(id);
             dismissToast(id);
             restore();
           },
@@ -201,12 +219,17 @@ export function SecondBrain() {
       scheduleDelete(
         "Thought deleted",
         () => {
-          void apiFetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
-            if (!response.ok) {
+          void apiFetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
+            .then((response) => {
+              if (!response.ok) {
+                setError("Could not delete that thought.");
+                void load();
+              }
+            })
+            .catch(() => {
               setError("Could not delete that thought.");
               void load();
-            }
-          });
+            });
         },
         () => setThoughts((current) => [thought, ...current]),
       );
@@ -260,12 +283,17 @@ export function SecondBrain() {
       scheduleDelete(
         bookNotes.length > 0 ? `"${book.title}" and ${bookNotes.length} notes deleted` : `"${book.title}" deleted`,
         () => {
-          void apiFetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
-            if (!response.ok) {
+          void apiFetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
+            .then((response) => {
+              if (!response.ok) {
+                setError("Could not delete that book.");
+                void load();
+              }
+            })
+            .catch(() => {
               setError("Could not delete that book.");
               void load();
-            }
-          });
+            });
         },
         () => {
           setBooks((current) => {
@@ -327,12 +355,17 @@ export function SecondBrain() {
       scheduleDelete(
         "Note deleted",
         () => {
-          void apiFetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" }).then((response) => {
-            if (!response.ok) {
+          void apiFetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
+            .then((response) => {
+              if (!response.ok) {
+                setError("Could not delete that note.");
+                void load();
+              }
+            })
+            .catch(() => {
               setError("Could not delete that note.");
               void load();
-            }
-          });
+            });
         },
         () => setNotes((current) => [note, ...current]),
       );

@@ -238,12 +238,12 @@ export function BooksTab({
   }, [bookNotes, query]);
 
   async function addBook() {
-    if (!title.trim()) return;
+    if (busy || !title.trim()) return;
     if (await onAddBook(title)) setTitle("");
   }
 
   async function addNote() {
-    if (!book || !noteText.trim()) return;
+    if (busy || !book || !noteText.trim()) return;
     if (await onAddNote(book.id, noteText, page)) setNoteText("");
   }
 

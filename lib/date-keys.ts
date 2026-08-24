@@ -9,6 +9,12 @@ export function dateFromKey(value: string): Date {
   return new Date(`${value}T12:00:00`);
 }
 
+// A stored timestamp is a UTC instant; bucket it by the viewer's local calendar
+// day so a late-evening completion lands on the right day (and week).
+export function localDayFromInstant(instant: string): string {
+  return localDateKey(new Date(instant));
+}
+
 export function shiftDate(value: string, days: number): string {
   const date = dateFromKey(value);
   date.setDate(date.getDate() + days);
