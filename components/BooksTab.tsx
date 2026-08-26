@@ -269,8 +269,18 @@ export function BooksTab({
     if (await onAddBook(title)) setTitle("");
   }
 
+  // Both pages given and numeric: the start must come before the end.
+  const startNum = Number(page.trim());
+  const endNum = Number(pageEnd.trim());
+  const rangeError =
+    page.trim() !== "" &&
+    pageEnd.trim() !== "" &&
+    Number.isFinite(startNum) &&
+    Number.isFinite(endNum) &&
+    startNum >= endNum;
+
   async function addNote() {
-    if (busy || !book || !noteText.trim()) return;
+    if (busy || !book || !noteText.trim() || rangeError) return;
     if (await onAddNote(book.id, noteText, page, pageEnd)) setNoteText("");
   }
 
@@ -334,20 +344,25 @@ export function BooksTab({
           <div className="note-capture card">
             <div className="page-range">
               <input
-                className="page-input"
+                className={`page-input${rangeError ? " invalid" : ""}`}
                 value={page}
                 onChange={(event) => setPage(event.target.value)}
-                placeholder="Start"
+                placeholder="p."
                 inputMode="numeric"
                 aria-label="Start page, optional"
+                aria-invalid={rangeError}
               />
+              <span className="page-range-sep" aria-hidden="true">
+                –
+              </span>
               <input
-                className="page-input"
+                className={`page-input${rangeError ? " invalid" : ""}`}
                 value={pageEnd}
                 onChange={(event) => setPageEnd(event.target.value)}
-                placeholder="End"
+                placeholder="p."
                 inputMode="numeric"
                 aria-label="End page, optional"
+                aria-invalid={rangeError}
               />
             </div>
             <textarea
@@ -366,7 +381,7 @@ export function BooksTab({
             <motion.button
               className="keep-button"
               onClick={() => void addNote()}
-              disabled={busy || !noteText.trim()}
+              disabled={busy || !noteText.trim() || rangeError}
               whileTap={{ scale: 0.88 }}
               transition={bouncy}
               aria-label={busy ? "Saving note" : "Add note"}
@@ -375,6 +390,11 @@ export function BooksTab({
               <SubmitIcon />
             </motion.button>
           </div>
+          {rangeError && (
+            <p className="capture-error" role="alert">
+              Start page must be smaller than the end page.
+            </p>
+          )}
 
           {bookNotes.length > 4 && (
             <label className="note-search">
