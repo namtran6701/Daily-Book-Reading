@@ -309,13 +309,13 @@ export function SecondBrain() {
   );
 
   const addNote = useCallback(
-    async (bookId: string, text: string, page: string) => {
+    async (bookId: string, text: string, page: string, pageEnd: string) => {
       setBusy(true);
       try {
         const response = await apiFetch("/api/book-notes", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ bookId, text, page, dayKey: today }),
+          body: JSON.stringify({ bookId, text, page, pageEnd, dayKey: today }),
         });
         const payload = await readJson<{ notes: BookNote[] }>(response, "Could not save that note.");
         setNotes((current) => [...payload.notes, ...current]);

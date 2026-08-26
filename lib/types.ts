@@ -24,6 +24,7 @@ export type BookNote = {
   bookId: string;
   body: string;
   page: string;
+  pageEnd: string;
   dayKey: string;
   createdAt: string;
   updatedAt: string;
