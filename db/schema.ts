@@ -40,6 +40,7 @@ export const bookNotes = sqliteTable(
     bookId: text("book_id").notNull(),
     body: text("body").notNull(),
     page: text("page").notNull().default(""),
+    pageEnd: text("page_end").notNull().default(""),
     dayKey: text("day_key").notNull(),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),

@@ -48,6 +48,13 @@ async function migrateBooks(db: D1Database): Promise<void> {
   }
 }
 
+async function migrateBookNotes(db: D1Database): Promise<void> {
+  const columns = await columnNames(db, "book_notes");
+  if (!columns.has("page_end")) {
+    await db.prepare("ALTER TABLE book_notes ADD COLUMN page_end TEXT NOT NULL DEFAULT ''").run();
+  }
+}
+
 export async function ensureSchema(): Promise<void> {
   if (schemaPromise) return schemaPromise;
   const db = getD1();
@@ -86,6 +93,7 @@ export async function ensureSchema(): Promise<void> {
         book_id TEXT NOT NULL,
         body TEXT NOT NULL,
         page TEXT NOT NULL DEFAULT '',
+        page_end TEXT NOT NULL DEFAULT '',
         day_key TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -99,6 +107,7 @@ export async function ensureSchema(): Promise<void> {
     // which an older thoughts table will not have.
     await migrateThoughts(db);
     await migrateBooks(db);
+    await migrateBookNotes(db);
     await db
       .prepare("CREATE INDEX IF NOT EXISTS idx_thoughts_user_quadrant ON thoughts(user_id, quadrant, status)")
       .run();

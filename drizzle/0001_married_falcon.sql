@@ -1,0 +1,1 @@
+ALTER TABLE `book_notes` ADD `page_end` text DEFAULT '' NOT NULL;

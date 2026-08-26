@@ -27,7 +27,7 @@ type Props = {
   onAddBook: (title: string) => Promise<boolean>;
   onUpdateBook: (id: string, patch: { finished?: boolean }) => Promise<void>;
   onDeleteBook: (id: string) => Promise<void>;
-  onAddNote: (bookId: string, text: string, page: string) => Promise<boolean>;
+  onAddNote: (bookId: string, text: string, page: string, pageEnd: string) => Promise<boolean>;
   onUpdateNote: (id: string, patch: Partial<BookNote>) => Promise<void>;
   onDeleteNote: (id: string) => Promise<void>;
 };
@@ -54,6 +54,22 @@ export function BookCover({ title, large }: { title: string; large?: boolean }) 
   );
 }
 
+// Turns the stored start/end pages into a badge label and, when both are
+// numeric with end >= start, an inclusive count of pages read.
+function pageInfo(page: string, pageEnd: string): { label: string; read: number | null } | null {
+  const start = page.trim();
+  const end = pageEnd.trim();
+  if (!start && !end) return null;
+  const startNum = Number(start);
+  const endNum = Number(end);
+  const read =
+    start && end && Number.isFinite(startNum) && Number.isFinite(endNum) && endNum >= startNum
+      ? endNum - startNum + 1
+      : null;
+  const label = start && end ? `p.${start}–${end}` : `p.${start || end}`;
+  return { label, read };
+}
+
 function NoteRow({
   note,
   onUpdate,
@@ -66,6 +82,7 @@ function NoteRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.body);
   const editor = useRef<HTMLTextAreaElement>(null);
+  const page = pageInfo(note.page, note.pageEnd);
 
   useEffect(() => {
     if (editing) editor.current?.focus();
@@ -90,7 +107,16 @@ function NoteRow({
       exit={{ opacity: 0, scale: 0.96 }}
       transition={snappy}
     >
-      {note.page && <span className="note-page">p.{note.page}</span>}
+      {page && (
+        <span className="note-page">
+          {page.label}
+          {page.read !== null && (
+            <em className="note-pages-read">
+              {page.read} {page.read === 1 ? "page" : "pages"}
+            </em>
+          )}
+        </span>
+      )}
       {editing ? (
         <div className="thought-editor">
           <textarea
@@ -211,6 +237,7 @@ export function BooksTab({
   const [title, setTitle] = useState("");
   const [noteText, setNoteText] = useState("");
   const [page, setPage] = useState("");
+  const [pageEnd, setPageEnd] = useState("");
   const [query, setQuery] = useState("");
 
   const notesByBook = useMemo(() => {
@@ -244,7 +271,7 @@ export function BooksTab({
 
   async function addNote() {
     if (busy || !book || !noteText.trim()) return;
-    if (await onAddNote(book.id, noteText, page)) setNoteText("");
+    if (await onAddNote(book.id, noteText, page, pageEnd)) setNoteText("");
   }
 
   const reading = books.filter((entry) => !entry.finishedAt);
@@ -305,13 +332,24 @@ export function BooksTab({
           </header>
 
           <div className="note-capture card">
-            <input
-              className="page-input"
-              value={page}
-              onChange={(event) => setPage(event.target.value)}
-              placeholder="p."
-              aria-label="Page number, optional"
-            />
+            <div className="page-range">
+              <input
+                className="page-input"
+                value={page}
+                onChange={(event) => setPage(event.target.value)}
+                placeholder="Start"
+                inputMode="numeric"
+                aria-label="Start page, optional"
+              />
+              <input
+                className="page-input"
+                value={pageEnd}
+                onChange={(event) => setPageEnd(event.target.value)}
+                placeholder="End"
+                inputMode="numeric"
+                aria-label="End page, optional"
+              />
+            </div>
             <textarea
               value={noteText}
               rows={2}

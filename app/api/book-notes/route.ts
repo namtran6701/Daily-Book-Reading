@@ -18,12 +18,13 @@ type BookNoteRow = {
   book_id: string;
   body: string;
   page: string;
+  page_end: string;
   day_key: string;
   created_at: string;
   updated_at: string;
 };
 
-const COLUMNS = "id, book_id, body, page, day_key, created_at, updated_at";
+const COLUMNS = "id, book_id, body, page, page_end, day_key, created_at, updated_at";
 
 function serialize(row: BookNoteRow) {
   return {
@@ -31,6 +32,7 @@ function serialize(row: BookNoteRow) {
     bookId: row.book_id,
     body: row.body,
     page: row.page,
+    pageEnd: row.page_end,
     dayKey: row.day_key,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -71,7 +73,8 @@ export async function POST(request: Request) {
     const problem = captureError(lines);
     if (problem) return Response.json({ error: problem }, { status: 400 });
     const page = text(payload.page);
-    if (page.length > MAX_PAGE_LENGTH) {
+    const pageEnd = text(payload.pageEnd);
+    if (page.length > MAX_PAGE_LENGTH || pageEnd.length > MAX_PAGE_LENGTH) {
       return Response.json({ error: `Page is too long: ${MAX_PAGE_LENGTH} characters max.` }, { status: 400 });
     }
 
@@ -88,8 +91,8 @@ export async function POST(request: Request) {
       lines.map((body, index) =>
         db
           .prepare(`INSERT INTO book_notes (
-              id, user_id, book_id, body, page, day_key, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              id, user_id, book_id, body, page, page_end, day_key, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
@@ -97,6 +100,7 @@ export async function POST(request: Request) {
             bookId,
             body,
             page,
+            pageEnd,
             payload.dayKey,
             timestamps[index],
             timestamps[index],
@@ -128,12 +132,13 @@ export async function PATCH(request: Request) {
     if (!current) return Response.json({ error: "Note not found." }, { status: 404 });
 
     const row = await db
-      .prepare(`UPDATE book_notes SET body = ?, page = ?, updated_at = ?
+      .prepare(`UPDATE book_notes SET body = ?, page = ?, page_end = ?, updated_at = ?
         WHERE id = ? AND user_id = ?
         RETURNING ${COLUMNS}`)
       .bind(
         text(payload.body, current.body).slice(0, 4000) || current.body,
-        text(payload.page, current.page).slice(0, 40),
+        text(payload.page, current.page).slice(0, MAX_PAGE_LENGTH),
+        text(payload.pageEnd, current.page_end).slice(0, MAX_PAGE_LENGTH),
         new Date().toISOString(),
         id,
         OWNER_ID,
