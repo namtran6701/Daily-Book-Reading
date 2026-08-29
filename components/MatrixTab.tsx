@@ -22,8 +22,9 @@ type Props = {
   busy: boolean;
   readOnly?: boolean;
   onCapture: (text: string, quadrant: Quadrant) => Promise<boolean>;
-  onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<Thought>) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
+  onOpenDetail: (id: string) => void;
   deletingIds: Set<string>;
 };
 
@@ -183,7 +184,7 @@ function Overlay({
   );
 }
 
-export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate, onDelete, deletingIds }: Props) {
+export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate, onDelete, onOpenDetail, deletingIds }: Props) {
   const [text, setText] = useState("");
   // MatrixTab only mounts on the client (the tabs render after `today` resolves),
   // so reading the last-used quadrant here is safe and keeps capture to one tap.
@@ -427,6 +428,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
                           readOnly={readOnly}
+                          onOpenDetail={onOpenDetail}
                           onMove={setMoveId}
                           onDragStart={setDragId}
                           onDragEnd={endDrag}
@@ -471,6 +473,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
                               readOnly={readOnly}
+                              onOpenDetail={onOpenDetail}
                               onMove={setMoveId}
                             />
                           ))}
@@ -577,6 +580,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
                           readOnly={readOnly}
+                          onOpenDetail={onOpenDetail}
                           onMove={setMoveId}
                         />
                       ))}
@@ -613,6 +617,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
                               readOnly={readOnly}
+                              onOpenDetail={onOpenDetail}
                               onMove={setMoveId}
                             />
                           ))}

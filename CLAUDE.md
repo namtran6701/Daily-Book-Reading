@@ -70,9 +70,10 @@ The schema has two representations that must stay synchronized by hand:
 
 - `db/index.ts` is the live source of truth. `ensureSchema()` is memoized per
   Worker isolate and creates or migrates `thoughts`, `books`, and `book_notes`
-  on first use. It also removes retired `chapters` and `daily_notes` tables,
-  folds legacy thought metadata into the body, and removes the retired book
-  `author` column when those older shapes are encountered.
+  on first use. Thought rows include a long-form `notes` field linked to the
+  compact matrix title. It also removes retired `chapters` and `daily_notes`
+  tables, folds legacy thought metadata into the body, and removes the retired
+  book `author` column when those older shapes are encountered.
 - `db/schema.ts` describes the same final three-table shape for Drizzle only.
   `npm run db:generate` records changes under `drizzle/`; those generated SQL
   files are not executed by the app at runtime.
@@ -115,6 +116,13 @@ period completion statistics.
   thoughts, books, and notes in parallel on mount, owns retries and online
   status, selects among the four tabs, renders the Calendar's `Briefing`, and
   passes state, read-only status, and callbacks to the tab components.
+- `TaskDetail` is the focused document view opened from matrix, Calendar,
+  Review, and urgent Briefing thought-title links. It auto-saves long-form
+  notes, title, and date through a serialized update queue without creating a
+  separate note row. Every edit is
+  first mirrored to a per-task `localStorage` recovery draft, and lifecycle
+  events flush the latest draft with a keepalive request. The quadrant is
+  context, not an editable property, in this view.
 - Data fetching uses plain `fetch`, `cache: "no-store"`, and React state.
   Same-origin API redirects are handled manually so an expired Cloudflare
   Access session can reload into its login flow. Thought/note PATCH actions

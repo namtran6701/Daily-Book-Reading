@@ -3,6 +3,7 @@ import type { Quadrant } from "./quadrants";
 export type Thought = {
   id: string;
   body: string;
+  notes: string;
   quadrant: Quadrant;
   done: boolean;
   dayKey: string;

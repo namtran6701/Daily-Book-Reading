@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ageLabel, daysBetween } from "@/lib/date-keys";
-import { CheckIcon, CloseIcon, MoveIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TrashIcon } from "./icons";
+import { CheckIcon, CloseIcon, MoveIcon, NoteIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TrashIcon } from "./icons";
 import { QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -13,13 +13,14 @@ type Props = {
   today: string;
   showQuadrant?: boolean;
   showAge?: boolean;
-  onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<Thought>) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
   // True while its DELETE is in flight: the row dims and its controls lock
   // until the server confirms and the row leaves the list.
   deleting?: boolean;
   readOnly?: boolean;
   onMove?: (id: string) => void;
+  onOpenDetail?: (id: string) => void;
   // Desktop-only native drag between quadrant cards. Touch never engages this,
   // so there is no custom touch-drag code and nothing to lag.
   onDragStart?: (id: string) => void;
@@ -47,6 +48,7 @@ export function ThoughtRow({
   deleting,
   readOnly,
   onMove,
+  onOpenDetail,
   onDragStart,
   onDragEnd,
   isDragging,
@@ -178,7 +180,18 @@ export function ThoughtRow({
           </div>
         ) : (
           <div className="thought-body">
-            <p>{thought.body}</p>
+            {onOpenDetail ? (
+              <button
+                className="thought-open"
+                onClick={() => onOpenDetail(thought.id)}
+                role="link"
+                aria-label={`Open details for ${thought.body}`}
+              >
+                <span>{thought.body}</span>
+              </button>
+            ) : (
+              <p>{thought.body}</p>
+            )}
             <div className="thought-meta">
               {showQuadrant &&
                 (movableTag ? (
@@ -201,6 +214,12 @@ export function ThoughtRow({
                   </span>
                 ))}
               {showAge && <span className={`thought-age ${heat}`}>{ageLabel(thought.dayKey, today)}</span>}
+              {thought.notes && (
+                <span className="thought-has-notes">
+                  <NoteIcon size={11} />
+                  Notes
+                </span>
+              )}
             </div>
           </div>
         )}

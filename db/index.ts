@@ -23,6 +23,9 @@ async function migrateThoughts(db: D1Database): Promise<void> {
   if (!columns.has("quadrant")) {
     await db.prepare("ALTER TABLE thoughts ADD COLUMN quadrant TEXT NOT NULL DEFAULT 'later'").run();
   }
+  if (!columns.has("notes")) {
+    await db.prepare("ALTER TABLE thoughts ADD COLUMN notes TEXT NOT NULL DEFAULT ''").run();
+  }
   if (columns.has("tags") && columns.has("source")) {
     await db
       .prepare(`UPDATE thoughts SET
@@ -68,6 +71,7 @@ export async function ensureSchema(): Promise<void> {
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
         body TEXT NOT NULL,
+        notes TEXT NOT NULL DEFAULT '',
         quadrant TEXT NOT NULL DEFAULT 'later',
         status TEXT NOT NULL DEFAULT 'open',
         day_key TEXT NOT NULL,

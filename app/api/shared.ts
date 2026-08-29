@@ -1,6 +1,7 @@
 export const MAX_ROWS = 3000;
 export const MAX_CAPTURE_LINES = 50;
 export const MAX_ROW_LENGTH = 4000;
+export const MAX_TASK_NOTES_LENGTH = 100000;
 export const MAX_TITLE_LENGTH = 300;
 export const MAX_PAGE_LENGTH = 40;
 export const MAX_NOTES_PER_BOOK = 1000;

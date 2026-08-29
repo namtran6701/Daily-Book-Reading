@@ -776,6 +776,22 @@ input:focus {
   color: var(--danger-ink);
 }
 
+.briefing-task-link {
+  color: inherit;
+  font: inherit;
+  font-weight: 640;
+  overflow-wrap: anywhere;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 34%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.18s ease;
+}
+
+.briefing-task-link:hover {
+  text-decoration-color: currentColor;
+}
+
 .briefing-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1328,14 +1344,34 @@ input:focus {
   min-width: 0;
 }
 
-.thought-body p {
+.thought-body p,
+.thought-open {
   font-size: 14.5px;
   line-height: 1.45;
   letter-spacing: -0.006em;
   overflow-wrap: anywhere;
 }
 
-.thought.is-done .thought-body p {
+.thought-open {
+  display: block;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  border-radius: 7px;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--q) 34%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.18s ease, text-decoration-color 0.18s ease;
+}
+
+.thought-open:hover {
+  color: var(--q);
+  text-decoration-color: var(--q);
+}
+
+.thought.is-done .thought-body p,
+.thought.is-done .thought-open {
   color: var(--tertiary);
   text-decoration: line-through;
   text-decoration-color: var(--separator-strong);
@@ -1359,6 +1395,13 @@ input:focus {
 .thought-age.heat-2 {
   color: var(--red);
   font-weight: 560;
+}
+
+.thought-has-notes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--secondary);
 }
 
 /* the quadrant tag doubles as the move control when interactive */
@@ -1472,6 +1515,243 @@ button.quadrant-tag .caret {
 
 .done-toggle-open svg {
   transform: rotate(180deg);
+}
+
+/* ---------- task detail: a focused document linked to one task ---------- */
+
+.page-task {
+  padding-top: 0;
+}
+
+.task-detail {
+  padding-top: env(safe-area-inset-top);
+}
+
+.task-detail-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 -20px;
+  padding: 10px 20px;
+  background: var(--glass);
+  border-bottom: 1px solid var(--separator);
+  backdrop-filter: blur(20px) saturate(1.7);
+  -webkit-backdrop-filter: blur(20px) saturate(1.7);
+}
+
+.task-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.task-back {
+  color: var(--secondary);
+  background: var(--fill);
+}
+
+.task-back:hover {
+  color: var(--label);
+  background: var(--fill-strong);
+}
+
+.task-save-state {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tertiary);
+  font-size: 11.5px;
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.task-save-state i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.task-save-state.save-unsaved i,
+.task-save-state.save-saving i {
+  background: var(--orange);
+}
+
+.task-save-state.save-error {
+  color: var(--danger-ink);
+}
+
+.task-save-state.save-error i {
+  background: var(--red);
+}
+
+.task-paper {
+  display: grid;
+  grid-template-columns: 238px minmax(0, 1fr);
+  min-height: calc(100vh - 118px - env(safe-area-inset-top));
+  margin: 26px 0 8px;
+  overflow: hidden;
+}
+
+.task-paper::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--q);
+}
+
+.task-properties {
+  padding: 29px 24px 24px 27px;
+  background: linear-gradient(160deg, var(--q-soft), rgba(245, 245, 247, 0.58) 46%, var(--surface-2));
+  border-right: 1px solid var(--separator);
+}
+
+.task-property-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 24px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--separator);
+}
+
+.task-property-heading > div {
+  min-width: 0;
+}
+
+.task-property-heading strong,
+.task-property-heading span {
+  display: block;
+}
+
+.task-property-heading strong {
+  font-size: 14px;
+  font-weight: 660;
+}
+
+.task-property-heading div span {
+  margin-top: 2px;
+  color: var(--tertiary);
+  font-size: 9.5px;
+  font-weight: 620;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.task-property {
+  display: block;
+  margin-top: 18px;
+}
+
+.task-property > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 640;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.task-property input {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  border: 1px solid var(--separator-strong);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--label);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.task-property input:disabled {
+  opacity: 0.58;
+}
+
+.task-created {
+  margin-top: 26px;
+  color: var(--tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.task-document {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 54px clamp(34px, 7vw, 82px) 60px;
+  background: var(--surface);
+}
+
+.task-title-editor,
+.task-notes-editor {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  resize: none;
+}
+
+.task-title-editor {
+  min-height: 94px;
+  field-sizing: content;
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 560;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.task-title-editor:focus-visible,
+.task-notes-editor:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.task-notes-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 34px;
+  padding: 14px 0;
+  border-top: 1px solid var(--separator);
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.task-notes-editor {
+  flex: 1;
+  min-height: 48vh;
+  color: #2b2b2e;
+  font-size: 16px;
+  line-height: 1.72;
+  letter-spacing: -0.004em;
+  white-space: pre-wrap;
+}
+
+.task-notes-editor::placeholder {
+  color: #b4b4b9;
 }
 
 /* ---------- sheet + move menu (portal) ---------- */
@@ -2606,13 +2886,29 @@ button.quadrant-tag .caret {
   border-bottom: none;
 }
 
-.carry-list p {
+.carry-list p,
+.carry-task-link {
   flex: 1;
   min-width: 0;
   font-size: 14px;
   line-height: 1.4;
   letter-spacing: -0.006em;
   overflow-wrap: anywhere;
+}
+
+.carry-task-link {
+  color: var(--label);
+  text-align: left;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--q) 32%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.18s ease, text-decoration-color 0.18s ease;
+}
+
+.carry-task-link:hover {
+  color: var(--q);
+  text-decoration-color: var(--q);
 }
 
 .carry-age {
@@ -2659,6 +2955,10 @@ button.quadrant-tag .caret {
 @media (max-width: 759px) {
   .app {
     padding: 0 14px calc(var(--tabbar-h) + 26px);
+  }
+
+  .app.showing-task {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 
   .masthead {
@@ -2796,6 +3096,80 @@ button.quadrant-tag .caret {
 
   .q-open-cue {
     display: inline-flex;
+  }
+
+  .task-detail-bar {
+    gap: 9px;
+    min-height: 58px;
+    margin: 0 -14px;
+    padding: 7px 14px;
+  }
+
+  .task-back {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .task-back span {
+    display: none;
+  }
+
+  .task-save-state {
+    font-size: 10.5px;
+  }
+
+  .task-paper {
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 86px - env(safe-area-inset-top));
+    margin-top: 12px;
+  }
+
+  .task-paper::before {
+    inset: 0 0 auto 0;
+    width: auto;
+    height: 4px;
+  }
+
+  .task-properties {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 12px;
+    padding: 24px 18px 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--separator);
+  }
+
+  .task-property-heading {
+    grid-column: 1 / -1;
+    padding-bottom: 17px;
+    margin-bottom: 0;
+  }
+
+  .task-property {
+    margin-top: 15px;
+  }
+
+  .task-created {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+  }
+
+  .task-document {
+    padding: 34px 22px 44px;
+  }
+
+  .task-title-editor {
+    min-height: 72px;
+    font-size: clamp(31px, 10vw, 42px);
+  }
+
+  .task-notes-label {
+    margin-top: 25px;
+  }
+
+  .task-notes-editor {
+    min-height: 44vh;
+    font-size: 16px;
   }
 
   .book-header {

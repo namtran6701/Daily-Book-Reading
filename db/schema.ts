@@ -6,6 +6,7 @@ export const thoughts = sqliteTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     body: text("body").notNull(),
+    notes: text("notes").notNull().default(""),
     quadrant: text("quadrant").notNull().default("later"),
     status: text("status").notNull().default("open"),
     dayKey: text("day_key").notNull(),

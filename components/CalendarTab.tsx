@@ -18,8 +18,9 @@ type Props = {
   selectedDay: string;
   onMonthChange: (direction: "previous" | "next") => void;
   onSelectDay: (day: string) => void;
-  onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
+  onUpdate: (id: string, patch: Partial<Thought>) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
+  onOpenDetail: (id: string) => void;
   deletingIds: Set<string>;
   readOnly?: boolean;
 };
@@ -37,6 +38,7 @@ export function CalendarTab({
   onSelectDay,
   onUpdate,
   onDelete,
+  onOpenDetail,
   deletingIds,
   readOnly,
 }: Props) {
@@ -245,6 +247,7 @@ export function CalendarTab({
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
                           readOnly={readOnly}
+                          onOpenDetail={onOpenDetail}
                         />
                       ))}
                     </AnimatePresence>

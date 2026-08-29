@@ -14,6 +14,7 @@ type Props = {
   books: Book[];
   notes: BookNote[];
   today: string;
+  onOpenDetail: (id: string) => void;
 };
 
 type Range = "week" | "month";
@@ -42,7 +43,7 @@ function CountUp({ value }: { value: number }) {
 
 const QUADRANT_ORDER: Record<Quadrant, number> = { do: 0, plan: 1, quick: 2, later: 3 };
 
-export function ReviewTab({ thoughts, books, notes, today }: Props) {
+export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props) {
   const [range, setRange] = useState<Range>("week");
 
   const review = useMemo(() => {
@@ -305,7 +306,15 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
                       <QuadrantGlyph quadrant={thought.quadrant} size={11} />
                       {QUADRANT_LABELS[thought.quadrant]}
                     </span>
-                    <p>{thought.body}</p>
+                    <button
+                      className={`carry-task-link q-${thought.quadrant}`}
+                      type="button"
+                      role="link"
+                      onClick={() => onOpenDetail(thought.id)}
+                      aria-label={`Open task details for ${thought.body}`}
+                    >
+                      {thought.body}
+                    </button>
                     <span className="carry-age">{ageLabel(thought.dayKey, today)}</span>
                   </li>
                 ))}
@@ -332,7 +341,15 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
                       <QuadrantGlyph quadrant={thought.quadrant} size={11} />
                       {QUADRANT_LABELS[thought.quadrant]}
                     </span>
-                    <p>{thought.body}</p>
+                    <button
+                      className={`carry-task-link q-${thought.quadrant}`}
+                      type="button"
+                      role="link"
+                      onClick={() => onOpenDetail(thought.id)}
+                      aria-label={`Open task details for ${thought.body}`}
+                    >
+                      {thought.body}
+                    </button>
                     <span className="carry-age">{ageLabel(thought.dayKey, today)}</span>
                   </li>
                 ))}

@@ -12,6 +12,7 @@ type Props = {
   books: Book[];
   notes: BookNote[];
   today: string;
+  onOpenDetail: (id: string) => void;
 };
 
 type Chip = { key: string; tone: string; icon: React.ReactNode; text: React.ReactNode };
@@ -24,7 +25,7 @@ function greeting(): string {
   return "Good evening";
 }
 
-export function Briefing({ thoughts, books, notes, today }: Props) {
+export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props) {
   const reduceMotion = useReducedMotion();
   const { headline, alert, chips } = useMemo(() => {
     const open = thoughts.filter((thought) => !thought.done);
@@ -48,10 +49,19 @@ export function Briefing({ thoughts, books, notes, today }: Props) {
 
     let headline: React.ReactNode;
     let alert = false;
-    if (urgentAge >= 2) {
+    if (oldestUrgent && urgentAge >= 2) {
       headline = (
         <>
-          An urgent item has waited <strong>{urgentAge} days</strong>. Worth a look.
+          An urgent item has waited <strong>{urgentAge} days</strong>.{" "}
+          <button
+            className="briefing-task-link"
+            type="button"
+            role="link"
+            onClick={() => onOpenDetail(oldestUrgent.id)}
+            aria-label={`Open task details for ${oldestUrgent.body}`}
+          >
+            {oldestUrgent.body}
+          </button>
         </>
       );
       alert = true;
@@ -115,7 +125,7 @@ export function Briefing({ thoughts, books, notes, today }: Props) {
     }
 
     return { headline, alert, chips };
-  }, [thoughts, books, notes, today]);
+  }, [thoughts, books, notes, today, onOpenDetail]);
 
   return (
     <motion.section

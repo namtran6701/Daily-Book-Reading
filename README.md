@@ -30,6 +30,19 @@ quadrant. Thoughts can be completed, reopened, edited, deleted, or dragged to a
 different quadrant. Completed thoughts remain available behind each
 quadrant's **Show done** control.
 
+Select a thought's linked title to open its task detail page. The short title
+stays compact in the matrix while the linked page provides a large, auto-saving
+notes canvas for context, links, and working notes. The same page can change
+the due date and title; its quadrant remains fixed while the canvas is open.
+Notes remain attached to that thought and are available from both the matrix
+and Calendar.
+
+Task-canvas edits are copied immediately to a per-task draft in the browser,
+then sent to D1 after a short pause. Back navigation, backgrounding, and page
+exit also trigger a final save attempt. The browser draft is removed after D1
+confirms the latest title, notes, and due date; if that request is interrupted,
+the draft is restored and retried the next time the task opens.
+
 Deletion requests are sent immediately, and the row remains visible with a
 progress indicator until the server confirms the removal. There is no Undo
 window. Deleting a book also deletes its notes.
@@ -65,6 +78,9 @@ that cached shell offline. API responses are deliberately never cached, so
 loading or changing thoughts, books, and notes still requires a network
 connection. If the connection drops after data has loaded, the app keeps that
 content readable and disables write controls until the connection returns.
+The task canvas's small recovery drafts are the exception: they use browser
+local storage to protect typing that happened immediately before a page was
+backgrounded or closed. They are not a full offline copy of the app's data.
 
 The first load has a dedicated loading screen. If that load or a later request
 fails, the app keeps the failure in context and offers **Try again**. A dropped
@@ -145,7 +161,8 @@ npx wrangler deploy --config dist/server/wrangler.json
 ```
 
 The first API request in each Worker isolate runs `ensureSchema()` against the
-bound database.
+bound database. Existing databases receive the additive task-notes column
+automatically; existing thoughts start with an empty note.
 
 > [!IMPORTANT]
 > The app does not implement authentication. Every request uses the fixed

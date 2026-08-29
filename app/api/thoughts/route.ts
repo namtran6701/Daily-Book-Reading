@@ -2,6 +2,7 @@ import { ensureSchema, getD1 } from "@/db";
 import { isQuadrant } from "@/lib/quadrants";
 import {
   MAX_ROWS,
+  MAX_TASK_NOTES_LENGTH,
   OWNER_ID,
   captureError,
   captureLines,
@@ -15,6 +16,7 @@ import {
 type ThoughtRow = {
   id: string;
   body: string;
+  notes: string;
   quadrant: string;
   status: string;
   day_key: string;
@@ -23,12 +25,13 @@ type ThoughtRow = {
   updated_at: string;
 };
 
-const COLUMNS = "id, body, quadrant, status, day_key, done_at, created_at, updated_at";
+const COLUMNS = "id, body, notes, quadrant, status, day_key, done_at, created_at, updated_at";
 
 function serialize(row: ThoughtRow) {
   return {
     id: row.id,
     body: row.body,
+    notes: row.notes,
     quadrant: row.quadrant,
     done: row.status === "done",
     dayKey: row.day_key,
@@ -75,8 +78,8 @@ export async function POST(request: Request) {
       lines.map((body, index) =>
         db
           .prepare(`INSERT INTO thoughts (
-              id, user_id, body, quadrant, status, day_key, done_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 'open', ?, NULL, ?, ?)
+              id, user_id, body, notes, quadrant, status, day_key, done_at, created_at, updated_at
+            ) VALUES (?, ?, ?, '', ?, 'open', ?, NULL, ?, ?)
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
@@ -104,6 +107,12 @@ export async function PATCH(request: Request) {
     if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
     if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });
+    if (typeof payload.notes === "string" && payload.notes.length > MAX_TASK_NOTES_LENGTH) {
+      return Response.json(
+        { error: `Task notes cannot exceed ${MAX_TASK_NOTES_LENGTH.toLocaleString("en-US")} characters.` },
+        { status: 400 },
+      );
+    }
 
     await ensureSchema();
     const db = getD1();
@@ -116,14 +125,19 @@ export async function PATCH(request: Request) {
     const timestamp = new Date().toISOString();
     const done = typeof payload.done === "boolean" ? payload.done : current.status === "done";
 
+    const notes = typeof payload.notes === "string" ? payload.notes : current.notes;
+    const dayKey = validDate(payload.dayKey) ? payload.dayKey : current.day_key;
+
     const row = await db
-      .prepare(`UPDATE thoughts SET body = ?, quadrant = ?, status = ?, done_at = ?, updated_at = ?
+      .prepare(`UPDATE thoughts SET body = ?, notes = ?, quadrant = ?, status = ?, day_key = ?, done_at = ?, updated_at = ?
         WHERE id = ? AND user_id = ?
         RETURNING ${COLUMNS}`)
       .bind(
         text(payload.body, current.body).slice(0, 4000) || current.body,
+        notes,
         isQuadrant(payload.quadrant) ? payload.quadrant : current.quadrant,
         done ? "done" : "open",
+        dayKey,
         done ? (current.done_at ?? timestamp) : null,
         timestamp,
         id,
