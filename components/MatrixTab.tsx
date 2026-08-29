@@ -115,8 +115,10 @@ function Overlay({
     }
     const restoreFocus = document.activeElement as HTMLElement | null;
 
-    const auto = scrimRef.current?.querySelector<HTMLElement>("[data-autofocus]");
-    (auto ?? focusable()[0] ?? scrimRef.current)?.focus();
+    // Focus the first control (the close button), never the text field, so
+    // opening the sheet doesn't pop the keyboard. The keyboard opens only when
+    // the user taps the field themselves.
+    (focusable()[0] ?? scrimRef.current)?.focus();
 
     return () => {
       document.body.style.overflow = previous;
@@ -528,7 +530,6 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                 <div className="sheet-composer">
                   <textarea
                     value={sheetText}
-                    data-autofocus
                     rows={1}
                     placeholder={`Add to ${QUADRANT_LABELS[sheetQuad]}...`}
                     enterKeyHint="send"
