@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
@@ -89,13 +89,25 @@ function Overlay({
 }) {
   const scrimRef = useRef<HTMLDivElement>(null);
 
+  const focusable = useCallback(
+    () =>
+      Array.from(
+        scrimRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled")),
+    [],
+  );
+
+  // Mount-only: lock scroll, make the app behind the dialog inert (out of the tab
+  // order and hidden from assistive tech; a depth counter keeps it inert while a
+  // nested overlay is open), and set the initial focus. This must NOT re-run on
+  // every render, or typing in the sheet would keep yanking focus back to the
+  // first control and dismiss the keyboard.
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    // Make the app behind the dialog inert (out of the tab order and hidden from
-    // assistive tech). A depth counter keeps it inert while a nested overlay
-    // (e.g. the move menu opened from inside the sheet) is still open.
     const app = document.querySelector<HTMLElement>('[data-app="second-brain"]');
     if (app) {
       app.dataset.overlayDepth = String(Number(app.dataset.overlayDepth ?? "0") + 1);
@@ -103,15 +115,27 @@ function Overlay({
     }
     const restoreFocus = document.activeElement as HTMLElement | null;
 
-    const focusable = () =>
-      Array.from(
-        scrimRef.current?.querySelectorAll<HTMLElement>(
-          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
-      ).filter((el) => !el.hasAttribute("disabled"));
+    const auto = scrimRef.current?.querySelector<HTMLElement>("[data-autofocus]");
+    (auto ?? focusable()[0] ?? scrimRef.current)?.focus();
 
-    (focusable()[0] ?? scrimRef.current)?.focus();
+    return () => {
+      document.body.style.overflow = previous;
+      if (app) {
+        const remaining = Number(app.dataset.overlayDepth ?? "1") - 1;
+        if (remaining > 0) {
+          app.dataset.overlayDepth = String(remaining);
+        } else {
+          delete app.dataset.overlayDepth;
+          app.removeAttribute("inert");
+        }
+      }
+      restoreFocus?.focus?.();
+    };
+  }, [focusable]);
 
+  // Escape to close + Tab focus trap. Re-subscribes when onClose changes without
+  // disturbing focus.
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -131,21 +155,8 @@ function Overlay({
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      if (app) {
-        const remaining = Number(app.dataset.overlayDepth ?? "1") - 1;
-        if (remaining > 0) {
-          app.dataset.overlayDepth = String(remaining);
-        } else {
-          delete app.dataset.overlayDepth;
-          app.removeAttribute("inert");
-        }
-      }
-      window.removeEventListener("keydown", onKey);
-      restoreFocus?.focus?.();
-    };
-  }, [onClose]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, focusable]);
 
   return createPortal(
     <motion.div
@@ -517,6 +528,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                 <div className="sheet-composer">
                   <textarea
                     value={sheetText}
+                    data-autofocus
                     rows={1}
                     placeholder={`Add to ${QUADRANT_LABELS[sheetQuad]}...`}
                     enterKeyHint="send"
