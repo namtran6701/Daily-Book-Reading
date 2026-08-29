@@ -302,7 +302,7 @@ ul {
   .tabbar {
     position: fixed;
     left: 50%;
-    bottom: calc(4px + env(safe-area-inset-bottom));
+    bottom: max(6px, calc(env(safe-area-inset-bottom) - 14px));
     transform: translateX(-50%);
     z-index: 40;
     display: flex;
