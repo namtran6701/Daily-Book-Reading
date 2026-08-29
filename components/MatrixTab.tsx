@@ -271,16 +271,26 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
 
   function focusQuadrant(key: Quadrant) {
     pickQuadrant(key);
-    // Focus without the browser's own jump, then glide the composer up to just
-    // below the sticky masthead so the text box is ready to type into.
-    composerRef.current?.focus({ preventScroll: true });
+    const el = composerRef.current;
+    if (!el) return;
+    // If the composer is already on screen (mobile pill tap), a plain focus keeps
+    // the tap gesture intact so iOS raises the keyboard. Never scroll here, a
+    // programmatic scroll would swallow the keyboard.
+    const top = el.getBoundingClientRect().top;
+    if (top >= 0 && top <= window.innerHeight) {
+      el.focus();
+      return;
+    }
+    // Desktop "Add here" below the fold: focus without the browser's jump, then
+    // glide the composer up to just below the sticky masthead.
+    el.focus({ preventScroll: true });
     const card = composerCardRef.current;
     if (!card) return;
     const masthead = document.querySelector<HTMLElement>(".masthead");
     const gap = (masthead?.offsetHeight ?? 0) + 12;
-    const top = card.getBoundingClientRect().top + window.scrollY - gap;
+    const target = card.getBoundingClientRect().top + window.scrollY - gap;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
+    window.scrollTo({ top: Math.max(0, target), behavior: reduce ? "auto" : "smooth" });
   }
 
   function moveTo(target: Quadrant) {

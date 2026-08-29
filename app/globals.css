@@ -789,22 +789,22 @@ input:focus {
   border-color: color-mix(in srgb, var(--q) 55%, transparent);
 }
 
-/* Resting composer: let the pills that aren't the current default recede so the
-   selected quadrant reads clearly. Muted via color, not opacity, since animating
-   opacity here leaves repaint trails on iOS. Hover restores full presence. */
-.composer-picker:not(.armed) .pill:not(.picked) {
+/* Only the current default pill is ever coloured; every other pill stays grey
+   at all times, typing or not. Keeping them fixed avoids the grey<->colour
+   transition that ghosts on iOS. Muted via colour, not opacity (also ghosts). */
+.composer-picker .pill:not(.picked) {
   color: var(--tertiary);
 }
 
-.composer-picker:not(.armed) .pill:not(.picked) .pill-dot {
+.composer-picker .pill:not(.picked) .pill-dot {
   background: color-mix(in srgb, var(--q) 40%, var(--fill-strong));
 }
 
-.composer-picker:not(.armed) .pill:not(.picked):hover {
+.composer-picker .pill:not(.picked):hover {
   color: var(--label);
 }
 
-.composer-picker:not(.armed) .pill:not(.picked):hover .pill-dot {
+.composer-picker .pill:not(.picked):hover .pill-dot {
   background: var(--q);
 }
 
