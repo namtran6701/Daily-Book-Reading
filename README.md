@@ -30,8 +30,9 @@ quadrant. Thoughts can be completed, reopened, edited, deleted, or dragged to a
 different quadrant. Completed thoughts remain available behind each
 quadrant's **Show done** control.
 
-Deletes are delayed briefly and can be reversed from the Undo toast. Deleting
-a book also deletes its notes after the same undo window.
+Deletion requests are sent immediately, and the row remains visible with a
+progress indicator until the server confirms the removal. There is no Undo
+window. Deleting a book also deletes its notes.
 
 ## Books
 
@@ -62,7 +63,28 @@ The service worker caches the app shell and static assets after the first
 successful visit. Navigations use the network when available and fall back to
 that cached shell offline. API responses are deliberately never cached, so
 loading or changing thoughts, books, and notes still requires a network
-connection.
+connection. If the connection drops after data has loaded, the app keeps that
+content readable and disables write controls until the connection returns.
+
+The first load has a dedicated loading screen. If that load or a later request
+fails, the app keeps the failure in context and offers **Try again**. A dropped
+connection has its own status banner rather than being presented as a generic
+server failure.
+
+## Design and accessibility
+
+The interface uses an Apple-inspired editorial-minimal style: a self-hosted
+Fraunces display face for expressive headings, the system sans-serif stack for
+interface text, restrained monochrome surfaces, rounded cards, and semantic
+color where state needs to be obvious. Loading, empty, offline, and error
+presentation is shared through `components/UiState.tsx` so the same visual
+language appears in every tab.
+
+Motion from the `motion` package is used for navigation, entrances, layout
+changes, progress, and feedback. The root motion configuration honors the
+user's reduced-motion preference, and components with custom counters or
+artwork also switch to non-animated behavior. Narrow layouts use a bottom tab
+bar and enlarge frequently used controls to mobile-friendly touch targets.
 
 ## Local development
 
@@ -134,7 +156,7 @@ bound database.
 
 ```text
 app/                    Next-style routes, API handlers, metadata, and global CSS
-components/             Client UI, tab views, animation, toasts, and PWA registration
+components/             Client UI, tab views, animation, shared states, and PWA registration
 db/                     Runtime D1 schema management and Drizzle schema mirror
 drizzle/                Generated Drizzle migration snapshot
 lib/                    Shared date, quadrant, animation, and data types

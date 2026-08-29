@@ -36,7 +36,9 @@ npm run db:generate  # drizzle-kit generate from db/schema.ts -> drizzle/
 `tests/rendered-html.test.mjs` is the only automated test. It imports the built
 worker from `dist/server/index.js` and verifies the server-rendered shell, so it
 must run after a build; `npm test` handles that ordering. It supplies only a
-mock `ASSETS` binding and does not exercise D1 or the client-side APIs.
+mock `ASSETS` binding and does not exercise D1 or the client-side APIs. The
+assertions cover the app title, root marker, four tab labels, and initial
+loading-state copy.
 
 ## Runtime and deployment
 
@@ -110,13 +112,21 @@ period completion statistics.
 - `app/page.tsx` force-renders dynamically and mounts
   `components/SecondBrain.tsx`.
 - `SecondBrain` is the client-side state and network container. It loads
-  thoughts, books, and notes together once on mount, selects among the four
-  tabs, renders the Calendar's `Briefing`, and passes state and callbacks to
-  the tab components.
-- Data fetching uses plain `fetch` and React state. Thought/note PATCH actions
-  update locally first and reload after a failure. Deletes disappear locally,
-  wait 4.5 seconds for the Undo window, and only then call DELETE; a failed
-  delete reloads server state. Book completion waits for the server response.
+  thoughts, books, and notes in parallel on mount, owns retries and online
+  status, selects among the four tabs, renders the Calendar's `Briefing`, and
+  passes state, read-only status, and callbacks to the tab components.
+- Data fetching uses plain `fetch`, `cache: "no-store"`, and React state.
+  Same-origin API redirects are handled manually so an expired Cloudflare
+  Access session can reload into its login flow. Thought/note PATCH actions
+  update locally first and reload after a failure. Deletes call the API
+  immediately, keep the row visible and locked while the request is in flight,
+  and remove it only after confirmation; a failed delete leaves the row in
+  place. A delete 404 is treated as success because the requested server state
+  has already been reached. Book completion waits for the server response.
+- `components/UiState.tsx` owns the shared loading, quiet empty/failure, and
+  offline/error banner patterns. If the initial load fails, the app shows a
+  full-page retry state. Once data has loaded, going offline keeps it readable,
+  displays an offline banner, and disables write controls until reconnection.
 - The browser's current `today` value comes from `useSyncExternalStore` and is
   empty during server rendering. Do not compute it on the Worker, which runs in
   UTC and may differ from the user's local date.
@@ -127,6 +137,24 @@ period completion statistics.
   `quick`, and `later`. Change that module first if quadrant semantics change.
 - Shared date helpers, spring presets, and API data types live in `lib/`.
 
+## Design and motion
+
+- Preserve the established editorial-minimal direction: self-hosted Fraunces
+  for display text, the Apple/system sans stack for controls and body copy,
+  restrained monochrome surfaces, rounded cards, and semantic color for
+  quadrant or status meaning. Global tokens and responsive rules live in
+  `app/globals.css`.
+- Motion is intentional and uses `motion/react` for tab transitions, shared
+  selection pills, entrances, layout changes, progress, and counters. The app
+  is wrapped in `MotionConfig reducedMotion="user"`; components that animate
+  outside ordinary motion variants must also use `useReducedMotion` or a CSS
+  `prefers-reduced-motion` rule.
+- The desktop masthead switches to a mobile bottom tab bar below 760px. The
+  masthead date is hidden at 900px and below to prevent tablet overlap. Keep
+  frequently used narrow-screen controls at least 44px in either dimension.
+- Reuse `UiState` for new loading, empty, offline, or failure experiences
+  rather than introducing tab-specific state styling.
+
 ## PWA behavior
 
 `app/layout.tsx` declares the manifest, theme, Apple mobile metadata, favicon,
@@ -136,6 +164,8 @@ registers `public/sw.js` after window load.
 The service worker precaches the shell and core icons. It uses network-first
 navigation with a cached `/` fallback and cache-first static assets with a
 background refresh. It deliberately bypasses every `/api/` request, so no user
-data is cached for offline use. When changing the cached shell or service
-worker behavior, bump the `CACHE` value in `public/sw.js` so old caches are
-evicted during activation.
+data is cached for offline use. The in-memory data already loaded by the client
+remains readable after a connection drop, but a fresh offline load cannot
+recover API data. When changing the cached shell or service worker behavior,
+bump the `CACHE` value in `public/sw.js` so old caches are evicted during
+activation.

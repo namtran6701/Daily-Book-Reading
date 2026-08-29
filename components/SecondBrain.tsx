@@ -14,8 +14,9 @@ import { Briefing } from "./Briefing";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
 import { ReviewTab } from "./ReviewTab";
+import { LoadingState, QuietState, StatusBanner } from "./UiState";
 import { formatDate, localDateKey, monthKey, shiftMonth } from "@/lib/date-keys";
-import { BookGlyph, MatrixGlyph, RefreshIcon, ReviewGlyph, TodayIcon } from "./icons";
+import { AlertIcon, BookGlyph, MatrixGlyph, OfflineIcon, ReviewGlyph, TodayIcon } from "./icons";
 import type { Quadrant } from "@/lib/quadrants";
 import { gentle, snappy } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
@@ -33,6 +34,19 @@ function subscribeToNothing(): () => void {
   return () => {};
 }
 
+function subscribeToNetwork(callback: () => void): () => void {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
+function readNetworkStatus(): boolean {
+  return navigator.onLine;
+}
+
 async function readJson<T>(response: Response, fallback: string): Promise<T> {
   const payload = (await response.json()) as T & { error?: string };
   if (!response.ok) throw new Error(payload.error ?? fallback);
@@ -46,6 +60,9 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 // Access's login flow. The sessionStorage guard stops a reload that lands back
 // on a cached shell from spinning.
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  if (!navigator.onLine) {
+    throw new Error("Changes need a connection. Reconnect and try again.");
+  }
   const response = await fetch(input, { ...init, redirect: "manual" });
   if (response.type === "opaqueredirect") {
     let reloaded = false;
@@ -71,6 +88,7 @@ export function SecondBrain() {
   const [books, setBooks] = useState<Book[]>([]);
   const [notes, setNotes] = useState<BookNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("calendar");
@@ -85,6 +103,7 @@ export function SecondBrain() {
   // The server runs in UTC and the browser does not, so the current date is
   // read on the client only. It stays empty through the server render.
   const today = useSyncExternalStore(subscribeToNothing, localDateKey, () => "");
+  const online = useSyncExternalStore(subscribeToNetwork, readNetworkStatus, () => true);
   const activeDay = selectedDay || today;
   const activeMonth = month || (today ? monthKey(today) : "");
 
@@ -103,6 +122,7 @@ export function SecondBrain() {
       setThoughts((await readJson<{ thoughts: Thought[] }>(thoughtsResponse, "Could not load your thoughts.")).thoughts);
       setBooks((await readJson<{ books: Book[] }>(booksResponse, "Could not load your books.")).books);
       setNotes((await readJson<{ notes: BookNote[] }>(notesResponse, "Could not load your notes.")).notes);
+      setLoaded(true);
       setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not open your second brain.");
@@ -114,6 +134,12 @@ export function SecondBrain() {
   useEffect(() => {
     // A one-shot fetch on mount: there is no external system to subscribe to.
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+
+  const retryLoad = useCallback(() => {
+    setError("");
+    setLoading(true);
     void load();
   }, [load]);
 
@@ -307,11 +333,11 @@ export function SecondBrain() {
     setTab(next);
   }
 
-  const ready = Boolean(today) && !loading;
+  const ready = Boolean(today) && loaded && !loading;
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="app" data-app="second-brain">
+      <main className={`app ${online ? "" : "is-offline"}`} data-app="second-brain" data-online={online}>
         <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
           <span className="brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -346,34 +372,40 @@ export function SecondBrain() {
           </div>
         </header>
 
-        {error && (
-          <div className="error-banner">
-            <span>{error}</span>
-            <button
-              className="icon-action pressable"
-              onClick={() => {
-                setError("");
-                setLoading(true);
-                void load();
-              }}
-              aria-label="Try again"
-              title="Try again"
-            >
-              <RefreshIcon />
-            </button>
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {loaded && !online && (
+            <motion.div key="offline" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={gentle}>
+              <StatusBanner tone="offline" icon={<OfflineIcon />} title="You’re offline">
+                You can look around. Changes need a connection.
+              </StatusBanner>
+            </motion.div>
+          )}
+          {loaded && online && error && (
+            <motion.div key="error" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={gentle}>
+              <StatusBanner
+                tone="error"
+                icon={<AlertIcon />}
+                title="That didn’t work"
+                action={{ label: "Try again", onClick: retryLoad }}
+              >
+                {error}
+              </StatusBanner>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className={`page page-${tab}`}>
-          {!ready ? (
-            <div className="loading-line">
-              <span className="loading-dots" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              Opening your second brain
-            </div>
+          {!today || loading ? (
+            <LoadingState />
+          ) : !ready ? (
+            <QuietState
+              className="open-failure card"
+              icon={online ? <AlertIcon size={20} /> : <OfflineIcon size={20} />}
+              title={online ? "Second Brain didn’t open" : "Your connection is quiet"}
+              action={{ label: "Try again", onClick: retryLoad }}
+            >
+              {online ? error || "Try opening it again." : "Reconnect, then try opening your thoughts and notes again."}
+            </QuietState>
           ) : (
             <>
               {tab === "calendar" && <Briefing thoughts={thoughts} books={books} notes={notes} today={today} />}
@@ -400,12 +432,14 @@ export function SecondBrain() {
                       onUpdate={updateThought}
                       onDelete={deleteThought}
                       deletingIds={deletingIds}
+                      readOnly={!online}
                     />
                   ) : tab === "thoughts" ? (
                     <MatrixTab
                       thoughts={thoughts}
                       today={today}
-                      busy={busy}
+                      busy={busy || !online}
+                      readOnly={!online}
                       onCapture={captureThought}
                       onUpdate={updateThought}
                       onDelete={deleteThought}
@@ -416,7 +450,8 @@ export function SecondBrain() {
                       books={books}
                       notes={notes}
                       today={today}
-                      busy={busy}
+                      busy={busy || !online}
+                      readOnly={!online}
                       selectedBookId={selectedBookId}
                       onSelectBook={setSelectedBookId}
                       onAddBook={addBook}

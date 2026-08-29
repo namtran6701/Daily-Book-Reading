@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { daysBetween } from "@/lib/date-keys";
 import { BookGlyph, FlameIcon, MatrixGlyph, PlusIcon } from "./icons";
 import { gentle } from "@/lib/springs";
@@ -25,6 +25,7 @@ function greeting(): string {
 }
 
 export function Briefing({ thoughts, books, notes, today }: Props) {
+  const reduceMotion = useReducedMotion();
   const { headline, alert, chips } = useMemo(() => {
     const open = thoughts.filter((thought) => !thought.done);
     const capturedToday =
@@ -126,7 +127,7 @@ export function Briefing({ thoughts, books, notes, today }: Props) {
     >
       <motion.img
         className="orb"
-        src="/hero_img.svg"
+        src={reduceMotion ? "/animated.svg" : "/hero_img.svg"}
         alt=""
         aria-hidden="true"
         variants={{ hidden: { opacity: 0, scale: 0.4 }, show: { opacity: 1, scale: 1 } }}

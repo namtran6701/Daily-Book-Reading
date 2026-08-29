@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
+import { QuietState } from "./UiState";
 import { WEEKDAY_INITIALS, dayTitle, formatDate, monthGrid, monthKey, monthLabel } from "@/lib/date-keys";
 import { TodayIcon } from "./icons";
 import { gentle, snappy } from "@/lib/springs";
@@ -20,6 +21,7 @@ type Props = {
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   deletingIds: Set<string>;
+  readOnly?: boolean;
 };
 
 const MAX_DOTS = 5;
@@ -36,6 +38,7 @@ export function CalendarTab({
   onUpdate,
   onDelete,
   deletingIds,
+  readOnly,
 }: Props) {
   // 1 = sliding toward the future, -1 toward the past; drives the grid swipe.
   const [direction, setDirection] = useState(1);
@@ -220,7 +223,9 @@ export function CalendarTab({
           </header>
 
           {dayThoughts.length === 0 && readingCount === 0 ? (
-            <p className="empty-line">Nothing written on this day.</p>
+            <QuietState compact icon={<TodayIcon size={17} />} title="A quiet day">
+              Nothing was captured here.
+            </QuietState>
           ) : (
             <>
               {dayThoughts.length > 0 && (
@@ -239,6 +244,7 @@ export function CalendarTab({
                           onUpdate={onUpdate}
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
+                          readOnly={readOnly}
                         />
                       ))}
                     </AnimatePresence>

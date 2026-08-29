@@ -108,6 +108,27 @@ export function RefreshIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function OfflineIcon({ size = 17 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M4.5 9.5A12 12 0 0 1 12 7c3 0 5.7 1 7.5 2.5" />
+      <path d="M7.5 13a7.5 7.5 0 0 1 7.8-.8" />
+      <path d="M10.5 16.5a2.8 2.8 0 0 1 3 0" />
+      <path d="M4 4l16 16" />
+    </svg>
+  );
+}
+
+export function AlertIcon({ size = 17 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5.5" />
+      <path d="M12 16.5h.01" strokeWidth={2.4} />
+    </svg>
+  );
+}
+
 export function UndoIcon({ size = 15 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

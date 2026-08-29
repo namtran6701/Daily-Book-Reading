@@ -20,6 +20,7 @@ test("server-renders the Second Brain shell", async () => {
   const html = await response.text();
   assert.match(html, /<title>Second Brain<\/title>/i);
   assert.match(html, /data-app="second-brain"/);
+  assert.match(html, /Opening your second brain/i);
   for (const tab of ["Calendar", "Thoughts", "Books", "Review"]) {
     assert.match(html, new RegExp(`>${tab}<`));
   }

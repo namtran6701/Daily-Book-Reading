@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, animate, motion } from "motion/react";
-import { QuadrantGlyph } from "./icons";
+import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
+import { QuadrantGlyph, ReviewGlyph } from "./icons";
+import { QuietState } from "./UiState";
 import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
 import { ageLabel, formatDate, localDayFromInstant, monthLabel, monthKey, rangeDays, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
 import { gentle } from "@/lib/springs";
@@ -19,9 +20,14 @@ type Range = "week" | "month";
 
 function CountUp({ value }: { value: number }) {
   const node = useRef<HTMLSpanElement>(null);
+  const reduceMotion = useReducedMotion();
   useEffect(() => {
     const target = node.current;
     if (!target) return;
+    if (reduceMotion) {
+      target.textContent = String(value);
+      return;
+    }
     const controls = animate(0, value, {
       duration: 0.9,
       ease: [0.22, 0.9, 0.24, 1],
@@ -30,7 +36,7 @@ function CountUp({ value }: { value: number }) {
       },
     });
     return () => controls.stop();
-  }, [value]);
+  }, [reduceMotion, value]);
   return <span ref={node}>0</span>;
 }
 
@@ -315,7 +321,9 @@ export function ReviewTab({ thoughts, books, notes, today }: Props) {
               Up next <em>for the coming {range}</em>
             </h3>
             {review.upNext.length === 0 ? (
-              <p className="empty-line">Nothing open. Your plate is clean: go read something.</p>
+              <QuietState compact icon={<ReviewGlyph size={17} />} title="Nothing is waiting">
+                Your plate is clear. Go read something.
+              </QuietState>
             ) : (
               <ul className="carry-list">
                 {review.upNext.map((thought) => (

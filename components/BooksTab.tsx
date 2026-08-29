@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
+import { QuietState } from "./UiState";
 import {
+  BookGlyph,
   CheckIcon,
   ChevronLeftIcon,
   CloseIcon,
@@ -33,6 +35,7 @@ type Props = {
   onDeleteNote: (id: string) => Promise<void>;
   // Ids (books and notes) whose DELETE is in flight; their rows lock and spin.
   deletingIds: Set<string>;
+  readOnly?: boolean;
 };
 
 // A stable hash so every title always renders the same generated cover.
@@ -78,11 +81,13 @@ function NoteRow({
   onUpdate,
   onDelete,
   deleting,
+  readOnly,
 }: {
   note: BookNote;
   onUpdate: (id: string, patch: Partial<BookNote>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   deleting?: boolean;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.body);
@@ -94,6 +99,7 @@ function NoteRow({
   }, [editing]);
 
   async function save() {
+    if (readOnly) return;
     const body = draft.trim();
     setEditing(false);
     if (!body || body === note.body) {
@@ -136,9 +142,10 @@ function NoteRow({
               }
             }}
             aria-label="Edit this note"
+            disabled={readOnly}
           />
           <div className="editor-actions">
-            <button className="icon-action pressable" onClick={() => void save()} aria-label="Save" title="Save">
+            <button className="icon-action pressable" onClick={() => void save()} disabled={readOnly} aria-label="Save" title="Save">
               <CheckIcon />
             </button>
             <button
@@ -164,7 +171,7 @@ function NoteRow({
                 setDraft(note.body);
                 setEditing(true);
               }}
-              disabled={deleting}
+              disabled={deleting || readOnly}
               aria-label="Edit note"
               title="Edit note"
             >
@@ -173,7 +180,7 @@ function NoteRow({
             <button
               className="icon-action danger pressable"
               onClick={() => void onDelete(note.id)}
-              disabled={deleting}
+              disabled={deleting || readOnly}
               aria-label={deleting ? "Deleting note" : "Delete note"}
               title={deleting ? "Deleting note" : "Delete note"}
             >
@@ -241,6 +248,7 @@ export function BooksTab({
   onUpdateNote,
   onDeleteNote,
   deletingIds,
+  readOnly,
 }: Props) {
   const [title, setTitle] = useState("");
   const [noteText, setNoteText] = useState("");
@@ -273,7 +281,7 @@ export function BooksTab({
   }, [bookNotes, query]);
 
   async function addBook() {
-    if (busy || !title.trim()) return;
+    if (busy || readOnly || !title.trim()) return;
     if (await onAddBook(title)) setTitle("");
   }
 
@@ -288,7 +296,7 @@ export function BooksTab({
     startNum >= endNum;
 
   async function addNote() {
-    if (busy || !book || !noteText.trim() || rangeError) return;
+    if (busy || readOnly || !book || !noteText.trim() || rangeError) return;
     if (await onAddNote(book.id, noteText, page, pageEnd)) setNoteText("");
   }
 
@@ -333,6 +341,7 @@ export function BooksTab({
                 <button
                   className="text-button pressable"
                   onClick={() => void onUpdateBook(book.id, { finished: !book.finishedAt })}
+                  disabled={readOnly}
                 >
                   {book.finishedAt ? <UndoIcon /> : <CheckIcon />}
                   {book.finishedAt ? "Back to reading" : "Mark finished"}
@@ -340,7 +349,7 @@ export function BooksTab({
                 <button
                   className="icon-action danger pressable"
                   onClick={() => void onDeleteBook(book.id)}
-                  disabled={deletingIds.has(book.id)}
+                  disabled={deletingIds.has(book.id) || readOnly}
                   aria-label={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
                   title={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
                 >
@@ -360,6 +369,7 @@ export function BooksTab({
                 inputMode="numeric"
                 aria-label="Start page, optional"
                 aria-invalid={rangeError}
+                disabled={readOnly}
               />
               <span className="page-range-sep" aria-hidden="true">
                 –
@@ -372,6 +382,7 @@ export function BooksTab({
                 inputMode="numeric"
                 aria-label="End page, optional"
                 aria-invalid={rangeError}
+                disabled={readOnly}
               />
             </div>
             <textarea
@@ -386,11 +397,12 @@ export function BooksTab({
                 }
               }}
               aria-label="Your note"
+              disabled={readOnly}
             />
             <motion.button
               className="keep-button"
               onClick={() => void addNote()}
-              disabled={busy || !noteText.trim() || rangeError}
+              disabled={busy || readOnly || !noteText.trim() || rangeError}
               whileTap={{ scale: 0.88 }}
               transition={bouncy}
               aria-label={busy ? "Saving note" : "Add note"}
@@ -423,9 +435,13 @@ export function BooksTab({
           )}
 
           {bookNotes.length === 0 ? (
-            <p className="empty-line">No notes from this book yet. The first one is the hardest.</p>
+            <QuietState icon={<BookGlyph size={18} />} title="A clean page">
+              Keep the first idea that makes you pause.
+            </QuietState>
           ) : journal.length === 0 ? (
-            <p className="empty-line">Nothing matches &ldquo;{query}&rdquo;.</p>
+            <QuietState compact icon={<SearchIcon size={17} />} title="No matching notes">
+              Try a different word or phrase.
+            </QuietState>
           ) : (
             <div className="journal">
               {journal.map(({ dayKey, rows }) => (
@@ -440,6 +456,7 @@ export function BooksTab({
                           onUpdate={onUpdateNote}
                           onDelete={onDeleteNote}
                           deleting={deletingIds.has(note.id)}
+                          readOnly={readOnly}
                         />
                       ))}
                     </AnimatePresence>
@@ -466,11 +483,12 @@ export function BooksTab({
                 onKeyDown={(event) => event.key === "Enter" && void addBook()}
                 placeholder="Title"
                 aria-label="Book title"
+                disabled={readOnly}
               />
               <motion.button
                 className="keep-button"
                 onClick={() => void addBook()}
-                disabled={busy || !title.trim()}
+                disabled={busy || readOnly || !title.trim()}
                 whileTap={{ scale: 0.88 }}
                 transition={bouncy}
                 aria-label="Add book"
@@ -508,7 +526,9 @@ export function BooksTab({
           )}
 
           {books.length === 0 && (
-            <p className="empty-line">Add the first book and your notes will collect under it.</p>
+            <QuietState icon={<BookGlyph size={18} />} title="Start your shelf">
+              Add the first book and your notes will collect beneath it.
+            </QuietState>
           )}
         </motion.div>
       )}

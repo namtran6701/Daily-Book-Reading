@@ -18,6 +18,7 @@ type Props = {
   // True while its DELETE is in flight: the row dims and its controls lock
   // until the server confirms and the row leaves the list.
   deleting?: boolean;
+  readOnly?: boolean;
   onMove?: (id: string) => void;
   // Desktop-only native drag between quadrant cards. Touch never engages this,
   // so there is no custom touch-drag code and nothing to lag.
@@ -44,6 +45,7 @@ export function ThoughtRow({
   onUpdate,
   onDelete,
   deleting,
+  readOnly,
   onMove,
   onDragStart,
   onDragEnd,
@@ -59,6 +61,7 @@ export function ThoughtRow({
   }, [editing]);
 
   async function save() {
+    if (readOnly) return;
     const body = draft.trim();
     setEditing(false);
     if (!body || body === thought.body) {
@@ -69,11 +72,13 @@ export function ThoughtRow({
   }
 
   function startEditing() {
+    if (readOnly) return;
     setDraft(thought.body);
     setEditing(true);
   }
 
   function toggleDone() {
+    if (readOnly) return;
     if (!thought.done) {
       setBurst((count) => count + 1);
       haptic(12);
@@ -87,7 +92,7 @@ export function ThoughtRow({
 
   return (
     <motion.li
-      className={`thought q-${thought.quadrant} ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""} ${deleting ? "is-deleting" : ""}`}
+      className={`thought q-${thought.quadrant} ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""} ${deleting ? "is-deleting" : ""} ${readOnly ? "is-read-only" : ""}`}
       layout="position"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -96,7 +101,7 @@ export function ThoughtRow({
     >
       <div
         className="thought-main"
-        draggable={!!onDragStart && !editing && !deleting}
+        draggable={!!onDragStart && !editing && !deleting && !readOnly}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", thought.id);
@@ -107,7 +112,7 @@ export function ThoughtRow({
         <motion.button
           className={`mark ${thought.done ? "mark-done" : ""}`}
           onClick={toggleDone}
-          disabled={deleting}
+          disabled={deleting || readOnly}
           whileTap={{ scale: 0.8 }}
           transition={snappy}
           aria-label={thought.done ? "Mark as not done" : "Mark as done"}
@@ -152,9 +157,10 @@ export function ThoughtRow({
                 }
               }}
               aria-label="Edit this thought"
+              disabled={readOnly}
             />
             <div className="editor-actions">
-              <button className="icon-action pressable" onClick={() => void save()} aria-label="Save" title="Save">
+              <button className="icon-action pressable" onClick={() => void save()} disabled={readOnly} aria-label="Save" title="Save">
                 <CheckIcon />
               </button>
               <button
@@ -179,6 +185,7 @@ export function ThoughtRow({
                   <button
                     className={`quadrant-tag q-${thought.quadrant}`}
                     onClick={() => onMove!(thought.id)}
+                    disabled={readOnly}
                     aria-label={`In ${QUADRANT_LABELS[thought.quadrant]}. Move to another quadrant`}
                   >
                     <QuadrantGlyph quadrant={thought.quadrant} size={11} />
@@ -204,7 +211,7 @@ export function ThoughtRow({
               <button
                 className="icon-action pressable"
                 onClick={() => onMove(thought.id)}
-                disabled={deleting}
+                disabled={deleting || readOnly}
                 aria-label="Move to another quadrant"
                 title="Move"
               >
@@ -214,7 +221,7 @@ export function ThoughtRow({
             <button
               className="icon-action pressable"
               onClick={startEditing}
-              disabled={deleting}
+              disabled={deleting || readOnly}
               aria-label="Edit"
               title="Edit"
             >
@@ -223,7 +230,7 @@ export function ThoughtRow({
             <button
               className="icon-action danger pressable"
               onClick={() => void onDelete(thought.id)}
-              disabled={deleting}
+              disabled={deleting || readOnly}
               aria-label={deleting ? "Deleting" : "Delete"}
               title={deleting ? "Deleting" : "Delete"}
             >

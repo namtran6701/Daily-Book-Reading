@@ -20,6 +20,7 @@ type Props = {
   thoughts: Thought[];
   today: string;
   busy: boolean;
+  readOnly?: boolean;
   onCapture: (text: string, quadrant: Quadrant) => Promise<boolean>;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -182,7 +183,7 @@ function Overlay({
   );
 }
 
-export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete, deletingIds }: Props) {
+export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate, onDelete, deletingIds }: Props) {
   const [text, setText] = useState("");
   // MatrixTab only mounts on the client (the tabs render after `today` resolves),
   // so reading the last-used quadrant here is safe and keeps capture to one tap.
@@ -243,13 +244,14 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   }
 
   function drop(target: Quadrant) {
+    if (readOnly) return endDrag();
     const thought = thoughts.find((item) => item.id === dragId);
     if (thought && thought.quadrant !== target) void onUpdate(thought.id, { quadrant: target });
     endDrag();
   }
 
   async function keep() {
-    if (busy || !text.trim()) return;
+    if (busy || readOnly || !text.trim()) return;
     if (await onCapture(text, quadrant)) {
       setText("");
       haptic(8);
@@ -261,6 +263,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   // straight into it (and remembers it as the default for the Enter/send path).
   // With an empty composer the pill just picks the default and focuses.
   async function pickOrSend(next: Quadrant) {
+    if (readOnly) return;
     if (!text.trim()) {
       focusQuadrant(next);
       return;
@@ -275,7 +278,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   }
 
   async function keepInSheet() {
-    if (busy || !sheetText.trim() || !sheetQuad) return;
+    if (busy || readOnly || !sheetText.trim() || !sheetQuad) return;
     if (await onCapture(sheetText, sheetQuad)) {
       setSheetText("");
       haptic(8);
@@ -342,6 +345,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
               }
             }}
             aria-label="Your thought"
+            disabled={readOnly}
           />
         </div>
         <div className={`composer-picker ${text.trim() ? "armed" : ""}`} role="group" aria-label="Priority">
@@ -351,6 +355,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
               key={key}
               className={`pill q-${key} ${quadrant === key ? "picked" : ""} ${justAdded === key ? "just-added" : ""}`}
               onClick={() => void pickOrSend(key)}
+              disabled={readOnly}
               whileTap={{ scale: 0.94 }}
               transition={bouncy}
               aria-pressed={quadrant === key}
@@ -421,6 +426,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                           onUpdate={onUpdate}
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
+                          readOnly={readOnly}
                           onMove={setMoveId}
                           onDragStart={setDragId}
                           onDragEnd={endDrag}
@@ -431,7 +437,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                   </ul>
                 )}
 
-                <button className="q-add pressable" onClick={() => focusQuadrant(key)}>
+                <button className="q-add pressable" onClick={() => focusQuadrant(key)} disabled={readOnly}>
                   <PlusIcon size={14} />
                   Add here
                 </button>
@@ -464,6 +470,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                               onUpdate={onUpdate}
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
+                              readOnly={readOnly}
                               onMove={setMoveId}
                             />
                           ))}
@@ -541,11 +548,12 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                       }
                     }}
                     aria-label={`Add a thought to ${QUADRANT_LABELS[sheetQuad]}`}
+                    disabled={readOnly}
                   />
                   <motion.button
                     className="composer-send"
                     onClick={() => void keepInSheet()}
-                    disabled={busy || !sheetText.trim()}
+                    disabled={busy || readOnly || !sheetText.trim()}
                     whileTap={{ scale: 0.86 }}
                     transition={bouncy}
                     aria-label="Add thought"
@@ -568,6 +576,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                           onUpdate={onUpdate}
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
+                          readOnly={readOnly}
                           onMove={setMoveId}
                         />
                       ))}
@@ -603,6 +612,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                               onUpdate={onUpdate}
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
+                              readOnly={readOnly}
                               onMove={setMoveId}
                             />
                           ))}
@@ -636,6 +646,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                     key={key}
                     className={`menu-option q-${key} ${moving.quadrant === key ? "current" : ""}`}
                     onClick={() => moveTo(key)}
+                    disabled={readOnly}
                     whileTap={{ scale: 0.96 }}
                     transition={bouncy}
                   >
