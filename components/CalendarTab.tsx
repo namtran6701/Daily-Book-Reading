@@ -19,6 +19,7 @@ type Props = {
   onSelectDay: (day: string) => void;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  deletingIds: Set<string>;
 };
 
 const MAX_DOTS = 5;
@@ -34,6 +35,7 @@ export function CalendarTab({
   onSelectDay,
   onUpdate,
   onDelete,
+  deletingIds,
 }: Props) {
   // 1 = sliding toward the future, -1 toward the past; drives the grid swipe.
   const [direction, setDirection] = useState(1);
@@ -236,6 +238,7 @@ export function CalendarTab({
                           showQuadrant
                           onUpdate={onUpdate}
                           onDelete={onDelete}
+                          deleting={deletingIds.has(thought.id)}
                         />
                       ))}
                     </AnimatePresence>

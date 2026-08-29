@@ -23,6 +23,7 @@ type Props = {
   onCapture: (text: string, quadrant: Quadrant) => Promise<boolean>;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  deletingIds: Set<string>;
 };
 
 const PREVIEW_COUNT = 2;
@@ -168,7 +169,7 @@ function Overlay({
   );
 }
 
-export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete }: Props) {
+export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete, deletingIds }: Props) {
   const [text, setText] = useState("");
   // MatrixTab only mounts on the client (the tabs render after `today` resolves),
   // so reading the last-used quadrant here is safe and keeps capture to one tap.
@@ -367,6 +368,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                           showAge
                           onUpdate={onUpdate}
                           onDelete={onDelete}
+                          deleting={deletingIds.has(thought.id)}
                           onMove={setMoveId}
                           onDragStart={setDragId}
                           onDragEnd={endDrag}
@@ -409,6 +411,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                               today={today}
                               onUpdate={onUpdate}
                               onDelete={onDelete}
+                              deleting={deletingIds.has(thought.id)}
                               onMove={setMoveId}
                             />
                           ))}
@@ -512,6 +515,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                           showAge
                           onUpdate={onUpdate}
                           onDelete={onDelete}
+                          deleting={deletingIds.has(thought.id)}
                           onMove={setMoveId}
                         />
                       ))}
@@ -546,6 +550,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
                               today={today}
                               onUpdate={onUpdate}
                               onDelete={onDelete}
+                              deleting={deletingIds.has(thought.id)}
                               onMove={setMoveId}
                             />
                           ))}

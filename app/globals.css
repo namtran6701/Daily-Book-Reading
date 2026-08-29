@@ -55,9 +55,6 @@
   --gray-soft: rgba(142, 142, 147, 0.11);
   --orange: #ff9500;
 
-  --toast-bg: rgba(28, 28, 30, 0.92);
-  --toast-label: #f5f5f7;
-
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
   --shadow-pill: 0 1px 4px rgba(0, 0, 0, 0.12);
   --shadow-float: 0 18px 44px -10px rgba(0, 0, 0, 0.28);
@@ -391,7 +388,7 @@ ul {
   padding-top: 12px;
 }
 
-/* ---------- error / loading / toast ---------- */
+/* ---------- error / loading ---------- */
 
 .error-banner {
   display: flex;
@@ -441,37 +438,28 @@ ul {
   50% { opacity: 1; transform: scale(1.2); }
 }
 
-.toast-stack {
-  position: fixed;
-  bottom: 26px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+@keyframes sb-spin {
+  to { transform: rotate(360deg); }
 }
 
-.toast {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 11px 18px;
-  border-radius: 999px;
-  background: var(--toast-bg);
-  color: var(--toast-label);
-  font-size: 13.5px;
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  white-space: nowrap;
+.spinner {
+  animation: sb-spin 0.7s linear infinite;
 }
 
-.toast-undo {
-  color: #e8e8ec;
-  font-weight: 640;
-  letter-spacing: 0.01em;
+/* A row whose delete is in flight: dimmed and locked, with its controls kept
+   visible (they are otherwise hover-revealed) so the spinner stays on screen. */
+.thought.is-deleting,
+.book-note.is-deleting {
+  opacity: 0.5;
+}
+
+.thought.is-deleting .row-actions,
+.book-note.is-deleting .note-meta {
+  opacity: 1;
+}
+
+.icon-action:disabled {
+  cursor: default;
 }
 
 /* ---------- shared controls ---------- */
@@ -2501,10 +2489,6 @@ button.quadrant-tag .caret {
 
   .masthead-date {
     display: none;
-  }
-
-  .toast-stack {
-    bottom: calc(var(--tabbar-h) + 20px);
   }
 
   .briefing {

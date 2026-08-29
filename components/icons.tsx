@@ -58,6 +58,14 @@ export function TrashIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function SpinnerIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} className="spinner" width={size} height={size}>
+      <path d="M12 4a8 8 0 1 1-8 8" opacity={0.9} />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon({ size = 16 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

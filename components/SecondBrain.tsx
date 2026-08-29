@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   AnimatePresence,
   MotionConfig,
@@ -14,7 +14,6 @@ import { Briefing } from "./Briefing";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
 import { ReviewTab } from "./ReviewTab";
-import { ToastStack, type Toast } from "./Toast";
 import { formatDate, localDateKey, monthKey, shiftMonth } from "@/lib/date-keys";
 import { BookGlyph, MatrixGlyph, RefreshIcon, ReviewGlyph, TodayIcon } from "./icons";
 import type { Quadrant } from "@/lib/quadrants";
@@ -29,8 +28,6 @@ const TABS: { value: Tab; label: string; glyph: (props: { size?: number }) => Re
   { value: "books", label: "Books", glyph: BookGlyph },
   { value: "review", label: "Review", glyph: ReviewGlyph },
 ];
-
-const UNDO_WINDOW = 4500;
 
 function subscribeToNothing(): () => void {
   return () => {};
@@ -81,11 +78,9 @@ export function SecondBrain() {
   const [month, setMonth] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedBookId, setSelectedBookId] = useState("");
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const toastCounter = useRef(0);
-  const deleteTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
-  const pendingDeletes = useRef(new Map<number, () => void>());
+  // Ids whose DELETE is in flight. The row shows a spinner and only leaves the
+  // list once the server confirms, so a failed delete can never resurrect a row.
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // The server runs in UTC and the browser does not, so the current date is
   // read on the client only. It stays empty through the server render.
@@ -122,54 +117,30 @@ export function SecondBrain() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    // If the tab closes mid-undo, commit pending deletes now rather than dropping
-    // them; keepalive on the DELETE lets the request outlive the page.
-    const flush = () => {
-      for (const timer of deleteTimers.current.values()) clearTimeout(timer);
-      deleteTimers.current.clear();
-      const commits = [...pendingDeletes.current.values()];
-      pendingDeletes.current.clear();
-      for (const commit of commits) commit();
-    };
-    window.addEventListener("pagehide", flush);
-    return () => window.removeEventListener("pagehide", flush);
-  }, []);
-
-  const dismissToast = useCallback((id: number) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id));
-  }, []);
-
-  // Deletes are optimistic with an undo window: the row disappears at once,
-  // the API call only fires after the toast times out.
-  const scheduleDelete = useCallback(
-    (message: string, commit: () => void, restore: () => void) => {
-      const id = ++toastCounter.current;
-      const timer = setTimeout(() => {
-        deleteTimers.current.delete(id);
-        pendingDeletes.current.delete(id);
-        dismissToast(id);
-        commit();
-      }, UNDO_WINDOW);
-      deleteTimers.current.set(id, timer);
-      pendingDeletes.current.set(id, commit);
-      setToasts((current) => [
-        ...current,
-        {
-          id,
-          message,
-          undo: () => {
-            const pending = deleteTimers.current.get(id);
-            if (pending) clearTimeout(pending);
-            deleteTimers.current.delete(id);
-            pendingDeletes.current.delete(id);
-            dismissToast(id);
-            restore();
-          },
-        },
-      ]);
+  // Delete the row only once the server confirms. The id spins in the meantime,
+  // and a failed request leaves the row in place with an error rather than
+  // removing it and hoping the request lands. `apply` prunes local state on
+  // success; a 404 counts as success since the row is already gone server-side.
+  const runDelete = useCallback(
+    async (id: string, url: string, apply: () => void, message: string) => {
+      setDeletingIds((current) => new Set(current).add(id));
+      try {
+        const response = await apiFetch(url, { method: "DELETE" });
+        // A 404 means it is already gone server-side, which is the outcome we want.
+        if (!response.ok && response.status !== 404) throw new Error(message);
+        apply();
+        setError("");
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : message);
+      } finally {
+        setDeletingIds((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          return next;
+        });
+      }
     },
-    [dismissToast],
+    [],
   );
 
   const captureThought = useCallback(
@@ -212,29 +183,14 @@ export function SecondBrain() {
   }, [load]);
 
   const deleteThought = useCallback(
-    async (id: string) => {
-      const thought = thoughts.find((item) => item.id === id);
-      if (!thought) return;
-      setThoughts((current) => current.filter((item) => item.id !== id));
-      scheduleDelete(
-        "Thought deleted",
-        () => {
-          void apiFetch(`/api/thoughts?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
-            .then((response) => {
-              if (!response.ok) {
-                setError("Could not delete that thought.");
-                void load();
-              }
-            })
-            .catch(() => {
-              setError("Could not delete that thought.");
-              void load();
-            });
-        },
-        () => setThoughts((current) => [thought, ...current]),
-      );
-    },
-    [thoughts, scheduleDelete, load],
+    (id: string) =>
+      runDelete(
+        id,
+        `/api/thoughts?id=${encodeURIComponent(id)}`,
+        () => setThoughts((current) => current.filter((item) => item.id !== id)),
+        "Could not delete that thought.",
+      ),
+    [runDelete],
   );
 
   const addBook = useCallback(async (title: string) => {
@@ -272,40 +228,18 @@ export function SecondBrain() {
   }, []);
 
   const deleteBook = useCallback(
-    async (id: string) => {
-      const book = books.find((item) => item.id === id);
-      if (!book) return;
-      const index = books.indexOf(book);
-      const bookNotes = notes.filter((note) => note.bookId === id);
-      setSelectedBookId("");
-      setBooks((current) => current.filter((item) => item.id !== id));
-      setNotes((current) => current.filter((item) => item.bookId !== id));
-      scheduleDelete(
-        bookNotes.length > 0 ? `"${book.title}" and ${bookNotes.length} notes deleted` : `"${book.title}" deleted`,
+    (id: string) =>
+      runDelete(
+        id,
+        `/api/books?id=${encodeURIComponent(id)}`,
         () => {
-          void apiFetch(`/api/books?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
-            .then((response) => {
-              if (!response.ok) {
-                setError("Could not delete that book.");
-                void load();
-              }
-            })
-            .catch(() => {
-              setError("Could not delete that book.");
-              void load();
-            });
+          setSelectedBookId("");
+          setBooks((current) => current.filter((item) => item.id !== id));
+          setNotes((current) => current.filter((item) => item.bookId !== id));
         },
-        () => {
-          setBooks((current) => {
-            const copy = [...current];
-            copy.splice(Math.min(index, copy.length), 0, book);
-            return copy;
-          });
-          setNotes((current) => [...current, ...bookNotes]);
-        },
-      );
-    },
-    [books, notes, scheduleDelete, load],
+        "Could not delete that book.",
+      ),
+    [runDelete],
   );
 
   const addNote = useCallback(
@@ -348,29 +282,14 @@ export function SecondBrain() {
   }, [load]);
 
   const deleteNote = useCallback(
-    async (id: string) => {
-      const note = notes.find((item) => item.id === id);
-      if (!note) return;
-      setNotes((current) => current.filter((item) => item.id !== id));
-      scheduleDelete(
-        "Note deleted",
-        () => {
-          void apiFetch(`/api/book-notes?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
-            .then((response) => {
-              if (!response.ok) {
-                setError("Could not delete that note.");
-                void load();
-              }
-            })
-            .catch(() => {
-              setError("Could not delete that note.");
-              void load();
-            });
-        },
-        () => setNotes((current) => [note, ...current]),
-      );
-    },
-    [notes, scheduleDelete, load],
+    (id: string) =>
+      runDelete(
+        id,
+        `/api/book-notes?id=${encodeURIComponent(id)}`,
+        () => setNotes((current) => current.filter((item) => item.id !== id)),
+        "Could not delete that note.",
+      ),
+    [runDelete],
   );
 
   const openCount = useMemo(() => thoughts.filter((thought) => !thought.done).length, [thoughts]);
@@ -480,6 +399,7 @@ export function SecondBrain() {
                       onSelectDay={selectDay}
                       onUpdate={updateThought}
                       onDelete={deleteThought}
+                      deletingIds={deletingIds}
                     />
                   ) : tab === "thoughts" ? (
                     <MatrixTab
@@ -489,6 +409,7 @@ export function SecondBrain() {
                       onCapture={captureThought}
                       onUpdate={updateThought}
                       onDelete={deleteThought}
+                      deletingIds={deletingIds}
                     />
                   ) : tab === "books" ? (
                     <BooksTab
@@ -504,6 +425,7 @@ export function SecondBrain() {
                       onAddNote={addNote}
                       onUpdateNote={updateNote}
                       onDeleteNote={deleteNote}
+                      deletingIds={deletingIds}
                     />
                   ) : (
                     <ReviewTab thoughts={thoughts} books={books} notes={notes} today={today} />
@@ -531,8 +453,6 @@ export function SecondBrain() {
             </button>
           ))}
         </nav>
-
-        <ToastStack toasts={toasts} onUndo={(toast) => toast.undo?.()} />
       </main>
     </MotionConfig>
   );

@@ -10,6 +10,7 @@ import {
   PencilIcon,
   PlusIcon,
   SearchIcon,
+  SpinnerIcon,
   SubmitIcon,
   TrashIcon,
   UndoIcon,
@@ -30,6 +31,8 @@ type Props = {
   onAddNote: (bookId: string, text: string, page: string, pageEnd: string) => Promise<boolean>;
   onUpdateNote: (id: string, patch: Partial<BookNote>) => Promise<void>;
   onDeleteNote: (id: string) => Promise<void>;
+  // Ids (books and notes) whose DELETE is in flight; their rows lock and spin.
+  deletingIds: Set<string>;
 };
 
 // A stable hash so every title always renders the same generated cover.
@@ -74,10 +77,12 @@ function NoteRow({
   note,
   onUpdate,
   onDelete,
+  deleting,
 }: {
   note: BookNote;
   onUpdate: (id: string, patch: Partial<BookNote>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  deleting?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(note.body);
@@ -100,7 +105,7 @@ function NoteRow({
 
   return (
     <motion.li
-      className="book-note"
+      className={`book-note ${deleting ? "is-deleting" : ""}`}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -159,6 +164,7 @@ function NoteRow({
                 setDraft(note.body);
                 setEditing(true);
               }}
+              disabled={deleting}
               aria-label="Edit note"
               title="Edit note"
             >
@@ -167,10 +173,11 @@ function NoteRow({
             <button
               className="icon-action danger pressable"
               onClick={() => void onDelete(note.id)}
-              aria-label="Delete note"
-              title="Delete note"
+              disabled={deleting}
+              aria-label={deleting ? "Deleting note" : "Delete note"}
+              title={deleting ? "Deleting note" : "Delete note"}
             >
-              <TrashIcon />
+              {deleting ? <SpinnerIcon /> : <TrashIcon />}
             </button>
           </div>
         </>
@@ -233,6 +240,7 @@ export function BooksTab({
   onAddNote,
   onUpdateNote,
   onDeleteNote,
+  deletingIds,
 }: Props) {
   const [title, setTitle] = useState("");
   const [noteText, setNoteText] = useState("");
@@ -332,10 +340,11 @@ export function BooksTab({
                 <button
                   className="icon-action danger pressable"
                   onClick={() => void onDeleteBook(book.id)}
-                  aria-label="Delete book"
-                  title="Delete book"
+                  disabled={deletingIds.has(book.id)}
+                  aria-label={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
+                  title={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
                 >
-                  <TrashIcon />
+                  {deletingIds.has(book.id) ? <SpinnerIcon /> : <TrashIcon />}
                 </button>
               </div>
             </div>
@@ -425,7 +434,13 @@ export function BooksTab({
                   <ul className="note-list">
                     <AnimatePresence mode="popLayout" initial={false}>
                       {rows.map((note) => (
-                        <NoteRow key={note.id} note={note} onUpdate={onUpdateNote} onDelete={onDeleteNote} />
+                        <NoteRow
+                          key={note.id}
+                          note={note}
+                          onUpdate={onUpdateNote}
+                          onDelete={onDeleteNote}
+                          deleting={deletingIds.has(note.id)}
+                        />
                       ))}
                     </AnimatePresence>
                   </ul>

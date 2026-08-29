@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ageLabel, daysBetween } from "@/lib/date-keys";
-import { CheckIcon, CloseIcon, MoveIcon, PencilIcon, QuadrantGlyph, TrashIcon } from "./icons";
+import { CheckIcon, CloseIcon, MoveIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TrashIcon } from "./icons";
 import { QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -15,6 +15,9 @@ type Props = {
   showAge?: boolean;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  // True while its DELETE is in flight: the row dims and its controls lock
+  // until the server confirms and the row leaves the list.
+  deleting?: boolean;
   onMove?: (id: string) => void;
   // Desktop-only native drag between quadrant cards. Touch never engages this,
   // so there is no custom touch-drag code and nothing to lag.
@@ -40,6 +43,7 @@ export function ThoughtRow({
   showAge,
   onUpdate,
   onDelete,
+  deleting,
   onMove,
   onDragStart,
   onDragEnd,
@@ -83,7 +87,7 @@ export function ThoughtRow({
 
   return (
     <motion.li
-      className={`thought q-${thought.quadrant} ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""}`}
+      className={`thought q-${thought.quadrant} ${thought.done ? "is-done" : ""} ${isDragging ? "dragging" : ""} ${deleting ? "is-deleting" : ""}`}
       layout="position"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -92,7 +96,7 @@ export function ThoughtRow({
     >
       <div
         className="thought-main"
-        draggable={!!onDragStart && !editing}
+        draggable={!!onDragStart && !editing && !deleting}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", thought.id);
@@ -103,6 +107,7 @@ export function ThoughtRow({
         <motion.button
           className={`mark ${thought.done ? "mark-done" : ""}`}
           onClick={toggleDone}
+          disabled={deleting}
           whileTap={{ scale: 0.8 }}
           transition={snappy}
           aria-label={thought.done ? "Mark as not done" : "Mark as done"}
@@ -199,22 +204,30 @@ export function ThoughtRow({
               <button
                 className="icon-action pressable"
                 onClick={() => onMove(thought.id)}
+                disabled={deleting}
                 aria-label="Move to another quadrant"
                 title="Move"
               >
                 <MoveIcon />
               </button>
             )}
-            <button className="icon-action pressable" onClick={startEditing} aria-label="Edit" title="Edit">
+            <button
+              className="icon-action pressable"
+              onClick={startEditing}
+              disabled={deleting}
+              aria-label="Edit"
+              title="Edit"
+            >
               <PencilIcon />
             </button>
             <button
               className="icon-action danger pressable"
               onClick={() => void onDelete(thought.id)}
-              aria-label="Delete"
-              title="Delete"
+              disabled={deleting}
+              aria-label={deleting ? "Deleting" : "Delete"}
+              title={deleting ? "Deleting" : "Delete"}
             >
-              <TrashIcon />
+              {deleting ? <SpinnerIcon /> : <TrashIcon />}
             </button>
           </div>
         )}
