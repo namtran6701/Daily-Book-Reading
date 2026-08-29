@@ -771,7 +771,7 @@ input:focus {
   font-weight: 590;
   letter-spacing: -0.006em;
   border: 1.5px solid transparent;
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
 }
 
 .pill svg {
@@ -787,6 +787,30 @@ input:focus {
   color: var(--q);
   background: var(--q-soft);
   border-color: color-mix(in srgb, var(--q) 55%, transparent);
+}
+
+/* Resting composer: dim the pills that aren't the current default so the
+   selected quadrant reads clearly. Hover restores full presence. */
+.composer-picker:not(.armed) .pill:not(.picked) {
+  opacity: 0.5;
+}
+
+.composer-picker:not(.armed) .pill:not(.picked):hover {
+  opacity: 1;
+}
+
+/* A capture just landed here: a subtle ring pulse on the target pill. */
+@keyframes pill-added {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--q) 50%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+.pill.just-added {
+  animation: pill-added 0.75s ease-out;
 }
 
 /* With text in the composer, pills submit into their quadrant; preview that
@@ -2628,5 +2652,9 @@ button.quadrant-tag .caret {
 
   .burst i {
     animation-duration: 0.01s;
+  }
+
+  .pill.just-added {
+    animation: none;
   }
 }

@@ -182,6 +182,23 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   const [moveId, setMoveId] = useState<string | null>(null);
 
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const composerCardRef = useRef<HTMLElement>(null);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [justAdded, setJustAdded] = useState<Quadrant | null>(null);
+
+  useEffect(() => () => {
+    if (addedTimer.current) clearTimeout(addedTimer.current);
+  }, []);
+
+  // Pulse the composer pill for the quadrant a capture just landed in.
+  function flashAdded(key: Quadrant) {
+    if (addedTimer.current) clearTimeout(addedTimer.current);
+    setJustAdded(null);
+    requestAnimationFrame(() => {
+      setJustAdded(key);
+      addedTimer.current = setTimeout(() => setJustAdded(null), 900);
+    });
+  }
 
   function pickQuadrant(next: Quadrant) {
     setQuadrant(next);
@@ -223,6 +240,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
     if (await onCapture(text, quadrant)) {
       setText("");
       haptic(8);
+      flashAdded(quadrant);
     }
   }
 
@@ -239,6 +257,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
     if (await onCapture(text, next)) {
       setText("");
       haptic(8);
+      flashAdded(next);
     }
   }
 
@@ -252,7 +271,16 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
 
   function focusQuadrant(key: Quadrant) {
     pickQuadrant(key);
-    composerRef.current?.focus();
+    // Focus without the browser's own jump, then glide the composer up to just
+    // below the sticky masthead so the text box is ready to type into.
+    composerRef.current?.focus({ preventScroll: true });
+    const card = composerCardRef.current;
+    if (!card) return;
+    const masthead = document.querySelector<HTMLElement>(".masthead");
+    const gap = (masthead?.offsetHeight ?? 0) + 12;
+    const top = card.getBoundingClientRect().top + window.scrollY - gap;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? "auto" : "smooth" });
   }
 
   function moveTo(target: Quadrant) {
@@ -272,6 +300,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
   return (
     <>
       <section
+        ref={composerCardRef}
         className={`composer card capture-${quadrant}`}
         aria-label="Capture a thought"
       >
@@ -297,7 +326,7 @@ export function MatrixTab({ thoughts, today, busy, onCapture, onUpdate, onDelete
           {QUADRANTS.map((key) => (
             <motion.button
               key={key}
-              className={`pill q-${key} ${quadrant === key ? "picked" : ""}`}
+              className={`pill q-${key} ${quadrant === key ? "picked" : ""} ${justAdded === key ? "just-added" : ""}`}
               onClick={() => void pickOrSend(key)}
               whileTap={{ scale: 0.94 }}
               transition={bouncy}
