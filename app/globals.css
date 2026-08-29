@@ -1632,8 +1632,8 @@ button.quadrant-tag .caret {
   min-width: 0;
 }
 
-.task-property-heading strong,
-.task-property-heading span {
+.task-property-heading > div > strong,
+.task-property-heading > div > span {
   display: block;
 }
 
