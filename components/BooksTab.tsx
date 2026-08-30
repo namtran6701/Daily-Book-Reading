@@ -32,7 +32,7 @@ type Props = {
   onUpdateBook: (id: string, patch: { finished?: boolean }) => Promise<void>;
   onDeleteBook: (id: string) => Promise<void>;
   onAddNote: (bookId: string, text: string) => Promise<BookNote | null>;
-  onOpenNote: (id: string) => void;
+  onOpenNote: (note: BookNote) => void;
   onDeleteNote: (id: string) => Promise<void>;
   // Ids (books and notes) whose DELETE is in flight; their rows lock and spin.
   deletingIds: Set<string>;
@@ -101,22 +101,29 @@ function NoteRow({
       exit={{ opacity: 0, scale: 0.96 }}
       transition={snappy}
     >
-      {page && (
-        <span className="note-page">
-          {page.label}
-          {page.read !== null && (
-            <em className="note-pages-read">
-              {page.read} {page.read === 1 ? "page" : "pages"}
-            </em>
-          )}
+      <button
+        className="reading-note-link pressable-row"
+        onClick={onOpen}
+        disabled={deleting}
+        aria-label={`Open reading note: ${note.body}`}
+      >
+        {page && (
+          <span className="note-page">
+            {page.label}
+            {page.read !== null && (
+              <em className="note-pages-read">
+                {page.read} {page.read === 1 ? "page" : "pages"}
+              </em>
+            )}
+          </span>
+        )}
+        <span className="reading-note-heading">
+          <span className="reading-note-title">{note.body}</span>
+          <span className="reading-note-cue" aria-hidden="true">
+            <ChevronRightIcon size={15} />
+          </span>
         </span>
-      )}
-      <button className="reading-note-link pressable-row" onClick={onOpen} disabled={deleting}>
-        <span className="reading-note-title">{note.body}</span>
         {note.notes && <span className="reading-note-preview">{note.notes}</span>}
-        <span className="reading-note-cue" aria-hidden="true">
-          <ChevronRightIcon size={15} />
-        </span>
       </button>
       <div className="note-meta">
         <button
@@ -231,7 +238,7 @@ export function BooksTab({
     const created = await onAddNote(book.id, noteText);
     if (!created) return;
     setNoteText("");
-    onOpenNote(created.id);
+    onOpenNote(created);
   }
 
   const reading = books.filter((entry) => !entry.finishedAt);
@@ -369,7 +376,7 @@ export function BooksTab({
                         <NoteRow
                           key={note.id}
                           note={note}
-                          onOpen={() => onOpenNote(note.id)}
+                          onOpen={() => onOpenNote(note)}
                           onDelete={onDeleteNote}
                           deleting={deletingIds.has(note.id)}
                           readOnly={readOnly}

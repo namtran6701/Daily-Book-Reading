@@ -472,18 +472,16 @@ export function SecondBrain() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  function openBookNote(id: string) {
-    if (id === selectedBookNoteId) return;
-    const note = notes.find((entry) => entry.id === id);
-    if (!note) return;
+  function openBookNote(note: BookNote) {
+    if (note.id === selectedBookNoteId) return;
     history.pushState(
-      { ...historyStateWithoutDetail(), [BOOK_NOTE_HISTORY_KEY]: id },
+      { ...historyStateWithoutDetail(), [BOOK_NOTE_HISTORY_KEY]: note.id },
       "",
-      bookNoteUrl(id),
+      bookNoteUrl(note.id),
     );
     setSelectedThoughtId("");
     setSelectedBookId(note.bookId);
-    setSelectedBookNoteId(id);
+    setSelectedBookNoteId(note.id);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 

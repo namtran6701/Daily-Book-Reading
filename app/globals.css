@@ -2755,7 +2755,11 @@ button.quadrant-tag .caret {
 }
 
 .book-note {
-  padding-right: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding-right: 2px;
 }
 
 .note-list p,
@@ -2767,17 +2771,27 @@ button.quadrant-tag .caret {
 }
 
 .reading-note-link {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  min-height: 32px;
-  padding: 1px 26px 1px 0;
+  min-width: 0;
+  min-height: 44px;
+  justify-content: center;
+  padding: 6px 0;
   text-align: left;
 }
 
+.reading-note-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .reading-note-title {
+  min-width: 0;
   font-size: 14.5px;
   font-weight: 520;
   line-height: 1.5;
@@ -2797,9 +2811,7 @@ button.quadrant-tag .caret {
 }
 
 .reading-note-cue {
-  position: absolute;
-  top: 4px;
-  right: 1px;
+  flex: none;
   display: inline-flex;
   color: var(--tertiary);
   transition: color 0.18s ease, transform 0.18s ease;
@@ -2829,9 +2841,6 @@ button.quadrant-tag .caret {
 }
 
 .note-meta {
-  position: absolute;
-  top: 6px;
-  right: 4px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -3469,6 +3478,8 @@ button.quadrant-tag .caret {
 
   .reading-page-control input {
     min-height: 34px;
+    /* iOS Safari zooms the viewport when a focused input renders below 16px. */
+    font-size: 16px;
   }
 
   .note-capture {
@@ -3485,7 +3496,8 @@ button.quadrant-tag .caret {
   }
 
   .book-note {
-    padding-right: 50px;
+    gap: 6px;
+    padding-right: 0;
   }
 
   .book-header {
