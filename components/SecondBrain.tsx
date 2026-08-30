@@ -10,6 +10,7 @@ import {
   useTransform,
 } from "motion/react";
 import { BooksTab } from "./BooksTab";
+import { BookNoteDetail, type BookNoteUpdateOptions } from "./BookNoteDetail";
 import { Briefing } from "./Briefing";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
@@ -31,6 +32,8 @@ type AppError = {
 
 const TASK_QUERY = "task";
 const TASK_HISTORY_KEY = "secondBrainTask";
+const BOOK_NOTE_QUERY = "note";
+const BOOK_NOTE_HISTORY_KEY = "secondBrainBookNote";
 
 const TABS: { value: Tab; label: string; glyph: (props: { size?: number }) => React.JSX.Element }[] = [
   { value: "calendar", label: "Calendar", glyph: TodayIcon },
@@ -60,17 +63,31 @@ function taskIdFromUrl(): string {
   return new URL(window.location.href).searchParams.get(TASK_QUERY) ?? "";
 }
 
+function bookNoteIdFromUrl(): string {
+  return new URL(window.location.href).searchParams.get(BOOK_NOTE_QUERY) ?? "";
+}
+
 function taskUrl(id?: string): string {
   const url = new URL(window.location.href);
+  url.searchParams.delete(BOOK_NOTE_QUERY);
   if (id) url.searchParams.set(TASK_QUERY, id);
   else url.searchParams.delete(TASK_QUERY);
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-function historyStateWithoutTask(): Record<string, unknown> {
+function bookNoteUrl(id?: string): string {
+  const url = new URL(window.location.href);
+  url.searchParams.delete(TASK_QUERY);
+  if (id) url.searchParams.set(BOOK_NOTE_QUERY, id);
+  else url.searchParams.delete(BOOK_NOTE_QUERY);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function historyStateWithoutDetail(): Record<string, unknown> {
   const current = history.state;
   const next = current && typeof current === "object" ? { ...current } : {};
   delete next[TASK_HISTORY_KEY];
+  delete next[BOOK_NOTE_HISTORY_KEY];
   return next;
 }
 
@@ -124,7 +141,9 @@ export function SecondBrain() {
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedBookId, setSelectedBookId] = useState("");
   const [selectedThoughtId, setSelectedThoughtId] = useState("");
+  const [selectedBookNoteId, setSelectedBookNoteId] = useState("");
   const thoughtIds = useRef<Set<string>>(new Set());
+  const bookNoteIds = useRef<Set<string>>(new Set());
   // Ids whose DELETE is in flight. The row shows a spinner and only leaves the
   // list once the server confirms, so a failed delete can never resurrect a row.
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -319,21 +338,21 @@ export function SecondBrain() {
   );
 
   const addNote = useCallback(
-    async (bookId: string, text: string, page: string, pageEnd: string) => {
+    async (bookId: string, text: string) => {
       setBusy(true);
       try {
         const response = await apiFetch("/api/book-notes", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ bookId, text, page, pageEnd, dayKey: today }),
+          body: JSON.stringify({ bookId, text, page: "", pageEnd: "", dayKey: today }),
         });
         const payload = await readJson<{ notes: BookNote[] }>(response, "Could not save that note.");
         setNotes((current) => [...payload.notes, ...current]);
         clearError(`book-note:add:${bookId}`);
-        return true;
+        return payload.notes[0] ?? null;
       } catch (caught) {
         reportError(`book-note:add:${bookId}`, caught, "Could not save that note.");
-        return false;
+        return null;
       } finally {
         setBusy(false);
       }
@@ -341,20 +360,29 @@ export function SecondBrain() {
     [clearError, reportError, today],
   );
 
-  const updateNote = useCallback(async (id: string, patch: Partial<BookNote>) => {
+  const updateNote = useCallback(async (
+    id: string,
+    patch: Partial<BookNote>,
+    options?: BookNoteUpdateOptions,
+  ) => {
     setNotes((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
     try {
       const response = await apiFetch("/api/book-notes", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, ...patch }),
+        keepalive: options?.keepalive,
       });
       const payload = await readJson<{ note: BookNote }>(response, "Could not update that note.");
       setNotes((current) => current.map((item) => (item.id === id ? payload.note : item)));
       clearError(`book-note:update:${id}`);
+      return true;
     } catch (caught) {
-      reportError(`book-note:update:${id}`, caught, "Could not update that note.");
-      void load();
+      if (!options?.background) {
+        reportError(`book-note:update:${id}`, caught, "Could not update that note.");
+        void load();
+      }
+      return false;
     }
   }, [clearError, load, reportError]);
 
@@ -369,25 +397,40 @@ export function SecondBrain() {
     [runDelete],
   );
 
+  /* eslint-disable react-hooks/set-state-in-effect -- URL detail state is reconciled after API data arrives. */
   useEffect(() => {
     thoughtIds.current = new Set(thoughts.map((thought) => thought.id));
+    bookNoteIds.current = new Set(notes.map((note) => note.id));
     if (!loaded) return;
 
     const requestedTask = taskIdFromUrl();
+    const requestedBookNote = bookNoteIdFromUrl();
     if (requestedTask && thoughtIds.current.has(requestedTask)) {
       // A shared or restored task URL should open its canvas after data arrives.
       setSelectedThoughtId(requestedTask);
-    } else if (requestedTask) {
-      history.replaceState(historyStateWithoutTask(), "", taskUrl());
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedBookNoteId("");
+    } else if (requestedBookNote && bookNoteIds.current.has(requestedBookNote)) {
+      const requestedNote = notes.find((note) => note.id === requestedBookNote);
       setSelectedThoughtId("");
+      setSelectedBookNoteId(requestedBookNote);
+      if (requestedNote) setSelectedBookId(requestedNote.bookId);
+      setTab("books");
+    } else if (requestedTask || requestedBookNote) {
+      history.replaceState(historyStateWithoutDetail(), "", bookNoteUrl());
+      setSelectedThoughtId("");
+      setSelectedBookNoteId("");
     }
-  }, [loaded, thoughts]);
+  }, [loaded, notes, thoughts]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     const followHistory = () => {
       const requestedTask = taskIdFromUrl();
+      const requestedBookNote = bookNoteIdFromUrl();
       setSelectedThoughtId(requestedTask && thoughtIds.current.has(requestedTask) ? requestedTask : "");
+      setSelectedBookNoteId(
+        requestedBookNote && bookNoteIds.current.has(requestedBookNote) ? requestedBookNote : "",
+      );
       window.scrollTo({ top: 0, behavior: "auto" });
     };
 
@@ -399,14 +442,22 @@ export function SecondBrain() {
   const selectedThought = selectedThoughtId
     ? thoughts.find((thought) => thought.id === selectedThoughtId) ?? null
     : null;
+  const selectedBookNote = selectedBookNoteId
+    ? notes.find((note) => note.id === selectedBookNoteId) ?? null
+    : null;
+  const selectedNoteBook = selectedBookNote
+    ? books.find((book) => book.id === selectedBookNote.bookId) ?? null
+    : null;
+  const showingDetail = Boolean(selectedThought || (selectedBookNote && selectedNoteBook));
 
   function openThought(id: string) {
     if (id === selectedThoughtId) return;
     history.pushState(
-      { ...historyStateWithoutTask(), [TASK_HISTORY_KEY]: id },
+      { ...historyStateWithoutDetail(), [TASK_HISTORY_KEY]: id },
       "",
       taskUrl(id),
     );
+    setSelectedBookNoteId("");
     setSelectedThoughtId(id);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -416,8 +467,33 @@ export function SecondBrain() {
       history.back();
       return;
     }
-    history.replaceState(historyStateWithoutTask(), "", taskUrl());
+    history.replaceState(historyStateWithoutDetail(), "", taskUrl());
     setSelectedThoughtId("");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function openBookNote(id: string) {
+    if (id === selectedBookNoteId) return;
+    const note = notes.find((entry) => entry.id === id);
+    if (!note) return;
+    history.pushState(
+      { ...historyStateWithoutDetail(), [BOOK_NOTE_HISTORY_KEY]: id },
+      "",
+      bookNoteUrl(id),
+    );
+    setSelectedThoughtId("");
+    setSelectedBookId(note.bookId);
+    setSelectedBookNoteId(id);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function closeBookNote() {
+    if (history.state?.[BOOK_NOTE_HISTORY_KEY] === selectedBookNoteId) {
+      history.back();
+      return;
+    }
+    history.replaceState(historyStateWithoutDetail(), "", bookNoteUrl());
+    setSelectedBookNoteId("");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -439,11 +515,11 @@ export function SecondBrain() {
   return (
     <MotionConfig reducedMotion="user">
       <main
-        className={`app ${online ? "" : "is-offline"} ${selectedThought ? "showing-task" : ""}`}
+        className={`app ${online ? "" : "is-offline"} ${showingDetail ? "showing-task" : ""}`}
         data-app="second-brain"
         data-online={online}
       >
-        {!selectedThought && (
+        {!showingDetail && (
           <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
             <span className="brand">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -501,7 +577,7 @@ export function SecondBrain() {
           )}
         </AnimatePresence>
 
-        <div className={`page ${selectedThought ? "page-task" : `page-${tab}`}`}>
+        <div className={`page ${showingDetail ? "page-task" : `page-${tab}`}`}>
           <AnimatePresence mode="wait" initial={false}>
             {selectedThought ? (
               <TaskDetail
@@ -510,6 +586,15 @@ export function SecondBrain() {
                 readOnly={!online}
                 onBack={closeThought}
                 onUpdate={updateThought}
+              />
+            ) : selectedBookNote && selectedNoteBook ? (
+              <BookNoteDetail
+                key={`book-note-${selectedBookNote.id}`}
+                book={selectedNoteBook}
+                note={selectedBookNote}
+                readOnly={!online}
+                onBack={closeBookNote}
+                onUpdate={updateNote}
               />
             ) : (
               <motion.div
@@ -594,7 +679,7 @@ export function SecondBrain() {
                             onUpdateBook={updateBook}
                             onDeleteBook={deleteBook}
                             onAddNote={addNote}
-                            onUpdateNote={updateNote}
+                            onOpenNote={openBookNote}
                             onDeleteNote={deleteNote}
                             deletingIds={deletingIds}
                           />
@@ -616,7 +701,7 @@ export function SecondBrain() {
           </AnimatePresence>
         </div>
 
-        {!selectedThought && (
+        {!showingDetail && (
           <nav className="tabbar" aria-label="Sections">
             {TABS.map(({ value, label, glyph: Glyph }) => (
               <button

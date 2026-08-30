@@ -50,11 +50,14 @@ window. Deleting a book also deletes its notes.
 
 ## Books
 
-Add books to the **Reading now** shelf, open a book to record notes with an
-optional page number, and mark it finished when you are done. Multi-line input
-creates one note per non-empty line. Notes are grouped by day and can be
-edited, deleted, and searched once a book has more than four notes. Finished
-books can be moved back to the reading shelf.
+Add books to the **Reading now** shelf, open a book, and begin each reading note
+with one clear main idea. Saving that first line opens a focused reading canvas
+where the idea can be expanded with long-form content and optional page numbers.
+The canvas auto-saves the title, pages, and content, keeps a local recovery draft,
+and deliberately has no due-date control. Existing notes open in the same canvas.
+Notes are grouped by day, can be deleted, and search covers both their main idea
+and expanded content once a book has more than four notes. Finished books can be
+moved back to the reading shelf.
 
 Book notes also appear on the Calendar and contribute to Review activity.
 
@@ -81,9 +84,10 @@ that cached shell offline. API responses are deliberately never cached, so
 loading or changing thoughts, books, and notes still requires a network
 connection. If the connection drops after data has loaded, the app keeps that
 content readable and disables write controls until the connection returns.
-The task canvas's small recovery drafts are the exception: they use browser
-local storage to protect typing that happened immediately before a page was
-backgrounded or closed. They are not a full offline copy of the app's data.
+The task and reading-note canvases' small recovery drafts are the exception:
+they use browser local storage to protect typing that happened immediately
+before a page was backgrounded or closed. They are not a full offline copy of
+the app's data.
 
 The first load has a dedicated loading screen. If that load or a later request
 fails, the app keeps the failure in context and offers **Try again**. A dropped
@@ -164,9 +168,10 @@ npx wrangler deploy --config dist/server/wrangler.json
 ```
 
 The first API request in each Worker isolate runs `ensureSchema()` against the
-bound database. Existing databases receive additive task-notes and scheduled-day
-columns automatically. Existing thoughts keep their current day as the immutable
-capture day and begin without a schedule.
+bound database. Existing databases receive additive task-notes, scheduled-day,
+and long-form reading-note columns automatically. Existing thoughts keep their
+current day as the immutable capture day and begin without a schedule; existing
+book notes begin with an empty long-form canvas.
 
 > [!IMPORTANT]
 > The app does not implement authentication. Every request uses the fixed

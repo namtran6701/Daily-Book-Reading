@@ -29,6 +29,13 @@
       "when": 1788067677156,
       "tag": "0003_woozy_ender_wiggin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788098850041,
+      "tag": "0004_marvelous_jackpot",
+      "breakpoints": true
     }
   ]
 }

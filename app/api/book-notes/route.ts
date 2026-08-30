@@ -3,6 +3,7 @@ import {
   MAX_NOTES_PER_BOOK,
   MAX_PAGE_LENGTH,
   MAX_ROWS,
+  MAX_TASK_NOTES_LENGTH,
   OWNER_ID,
   captureError,
   captureLines,
@@ -17,6 +18,7 @@ type BookNoteRow = {
   id: string;
   book_id: string;
   body: string;
+  notes: string;
   page: string;
   page_end: string;
   day_key: string;
@@ -24,13 +26,14 @@ type BookNoteRow = {
   updated_at: string;
 };
 
-const COLUMNS = "id, book_id, body, page, page_end, day_key, created_at, updated_at";
+const COLUMNS = "id, book_id, body, notes, page, page_end, day_key, created_at, updated_at";
 
 function serialize(row: BookNoteRow) {
   return {
     id: row.id,
     bookId: row.book_id,
     body: row.body,
+    notes: row.notes,
     page: row.page,
     pageEnd: row.page_end,
     dayKey: row.day_key,
@@ -91,8 +94,8 @@ export async function POST(request: Request) {
       lines.map((body, index) =>
         db
           .prepare(`INSERT INTO book_notes (
-              id, user_id, book_id, body, page, page_end, day_key, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            id, user_id, book_id, body, notes, page, page_end, day_key, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?)
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
@@ -122,6 +125,12 @@ export async function PATCH(request: Request) {
     if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
     if (!id) return Response.json({ error: "A note id is required." }, { status: 400 });
+    if (typeof payload.notes === "string" && payload.notes.length > MAX_TASK_NOTES_LENGTH) {
+      return Response.json(
+        { error: `Reading note content cannot exceed ${MAX_TASK_NOTES_LENGTH.toLocaleString("en-US")} characters.` },
+        { status: 400 },
+      );
+    }
 
     await ensureSchema();
     const db = getD1();
@@ -132,11 +141,12 @@ export async function PATCH(request: Request) {
     if (!current) return Response.json({ error: "Note not found." }, { status: 404 });
 
     const row = await db
-      .prepare(`UPDATE book_notes SET body = ?, page = ?, page_end = ?, updated_at = ?
+      .prepare(`UPDATE book_notes SET body = ?, notes = ?, page = ?, page_end = ?, updated_at = ?
         WHERE id = ? AND user_id = ?
         RETURNING ${COLUMNS}`)
       .bind(
         text(payload.body, current.body).slice(0, 4000) || current.body,
+        typeof payload.notes === "string" ? payload.notes : current.notes,
         text(payload.page, current.page).slice(0, MAX_PAGE_LENGTH),
         text(payload.pageEnd, current.page_end).slice(0, MAX_PAGE_LENGTH),
         new Date().toISOString(),

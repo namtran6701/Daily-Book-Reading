@@ -1815,6 +1815,137 @@ button.quadrant-tag .caret {
   color: #b4b4b9;
 }
 
+/* ---------- reading note detail: a bookish companion to the task canvas ---------- */
+
+.reading-detail {
+  padding-top: env(safe-area-inset-top);
+}
+
+.reading-context {
+  flex: 0 1 360px;
+  min-width: 0;
+  background: var(--orange-soft);
+}
+
+.reading-context .q-glyph {
+  color: var(--warning-ink);
+}
+
+.reading-context strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-context em {
+  color: var(--warning-ink);
+}
+
+.reading-paper::before {
+  background: linear-gradient(90deg, #c77f12, #f0b54b 52%, #d99524);
+}
+
+.reading-document {
+  position: relative;
+}
+
+/* A single warm rule recalls the margin of a marked-up book page. */
+.reading-document::before {
+  content: "";
+  position: absolute;
+  top: 36px;
+  bottom: 42px;
+  left: 18px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--orange), color-mix(in srgb, var(--orange) 12%, transparent));
+  opacity: 0.58;
+}
+
+.reading-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--warning-ink);
+  font-size: 10.5px;
+  font-weight: 660;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reading-kicker::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 4px var(--orange-soft);
+}
+
+.reading-title-editor {
+  font-size: clamp(32px, 4.6vw, 50px);
+}
+
+.reading-meta-row {
+  margin-top: 22px;
+}
+
+.reading-page-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 4px 10px 4px 12px;
+  border: 1px solid var(--separator-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--tertiary);
+  font-size: 13px;
+}
+
+.reading-page-control:focus-within {
+  border-color: rgba(10, 10, 12, 0.5);
+  box-shadow: 0 0 0 3.5px rgba(10, 10, 12, 0.09);
+}
+
+.reading-pages-label {
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reading-page-control input {
+  width: 50px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reading-page-control input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.reading-page-control.is-disabled {
+  opacity: 0.58;
+}
+
+.reading-notes-label {
+  color: var(--warning-ink);
+}
+
+.reading-notes-editor {
+  min-height: 50vh;
+}
+
 /* ---------- sheet + move menu (portal) ---------- */
 
 .scrim {
@@ -2483,45 +2614,75 @@ button.quadrant-tag .caret {
 }
 
 .note-capture {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 14px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
   margin-bottom: 18px;
 }
 
-.note-capture .page-range {
-  flex: none;
+.note-capture-intro {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 11px;
 }
 
-.note-capture .page-input {
-  width: 48px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+.note-capture-glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  color: var(--warning-ink);
+  background: var(--orange-soft);
 }
 
-.note-capture .page-input.invalid {
-  border-color: var(--red);
-  box-shadow: 0 0 0 1px var(--red);
+.note-capture-intro > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.page-range-sep {
-  color: var(--tertiary);
+.note-capture-intro strong {
+  font-family: var(--display);
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.capture-error {
-  margin: -10px 0 16px;
+.note-capture-intro em {
+  color: var(--secondary);
   font-size: 12px;
-  color: var(--red);
+  font-style: normal;
+  line-height: 1.35;
 }
 
-.note-capture textarea {
+.note-capture-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.note-capture-field input {
   flex: 1;
   min-width: 0;
+  min-height: 48px;
+  padding: 12px 15px;
+  border-radius: 15px;
+  font-size: 15.5px;
+  letter-spacing: -0.008em;
+}
+
+.note-capture-field .keep-button {
+  width: 48px;
+  height: 48px;
+}
+
+.note-capture-hint {
+  margin: -3px 0 0 47px;
+  color: var(--tertiary);
+  font-size: 11px;
 }
 
 .note-search {
@@ -2594,7 +2755,7 @@ button.quadrant-tag .caret {
 }
 
 .book-note {
-  padding-right: 72px;
+  padding-right: 48px;
 }
 
 .note-list p,
@@ -2603,6 +2764,50 @@ button.quadrant-tag .caret {
   line-height: 1.5;
   letter-spacing: -0.006em;
   overflow-wrap: anywhere;
+}
+
+.reading-note-link {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 32px;
+  padding: 1px 26px 1px 0;
+  text-align: left;
+}
+
+.reading-note-title {
+  font-size: 14.5px;
+  font-weight: 520;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  overflow-wrap: anywhere;
+}
+
+.reading-note-preview {
+  color: var(--secondary);
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reading-note-cue {
+  position: absolute;
+  top: 4px;
+  right: 1px;
+  display: inline-flex;
+  color: var(--tertiary);
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.reading-note-link:hover .reading-note-cue {
+  color: var(--label);
+  transform: translateX(2px);
 }
 
 .note-page {
@@ -3213,6 +3418,15 @@ button.quadrant-tag .caret {
     font-size: 10.5px;
   }
 
+  .reading-context {
+    flex: 1 1 auto;
+    padding-right: 10px;
+  }
+
+  .reading-context strong {
+    font-size: 12px;
+  }
+
   .task-paper {
     min-height: calc(100vh - 86px - env(safe-area-inset-top));
     margin-top: 12px;
@@ -3224,6 +3438,12 @@ button.quadrant-tag .caret {
 
   .task-document {
     padding: 28px 20px 44px;
+  }
+
+  .reading-document::before {
+    top: 26px;
+    bottom: 34px;
+    left: 9px;
   }
 
   .task-title-editor {
@@ -3241,6 +3461,31 @@ button.quadrant-tag .caret {
   .task-notes-editor {
     min-height: 44vh;
     font-size: 16px;
+  }
+
+  .reading-page-control {
+    min-height: 44px;
+  }
+
+  .reading-page-control input {
+    min-height: 34px;
+  }
+
+  .note-capture {
+    padding: 15px;
+  }
+
+  .note-capture-hint {
+    margin-left: 0;
+  }
+
+  .book-note .icon-action {
+    width: 44px;
+    height: 44px;
+  }
+
+  .book-note {
+    padding-right: 50px;
   }
 
   .book-header {

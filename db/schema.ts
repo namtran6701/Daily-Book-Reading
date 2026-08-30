@@ -42,6 +42,7 @@ export const bookNotes = sqliteTable(
     userId: text("user_id").notNull(),
     bookId: text("book_id").notNull(),
     body: text("body").notNull(),
+    notes: text("notes").notNull().default(""),
     page: text("page").notNull().default(""),
     pageEnd: text("page_end").notNull().default(""),
     dayKey: text("day_key").notNull(),

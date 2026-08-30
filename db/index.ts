@@ -56,6 +56,9 @@ async function migrateBooks(db: D1Database): Promise<void> {
 
 async function migrateBookNotes(db: D1Database): Promise<void> {
   const columns = await columnNames(db, "book_notes");
+  if (!columns.has("notes")) {
+    await db.prepare("ALTER TABLE book_notes ADD COLUMN notes TEXT NOT NULL DEFAULT ''").run();
+  }
   if (!columns.has("page_end")) {
     await db.prepare("ALTER TABLE book_notes ADD COLUMN page_end TEXT NOT NULL DEFAULT ''").run();
   }
@@ -100,6 +103,7 @@ export async function ensureSchema(): Promise<void> {
         user_id TEXT NOT NULL,
         book_id TEXT NOT NULL,
         body TEXT NOT NULL,
+        notes TEXT NOT NULL DEFAULT '',
         page TEXT NOT NULL DEFAULT '',
         page_end TEXT NOT NULL DEFAULT '',
         day_key TEXT NOT NULL,

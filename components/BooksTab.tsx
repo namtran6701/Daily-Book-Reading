@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
 import { QuietState } from "./UiState";
 import {
   BookGlyph,
-  CheckIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   CloseIcon,
-  PencilIcon,
+  CheckIcon,
+  NoteIcon,
   PlusIcon,
   SearchIcon,
   SpinnerIcon,
@@ -30,8 +31,8 @@ type Props = {
   onAddBook: (title: string) => Promise<boolean>;
   onUpdateBook: (id: string, patch: { finished?: boolean }) => Promise<void>;
   onDeleteBook: (id: string) => Promise<void>;
-  onAddNote: (bookId: string, text: string, page: string, pageEnd: string) => Promise<boolean>;
-  onUpdateNote: (id: string, patch: Partial<BookNote>) => Promise<void>;
+  onAddNote: (bookId: string, text: string) => Promise<BookNote | null>;
+  onOpenNote: (id: string) => void;
   onDeleteNote: (id: string) => Promise<void>;
   // Ids (books and notes) whose DELETE is in flight; their rows lock and spin.
   deletingIds: Set<string>;
@@ -78,36 +79,18 @@ function pageInfo(page: string, pageEnd: string): { label: string; read: number 
 
 function NoteRow({
   note,
-  onUpdate,
+  onOpen,
   onDelete,
   deleting,
   readOnly,
 }: {
   note: BookNote;
-  onUpdate: (id: string, patch: Partial<BookNote>) => Promise<void>;
+  onOpen: () => void;
   onDelete: (id: string) => Promise<void>;
   deleting?: boolean;
   readOnly?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(note.body);
-  const editor = useRef<HTMLTextAreaElement>(null);
   const page = pageInfo(note.page, note.pageEnd);
-
-  useEffect(() => {
-    if (editing) editor.current?.focus();
-  }, [editing]);
-
-  async function save() {
-    if (readOnly) return;
-    const body = draft.trim();
-    setEditing(false);
-    if (!body || body === note.body) {
-      setDraft(note.body);
-      return;
-    }
-    await onUpdate(note.id, { body });
-  }
 
   return (
     <motion.li
@@ -128,67 +111,24 @@ function NoteRow({
           )}
         </span>
       )}
-      {editing ? (
-        <div className="thought-editor">
-          <textarea
-            ref={editor}
-            value={draft}
-            rows={3}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setDraft(note.body);
-                setEditing(false);
-              }
-            }}
-            aria-label="Edit this note"
-            disabled={readOnly}
-          />
-          <div className="editor-actions">
-            <button className="icon-action pressable" onClick={() => void save()} disabled={readOnly} aria-label="Save" title="Save">
-              <CheckIcon />
-            </button>
-            <button
-              className="icon-action quiet pressable"
-              onClick={() => {
-                setDraft(note.body);
-                setEditing(false);
-              }}
-              aria-label="Cancel"
-              title="Cancel"
-            >
-              <CloseIcon />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <p>{note.body}</p>
-          <div className="note-meta">
-            <button
-              className="icon-action pressable"
-              onClick={() => {
-                setDraft(note.body);
-                setEditing(true);
-              }}
-              disabled={deleting || readOnly}
-              aria-label="Edit note"
-              title="Edit note"
-            >
-              <PencilIcon />
-            </button>
-            <button
-              className="icon-action danger pressable"
-              onClick={() => void onDelete(note.id)}
-              disabled={deleting || readOnly}
-              aria-label={deleting ? "Deleting note" : "Delete note"}
-              title={deleting ? "Deleting note" : "Delete note"}
-            >
-              {deleting ? <SpinnerIcon /> : <TrashIcon />}
-            </button>
-          </div>
-        </>
-      )}
+      <button className="reading-note-link pressable-row" onClick={onOpen} disabled={deleting}>
+        <span className="reading-note-title">{note.body}</span>
+        {note.notes && <span className="reading-note-preview">{note.notes}</span>}
+        <span className="reading-note-cue" aria-hidden="true">
+          <ChevronRightIcon size={15} />
+        </span>
+      </button>
+      <div className="note-meta">
+        <button
+          className="icon-action danger pressable"
+          onClick={() => void onDelete(note.id)}
+          disabled={deleting || readOnly}
+          aria-label={deleting ? "Deleting note" : "Delete note"}
+          title={deleting ? "Deleting note" : "Delete note"}
+        >
+          {deleting ? <SpinnerIcon /> : <TrashIcon />}
+        </button>
+      </div>
     </motion.li>
   );
 }
@@ -245,15 +185,13 @@ export function BooksTab({
   onUpdateBook,
   onDeleteBook,
   onAddNote,
-  onUpdateNote,
+  onOpenNote,
   onDeleteNote,
   deletingIds,
   readOnly,
 }: Props) {
   const [title, setTitle] = useState("");
   const [noteText, setNoteText] = useState("");
-  const [page, setPage] = useState("");
-  const [pageEnd, setPageEnd] = useState("");
   const [query, setQuery] = useState("");
 
   const notesByBook = useMemo(() => {
@@ -273,7 +211,10 @@ export function BooksTab({
   const journal = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const visible = needle
-      ? bookNotes.filter((note) => note.body.toLowerCase().includes(needle))
+      ? bookNotes.filter(
+          (note) =>
+            note.body.toLowerCase().includes(needle) || note.notes.toLowerCase().includes(needle),
+        )
       : bookNotes;
     const days = new Map<string, BookNote[]>();
     for (const note of visible) days.set(note.dayKey, [...(days.get(note.dayKey) ?? []), note]);
@@ -285,19 +226,12 @@ export function BooksTab({
     if (await onAddBook(title)) setTitle("");
   }
 
-  // Both pages given and numeric: the start must come before the end.
-  const startNum = Number(page.trim());
-  const endNum = Number(pageEnd.trim());
-  const rangeError =
-    page.trim() !== "" &&
-    pageEnd.trim() !== "" &&
-    Number.isFinite(startNum) &&
-    Number.isFinite(endNum) &&
-    startNum >= endNum;
-
   async function addNote() {
-    if (busy || readOnly || !book || !noteText.trim() || rangeError) return;
-    if (await onAddNote(book.id, noteText, page, pageEnd)) setNoteText("");
+    if (busy || readOnly || !book || !noteText.trim()) return;
+    const created = await onAddNote(book.id, noteText);
+    if (!created) return;
+    setNoteText("");
+    onOpenNote(created.id);
   }
 
   const reading = books.filter((entry) => !entry.finishedAt);
@@ -359,63 +293,45 @@ export function BooksTab({
             </div>
           </header>
 
-          <div className="note-capture card">
-            <div className="page-range">
-              <input
-                className={`page-input${rangeError ? " invalid" : ""}`}
-                value={page}
-                onChange={(event) => setPage(event.target.value)}
-                placeholder="p."
-                inputMode="numeric"
-                aria-label="Start page, optional"
-                aria-invalid={rangeError}
-                disabled={readOnly}
-              />
-              <span className="page-range-sep" aria-hidden="true">
-                –
+          <section className="note-capture card" aria-label="Start a reading note">
+            <div className="note-capture-intro">
+              <span className="note-capture-glyph" aria-hidden="true">
+                <NoteIcon size={16} />
               </span>
+              <span>
+                <strong>Start a reading note</strong>
+                <em>Begin with one clear idea. Add the detail next.</em>
+              </span>
+            </div>
+            <div className="note-capture-field">
               <input
-                className={`page-input${rangeError ? " invalid" : ""}`}
-                value={pageEnd}
-                onChange={(event) => setPageEnd(event.target.value)}
-                placeholder="p."
-                inputMode="numeric"
-                aria-label="End page, optional"
-                aria-invalid={rangeError}
+                value={noteText}
+                maxLength={4000}
+                placeholder="What is this reading mainly about?"
+                onChange={(event) => setNoteText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void addNote();
+                  }
+                }}
+                aria-label="Reading note main idea"
                 disabled={readOnly}
               />
+              <motion.button
+                className="keep-button"
+                onClick={() => void addNote()}
+                disabled={busy || readOnly || !noteText.trim()}
+                whileTap={{ scale: 0.88 }}
+                transition={bouncy}
+                aria-label={busy ? "Opening note" : "Start note"}
+                title="Start note"
+              >
+                <SubmitIcon />
+              </motion.button>
             </div>
-            <textarea
-              value={noteText}
-              rows={2}
-              placeholder="What stood out? One note per line."
-              onChange={(event) => setNoteText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void addNote();
-                }
-              }}
-              aria-label="Your note"
-              disabled={readOnly}
-            />
-            <motion.button
-              className="keep-button"
-              onClick={() => void addNote()}
-              disabled={busy || readOnly || !noteText.trim() || rangeError}
-              whileTap={{ scale: 0.88 }}
-              transition={bouncy}
-              aria-label={busy ? "Saving note" : "Add note"}
-              title="Add note"
-            >
-              <SubmitIcon />
-            </motion.button>
-          </div>
-          {rangeError && (
-            <p className="capture-error" role="alert">
-              Start page must be smaller than the end page.
-            </p>
-          )}
+            <p className="note-capture-hint">Press Enter to open the full reading canvas.</p>
+          </section>
 
           {bookNotes.length > 4 && (
             <label className="note-search">
@@ -453,7 +369,7 @@ export function BooksTab({
                         <NoteRow
                           key={note.id}
                           note={note}
-                          onUpdate={onUpdateNote}
+                          onOpen={() => onOpenNote(note.id)}
                           onDelete={onDeleteNote}
                           deleting={deletingIds.has(note.id)}
                           readOnly={readOnly}

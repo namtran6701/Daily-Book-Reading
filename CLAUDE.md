@@ -73,7 +73,8 @@ The schema has two representations that must stay synchronized by hand:
   on first use. Thought rows include a long-form `notes` field linked to the
   compact matrix title. Their existing `day_key` is the immutable local capture
   day; the nullable `scheduled_day_key` can be changed or cleared without
-  rewriting capture history. It also removes retired `chapters` and `daily_notes`
+  rewriting capture history. Book-note rows likewise include a long-form `notes`
+  field linked to their compact main idea. It also removes retired `chapters` and `daily_notes`
   tables, folds legacy thought metadata into the body, and removes the retired
   book `author` column when those older shapes are encountered.
 - `db/schema.ts` describes the same final three-table shape for Drizzle only.
@@ -126,6 +127,12 @@ period completion statistics.
   first mirrored to a per-task `localStorage` recovery draft, and lifecycle
   events flush the latest draft with a keepalive request. The quadrant is
   context, not an editable property, in this view.
+- `BookNoteDetail` is the parallel focused document view for reading notes. A
+  compact main idea opens into an auto-saving canvas with long-form content and
+  optional start/end pages. It intentionally has no scheduling control. Like
+  task detail, it serializes updates, uses a per-note `localStorage` recovery
+  draft, flushes with keepalive on lifecycle events, and can be restored from
+  its `?note=` URL.
 - Data fetching uses plain `fetch`, `cache: "no-store"`, and React state.
   Same-origin API redirects are handled manually so an expired Cloudflare
   Access session can reload into its login flow. Thought/note PATCH actions
