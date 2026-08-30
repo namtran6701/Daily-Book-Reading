@@ -321,7 +321,6 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
       className={`task-detail q-${thought.quadrant}`}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
       transition={snappy}
       aria-label={`Task details for ${thought.body}`}
     >

@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   AnimatePresence,
   MotionConfig,
@@ -82,6 +90,10 @@ function bookNoteUrl(id?: string): string {
   else url.searchParams.delete(BOOK_NOTE_QUERY);
   return `${url.pathname}${url.search}${url.hash}`;
 }
+
+// The Worker renders this component too, where a layout effect would warn and
+// never run. Fall back to the passive effect there.
+const useBrowserLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function historyStateWithoutDetail(): Record<string, unknown> {
   const current = history.state;
@@ -465,9 +477,10 @@ export function SecondBrain() {
     : null;
   const showingDetail = Boolean(selectedThought || (selectedBookNote && selectedNoteBook));
 
-  // Runs after the workspace is visible again, so the scroll never moves while
-  // the outgoing detail is still the only painted view.
-  useEffect(() => {
+  // Restore the workspace offset in the same frame the workspace is unhidden.
+  // A passive effect lands after paint, so the list flashed at the top for a
+  // frame before snapping back to where it was left.
+  useBrowserLayoutEffect(() => {
     detailOpen.current = showingDetail;
     if (showingDetail) return;
     window.scrollTo({ top: workspaceScroll.current, behavior: "auto" });
@@ -487,12 +500,15 @@ export function SecondBrain() {
   }
 
   function closeThought() {
-    if (history.state?.[TASK_HISTORY_KEY] === selectedThoughtId) {
+    const shouldReturnThroughHistory = history.state?.[TASK_HISTORY_KEY] === selectedThoughtId;
+    // Reveal the still-mounted workspace immediately. Waiting for the
+    // asynchronous popstate event makes the back action feel like a refresh.
+    setSelectedThoughtId("");
+    if (shouldReturnThroughHistory) {
       history.back();
       return;
     }
     history.replaceState(historyStateWithoutDetail(), "", taskUrl());
-    setSelectedThoughtId("");
   }
 
   function openBookNote(note: BookNote) {
