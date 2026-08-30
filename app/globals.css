@@ -172,6 +172,10 @@ ul {
   max-width: 1060px;
   margin: 0 auto;
   padding: 0 20px calc(56px + env(safe-area-inset-bottom));
+  /* A canvas pushes in from off the right edge. Clip at the padding box, which
+     is exactly where the sticky bars already bleed to, so the travel never
+     widens the document. `clip` keeps sticky and fixed children behaving. */
+  overflow-x: clip;
 }
 
 .masthead {

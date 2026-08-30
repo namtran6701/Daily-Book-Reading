@@ -635,7 +635,9 @@ export function SecondBrain() {
             hidden={showingDetail}
             aria-hidden={showingDetail || undefined}
             initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            // Settle back under the canvas while it is open, so closing one
+            // slides the workspace home instead of cutting to it.
+            animate={showingDetail ? { opacity: 0.6, x: "-20%", y: 0 } : { opacity: 1, x: 0, y: 0 }}
             transition={snappy}
           >
             {!today || loading ? (

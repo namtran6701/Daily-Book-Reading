@@ -319,8 +319,11 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
   return (
     <motion.section
       className={`task-detail q-${thought.quadrant}`}
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
+      // The canvas pushes in from the right. It has no exit: neither view paints
+      // an opaque background, so sliding one out over the other would show both
+      // at once. Closing is carried by the workspace sliding back instead.
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
       transition={snappy}
       aria-label={`Task details for ${thought.body}`}
     >
