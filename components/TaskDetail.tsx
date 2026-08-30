@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, type Transition } from "motion/react";
 import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
 import { formatDate } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
@@ -17,6 +17,7 @@ export type ThoughtUpdateOptions = {
 
 type Props = {
   thought: Thought;
+  transition?: Transition;
   readOnly?: boolean;
   onBack: () => void;
   onUpdate: (
@@ -89,7 +90,7 @@ function isClean(draft: DocumentDraft, saved: DocumentDraft): boolean {
   );
 }
 
-export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
+export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: Props) {
   const [initialDraft] = useState(() =>
     readDraft(
       thought.id,
@@ -324,7 +325,7 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
       // at once. Closing is carried by the workspace sliding back instead.
       initial={{ x: "100%" }}
       animate={{ x: 0 }}
-      transition={snappy}
+      transition={transition ?? snappy}
       aria-label={`Task details for ${thought.body}`}
     >
       <header className="task-detail-bar">

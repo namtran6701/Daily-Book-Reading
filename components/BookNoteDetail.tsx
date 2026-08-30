@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, type Transition } from "motion/react";
 import { BookGlyph, ChevronLeftIcon, NoteIcon } from "./icons";
 import { formatDate } from "@/lib/date-keys";
 import { snappy } from "@/lib/springs";
@@ -17,6 +17,7 @@ export type BookNoteUpdateOptions = {
 type Props = {
   book: Book;
   note: BookNote;
+  transition?: Transition;
   readOnly?: boolean;
   onBack: () => void;
   onUpdate: (
@@ -89,7 +90,7 @@ function isClean(draft: ReadingDraft, saved: ReadingDraft): boolean {
   );
 }
 
-export function BookNoteDetail({ book, note, readOnly, onBack, onUpdate }: Props) {
+export function BookNoteDetail({ book, note, transition, readOnly, onBack, onUpdate }: Props) {
   const [initialDraft] = useState(() =>
     readDraft(note.id, {
       body: note.body,
@@ -334,7 +335,7 @@ export function BookNoteDetail({ book, note, readOnly, onBack, onUpdate }: Props
       // at once. Closing is carried by the workspace sliding back instead.
       initial={{ x: "100%" }}
       animate={{ x: 0 }}
-      transition={snappy}
+      transition={transition ?? snappy}
       aria-label={`Reading note for ${book.title}: ${note.body}`}
     >
       <header className="task-detail-bar reading-detail-bar">

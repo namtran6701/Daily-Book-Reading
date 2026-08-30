@@ -16,6 +16,7 @@ import {
   useMotionValueEvent,
   useScroll,
   useTransform,
+  type Transition,
 } from "motion/react";
 import { BooksTab } from "./BooksTab";
 import { BookNoteDetail, type BookNoteUpdateOptions } from "./BookNoteDetail";
@@ -42,6 +43,9 @@ const TASK_QUERY = "task";
 const TASK_HISTORY_KEY = "secondBrainTask";
 const BOOK_NOTE_QUERY = "note";
 const BOOK_NOTE_HISTORY_KEY = "secondBrainBookNote";
+
+// Hand the motion to the browser: settle immediately, no animation of our own.
+const INSTANT: Transition = { duration: 0 };
 
 const TABS: { value: Tab; label: string; glyph: (props: { size?: number }) => React.JSX.Element }[] = [
   { value: "calendar", label: "Calendar", glyph: TodayIcon },
@@ -153,6 +157,9 @@ export function SecondBrain() {
   const [selectedDay, setSelectedDay] = useState("");
   const [selectedBookId, setSelectedBookId] = useState("");
   const [selectedThoughtId, setSelectedThoughtId] = useState("");
+  // Whether the last selection change came from the app or from the browser's
+  // own back/forward, which decides if the views animate themselves.
+  const [navigationSource, setNavigationSource] = useState<"app" | "history">("app");
   const [selectedBookNoteId, setSelectedBookNoteId] = useState("");
   const thoughtIds = useRef<Set<string>>(new Set());
   const bookNoteIds = useRef<Set<string>>(new Set());
@@ -447,6 +454,7 @@ export function SecondBrain() {
     history.scrollRestoration = "manual";
 
     const followHistory = () => {
+      setNavigationSource("history");
       const requestedTask = taskIdFromUrl();
       const requestedBookNote = bookNoteIdFromUrl();
       const nextTask = requestedTask && thoughtIds.current.has(requestedTask) ? requestedTask : "";
@@ -464,6 +472,11 @@ export function SecondBrain() {
       history.scrollRestoration = previousRestoration;
     };
   }, []);
+
+  // Safari runs its own snapshot slide for an edge-swipe back. Animating on top
+  // of that made the page slide twice, so a browser-driven move settles the
+  // views instantly and lets the gesture carry the motion by itself.
+  const navigationTransition = navigationSource === "history" ? INSTANT : snappy;
 
   const openCount = useMemo(() => thoughts.filter((thought) => !thought.done).length, [thoughts]);
   const selectedThought = selectedThoughtId
@@ -487,6 +500,7 @@ export function SecondBrain() {
   }, [showingDetail]);
 
   function openThought(id: string) {
+    setNavigationSource("app");
     if (id === selectedThoughtId) return;
     if (!showingDetail) workspaceScroll.current = window.scrollY;
     history.pushState(
@@ -500,6 +514,7 @@ export function SecondBrain() {
   }
 
   function closeThought() {
+    setNavigationSource("app");
     const shouldReturnThroughHistory = history.state?.[TASK_HISTORY_KEY] === selectedThoughtId;
     // Reveal the still-mounted workspace immediately. Waiting for the
     // asynchronous popstate event makes the back action feel like a refresh.
@@ -512,6 +527,7 @@ export function SecondBrain() {
   }
 
   function openBookNote(note: BookNote) {
+    setNavigationSource("app");
     if (note.id === selectedBookNoteId) return;
     if (!showingDetail) workspaceScroll.current = window.scrollY;
     history.pushState(
@@ -526,6 +542,7 @@ export function SecondBrain() {
   }
 
   function closeBookNote() {
+    setNavigationSource("app");
     const shouldReturnThroughHistory =
       history.state?.[BOOK_NOTE_HISTORY_KEY] === selectedBookNoteId;
     // Reveal the still-mounted book workspace immediately. Waiting for the
@@ -638,7 +655,7 @@ export function SecondBrain() {
             // Settle back under the canvas while it is open, so closing one
             // slides the workspace home instead of cutting to it.
             animate={showingDetail ? { opacity: 0.6, x: "-20%", y: 0 } : { opacity: 1, x: 0, y: 0 }}
-            transition={snappy}
+            transition={navigationTransition}
           >
             {!today || loading ? (
               <LoadingState />
@@ -740,6 +757,7 @@ export function SecondBrain() {
               <TaskDetail
                 key={`task-${selectedThought.id}`}
                 thought={selectedThought}
+                transition={navigationTransition}
                 readOnly={!online}
                 onBack={closeThought}
                 onUpdate={updateThought}
@@ -749,6 +767,7 @@ export function SecondBrain() {
                 key={`book-note-${selectedBookNote.id}`}
                 book={selectedNoteBook}
                 note={selectedBookNote}
+                transition={navigationTransition}
                 readOnly={!online}
                 onBack={closeBookNote}
                 onUpdate={updateNote}
