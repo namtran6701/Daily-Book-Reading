@@ -80,11 +80,13 @@ function QuadrantRing({ open, done }: { open: number; done: number }) {
 
 // Shared modal shell: scrim, Escape-to-close, backdrop tap, scroll lock.
 function Overlay({
+  active = true,
   center,
   label,
   onClose,
   children,
 }: {
+  active?: boolean;
   center?: boolean;
   label: string;
   onClose: () => void;
@@ -102,12 +104,11 @@ function Overlay({
     [],
   );
 
-  // Mount-only: lock scroll, make the app behind the dialog inert (out of the tab
-  // order and hidden from assistive tech; a depth counter keeps it inert while a
-  // nested overlay is open), and set the initial focus. This must NOT re-run on
-  // every render, or typing in the sheet would keep yanking focus back to the
-  // first control and dismiss the keyboard.
+  // While active, lock scroll, make the app behind the dialog inert (out of the
+  // tab order and hidden from assistive tech), and set the initial focus. A task
+  // canvas temporarily suspends these behaviors without unmounting the sheet.
   useEffect(() => {
+    if (!active) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -136,11 +137,12 @@ function Overlay({
       }
       restoreFocus?.focus?.();
     };
-  }, [focusable]);
+  }, [active, focusable]);
 
   // Escape to close + Tab focus trap. Re-subscribes when onClose changes without
   // disturbing focus.
   useEffect(() => {
+    if (!active) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -161,12 +163,13 @@ function Overlay({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, focusable]);
+  }, [active, onClose, focusable]);
 
   return createPortal(
     <motion.div
       ref={scrimRef}
       className={`scrim ${center ? "center" : ""}`}
+      hidden={!active}
       tabIndex={-1}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -513,8 +516,8 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
 
       {/* Mobile quadrant sheet */}
       <AnimatePresence>
-        {!canvasOpen && sheetQuad && sheetBucket && (
-          <Overlay label={QUADRANT_LABELS[sheetQuad]} onClose={() => setSheetQuad(null)}>
+        {sheetQuad && sheetBucket && (
+          <Overlay active={!canvasOpen} label={QUADRANT_LABELS[sheetQuad]} onClose={() => setSheetQuad(null)}>
             <motion.div
               className={`sheet q-${sheetQuad}`}
               initial={{ y: "100%" }}
@@ -635,8 +638,8 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
 
       {/* Move-to-quadrant menu (the single-pointer alternative to dragging) */}
       <AnimatePresence>
-        {!canvasOpen && moving && (
-          <Overlay center label="Move to" onClose={() => setMoveId(null)}>
+        {moving && (
+          <Overlay active={!canvasOpen} center label="Move to" onClose={() => setMoveId(null)}>
             <motion.div
               className="card menu"
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
