@@ -361,14 +361,21 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
 
           <div className="task-meta-row">
             <span className="task-schedule-control">
-              <label className="task-meta-field">
+              <label
+                className={`task-meta-field task-date-field ${scheduledDate ? "has-value" : "is-empty"} ${readOnly ? "is-disabled" : ""}`}
+              >
                 <TodayIcon size={14} />
-                <span>Schedule</span>
+                <span className="task-meta-value" aria-hidden="true">
+                  {scheduledDate
+                    ? formatDate(scheduledDate, { month: "short", day: "numeric", year: "numeric" })
+                    : "Dates"}
+                </span>
                 <input
                   type="date"
                   value={scheduledDate}
                   onChange={(event) => changeScheduledDate(event.target.value)}
                   disabled={readOnly}
+                  aria-label={scheduledDate ? `Scheduled for ${scheduledDate}` : "Choose a scheduled date"}
                 />
               </label>
               {scheduledDate && (
