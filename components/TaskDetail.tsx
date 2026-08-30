@@ -303,6 +303,13 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
           <ChevronLeftIcon size={17} />
           <span>Back to Quadrant</span>
         </button>
+        <span className="task-context">
+          <span className="q-glyph" aria-hidden="true">
+            <QuadrantGlyph quadrant={thought.quadrant} size={15} />
+          </span>
+          <strong>{QUADRANT_LABELS[thought.quadrant]}</strong>
+          <em>{QUADRANT_AXES[thought.quadrant]}</em>
+        </span>
         <span className={`task-save-state save-${saveState}`} role="status" aria-live="polite">
           <i aria-hidden="true" />
           {statusCopy}
@@ -310,37 +317,6 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
       </header>
 
       <div className="task-paper card">
-        <aside className="task-properties" aria-label="Task properties">
-          <div className="task-property-heading">
-            <span className="q-glyph" aria-hidden="true">
-              <QuadrantGlyph quadrant={thought.quadrant} size={17} />
-            </span>
-            <div>
-              <strong>{QUADRANT_LABELS[thought.quadrant]}</strong>
-              <span>{QUADRANT_AXES[thought.quadrant]}</span>
-            </div>
-          </div>
-
-          <label className="task-property">
-            <span>
-              <TodayIcon size={14} />
-              Due date
-            </span>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(event) => {
-                if (event.target.value) changeDueDate(event.target.value);
-              }}
-              disabled={readOnly}
-            />
-          </label>
-
-          <div className="task-created">
-            Added {formatDate(thought.createdAt.slice(0, 10), { month: "short", day: "numeric", year: "numeric" })}
-          </div>
-        </aside>
-
         <article className="task-document">
           <textarea
             className="task-title-editor"
@@ -358,6 +334,24 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
             aria-label="Task title"
             disabled={readOnly}
           />
+
+          <div className="task-meta-row">
+            <label className="task-meta-field">
+              <TodayIcon size={14} />
+              <span>Due</span>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(event) => {
+                  if (event.target.value) changeDueDate(event.target.value);
+                }}
+                disabled={readOnly}
+              />
+            </label>
+            <span className="task-meta-note">
+              Added {formatDate(thought.createdAt.slice(0, 10), { month: "short", day: "numeric", year: "numeric" })}
+            </span>
+          </div>
 
           <div className="task-notes-label">
             <NoteIcon size={15} />
