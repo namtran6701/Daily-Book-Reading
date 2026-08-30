@@ -544,50 +544,50 @@ export function SecondBrain() {
         data-app="second-brain"
         data-online={online}
       >
-        {!showingDetail && (
-          <motion.header
-            className={`masthead ${tab === "calendar" ? "masthead-home" : "masthead-section"} ${
-              scrolled ? "is-scrolled" : ""
-            }`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={snappy}
-          >
-            {tab === "calendar" && (
-              <span className="brand">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
-                <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
-                  Second Brain
-                </motion.span>
-              </span>
-            )}
-            <div className="masthead-meta">
-              <span className="masthead-date">
-                {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
-              </span>
-              <nav className="nav-top" aria-label="Sections">
-                {TABS.map(({ value, label, glyph: Glyph }) => (
-                  <button
-                    key={value}
-                    className={`seg-btn ${tab === value ? "active" : ""}`}
-                    onClick={() => selectTab(value)}
-                    aria-current={tab === value ? "page" : undefined}
-                  >
-                    {tab === value && <motion.span className="seg-pill" layoutId="seg-pill" transition={snappy} />}
-                    <span className="seg-label">
-                      <span className="seg-glyph" aria-hidden="true">
-                        <Glyph size={14} />
-                      </span>
-                      <span>{label}</span>
-                      {value === "thoughts" && openCount > 0 && <span className="seg-badge">{openCount}</span>}
+        <motion.header
+          className={`masthead ${tab === "calendar" ? "masthead-home" : "masthead-section"} ${
+            scrolled ? "is-scrolled" : ""
+          }`}
+          hidden={showingDetail}
+          aria-hidden={showingDetail || undefined}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={snappy}
+        >
+          {tab === "calendar" && (
+            <span className="brand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
+              <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+                Second Brain
+              </motion.span>
+            </span>
+          )}
+          <div className="masthead-meta">
+            <span className="masthead-date">
+              {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
+            </span>
+            <nav className="nav-top" aria-label="Sections">
+              {TABS.map(({ value, label, glyph: Glyph }) => (
+                <button
+                  key={value}
+                  className={`seg-btn ${tab === value ? "active" : ""}`}
+                  onClick={() => selectTab(value)}
+                  aria-current={tab === value ? "page" : undefined}
+                >
+                  {tab === value && <motion.span className="seg-pill" layoutId="seg-pill" transition={snappy} />}
+                  <span className="seg-label">
+                    <span className="seg-glyph" aria-hidden="true">
+                      <Glyph size={14} />
                     </span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </motion.header>
-        )}
+                    <span>{label}</span>
+                    {value === "thoughts" && openCount > 0 && <span className="seg-badge">{openCount}</span>}
+                  </span>
+                </button>
+              ))}
+            </nav>
+          </div>
+        </motion.header>
 
         <AnimatePresence initial={false}>
           {loaded && !online && (
@@ -738,33 +738,33 @@ export function SecondBrain() {
           </AnimatePresence>
         </div>
 
-        {!showingDetail && (
-          // x repeats the stylesheet's centering translate, which motion would
-          // otherwise drop when it takes over the transform to animate y.
-          <motion.nav
-            className="tabbar"
-            aria-label="Sections"
-            initial={{ opacity: 0, x: "-50%", y: 14 }}
-            animate={{ opacity: 1, x: "-50%", y: 0 }}
-            transition={snappy}
-          >
-            {TABS.map(({ value, label, glyph: Glyph }) => (
-              <button
-                key={value}
-                className={`tab-btn ${tab === value ? "active" : ""}`}
-                onClick={() => selectTab(value)}
-                aria-current={tab === value ? "page" : undefined}
-              >
-                {tab === value && <motion.span className="tab-pill" layoutId="tab-pill" transition={snappy} />}
-                <span className="tab-glyph" aria-hidden="true">
-                  <Glyph size={20} />
-                </span>
-                <span className="tab-text">{label}</span>
-                {value === "thoughts" && openCount > 0 && <span className="tab-badge">{openCount}</span>}
-              </button>
-            ))}
-          </motion.nav>
-        )}
+        {/* Keep navigation mounted across a canvas visit. Remounting it on
+            close replayed its entrance motion and looked like a page flash. */}
+        <motion.nav
+          className="tabbar"
+          aria-label="Sections"
+          hidden={showingDetail}
+          aria-hidden={showingDetail || undefined}
+          initial={{ opacity: 0, x: "-50%", y: 14 }}
+          animate={{ opacity: 1, x: "-50%", y: 0 }}
+          transition={snappy}
+        >
+          {TABS.map(({ value, label, glyph: Glyph }) => (
+            <button
+              key={value}
+              className={`tab-btn ${tab === value ? "active" : ""}`}
+              onClick={() => selectTab(value)}
+              aria-current={tab === value ? "page" : undefined}
+            >
+              {tab === value && <motion.span className="tab-pill" layoutId="tab-pill" transition={snappy} />}
+              <span className="tab-glyph" aria-hidden="true">
+                <Glyph size={20} />
+              </span>
+              <span className="tab-text">{label}</span>
+              {value === "thoughts" && openCount > 0 && <span className="tab-badge">{openCount}</span>}
+            </button>
+          ))}
+        </motion.nav>
       </main>
     </MotionConfig>
   );

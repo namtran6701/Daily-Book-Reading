@@ -331,7 +331,6 @@ export function BookNoteDetail({ book, note, readOnly, onBack, onUpdate }: Props
       className="reading-detail"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
       transition={snappy}
       aria-label={`Reading note for ${book.title}: ${note.body}`}
     >
