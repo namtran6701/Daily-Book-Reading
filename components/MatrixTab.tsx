@@ -286,6 +286,11 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
     }
   }
 
+  function openDetailFromSheet(id: string) {
+    setSheetQuad(null);
+    onOpenDetail(id);
+  }
+
   function focusQuadrant(key: Quadrant) {
     pickQuadrant(key);
     const el = composerRef.current;
@@ -580,7 +585,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
                           readOnly={readOnly}
-                          onOpenDetail={onOpenDetail}
+                          onOpenDetail={openDetailFromSheet}
                           onMove={setMoveId}
                         />
                       ))}
@@ -617,7 +622,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
                               readOnly={readOnly}
-                              onOpenDetail={onOpenDetail}
+                              onOpenDetail={openDetailFromSheet}
                               onMove={setMoveId}
                             />
                           ))}
