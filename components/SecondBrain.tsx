@@ -677,6 +677,7 @@ export function SecondBrain() {
                         thoughts={thoughts}
                         today={today}
                         busy={busy || !online}
+                        canvasOpen={showingDetail}
                         readOnly={!online}
                         onCapture={captureThought}
                         onUpdate={updateThought}

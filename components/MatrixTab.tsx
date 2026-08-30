@@ -20,6 +20,7 @@ type Props = {
   thoughts: Thought[];
   today: string;
   busy: boolean;
+  canvasOpen: boolean;
   readOnly?: boolean;
   onCapture: (text: string, quadrant: Quadrant) => Promise<boolean>;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<boolean>;
@@ -184,7 +185,7 @@ function Overlay({
   );
 }
 
-export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate, onDelete, onOpenDetail, deletingIds }: Props) {
+export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCapture, onUpdate, onDelete, onOpenDetail, deletingIds }: Props) {
   const [text, setText] = useState("");
   // MatrixTab only mounts on the client (the tabs render after `today` resolves),
   // so reading the last-used quadrant here is safe and keeps capture to one tap.
@@ -284,11 +285,6 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
       setSheetText("");
       haptic(8);
     }
-  }
-
-  function openDetailFromSheet(id: string) {
-    setSheetQuad(null);
-    onOpenDetail(id);
   }
 
   function focusQuadrant(key: Quadrant) {
@@ -517,7 +513,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
 
       {/* Mobile quadrant sheet */}
       <AnimatePresence>
-        {sheetQuad && sheetBucket && (
+        {!canvasOpen && sheetQuad && sheetBucket && (
           <Overlay label={QUADRANT_LABELS[sheetQuad]} onClose={() => setSheetQuad(null)}>
             <motion.div
               className={`sheet q-${sheetQuad}`}
@@ -585,7 +581,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                           onDelete={onDelete}
                           deleting={deletingIds.has(thought.id)}
                           readOnly={readOnly}
-                          onOpenDetail={openDetailFromSheet}
+                          onOpenDetail={onOpenDetail}
                           onMove={setMoveId}
                         />
                       ))}
@@ -622,7 +618,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
                               onDelete={onDelete}
                               deleting={deletingIds.has(thought.id)}
                               readOnly={readOnly}
-                              onOpenDetail={openDetailFromSheet}
+                              onOpenDetail={onOpenDetail}
                               onMove={setMoveId}
                             />
                           ))}
@@ -639,7 +635,7 @@ export function MatrixTab({ thoughts, today, busy, readOnly, onCapture, onUpdate
 
       {/* Move-to-quadrant menu (the single-pointer alternative to dragging) */}
       <AnimatePresence>
-        {moving && (
+        {!canvasOpen && moving && (
           <Overlay center label="Move to" onClose={() => setMoveId(null)}>
             <motion.div
               className="card menu"
