@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
 import { formatDate } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
-import { gentle } from "@/lib/springs";
+import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
 
 type SaveState = "saved" | "unsaved" | "saving" | "error";
@@ -260,14 +260,17 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
     void flushDocument();
   }
 
-  async function goBack(): Promise<void> {
+  // Leaving is immediate: the save runs alongside the transition instead of
+  // holding the tap until the network answers. The draft is already on this
+  // device, and a failed save still reports through the app-level banner.
+  function goBack(): void {
     if (!draftDocument.current.title.trim()) {
       const restored = savedDocument.current.title;
       setTitle(restored);
       draftDocument.current = { ...draftDocument.current, title: restored };
       storeDraft(thought.id, draftDocument.current);
     }
-    if (!readOnlyValue.current && !(await flushDocument())) return;
+    if (!readOnlyValue.current) void flushDocument();
     onBack();
   }
 
@@ -318,12 +321,12 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
       className={`task-detail q-${thought.quadrant}`}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={gentle}
+      exit={{ opacity: 0 }}
+      transition={snappy}
       aria-label={`Task details for ${thought.body}`}
     >
       <header className="task-detail-bar">
-        <button className="task-back pressable" onClick={() => void goBack()} aria-label="Back to Quadrant">
+        <button className="task-back pressable" onClick={goBack} aria-label="Back to Quadrant">
           <ChevronLeftIcon size={17} />
           <span>Back to Quadrant</span>
         </button>

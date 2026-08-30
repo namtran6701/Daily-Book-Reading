@@ -389,8 +389,16 @@ ul {
   box-shadow: var(--shadow-card);
 }
 
+/* The detail view and the workspace share one grid cell so they can cross-fade
+   in place. Stacking them in flow would double the page height mid-transition. */
 .page {
+  display: grid;
   padding-top: 12px;
+}
+
+.page > * {
+  grid-area: 1 / 1;
+  min-width: 0;
 }
 
 /* ---------- system and empty states ---------- */
@@ -3273,6 +3281,12 @@ button.quadrant-tag .caret {
   .masthead {
     margin: 0 -14px;
     padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
+  }
+
+  /* The home screen owns the Second Brain masthead. Other sections use the
+     persistent bottom navigation without reserving an empty header row. */
+  .masthead-section {
+    display: none;
   }
 
   .nav-top {

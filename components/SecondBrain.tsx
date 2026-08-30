@@ -144,6 +144,10 @@ export function SecondBrain() {
   const [selectedBookNoteId, setSelectedBookNoteId] = useState("");
   const thoughtIds = useRef<Set<string>>(new Set());
   const bookNoteIds = useRef<Set<string>>(new Set());
+  // Where the workspace was left when a detail opened, so returning lands back
+  // on the same row rather than at the top of the list.
+  const workspaceScroll = useRef(0);
+  const detailOpen = useRef(false);
   // Ids whose DELETE is in flight. The row shows a spinner and only leaves the
   // list once the server confirms, so a failed delete can never resurrect a row.
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -424,18 +428,29 @@ export function SecondBrain() {
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
+    // Browser scroll restoration fires while the outgoing detail is still
+    // painted, so the page visibly jumps under the old view. The app restores
+    // the offset itself once the workspace is back in the DOM.
+    const previousRestoration = history.scrollRestoration;
+    history.scrollRestoration = "manual";
+
     const followHistory = () => {
       const requestedTask = taskIdFromUrl();
       const requestedBookNote = bookNoteIdFromUrl();
-      setSelectedThoughtId(requestedTask && thoughtIds.current.has(requestedTask) ? requestedTask : "");
-      setSelectedBookNoteId(
-        requestedBookNote && bookNoteIds.current.has(requestedBookNote) ? requestedBookNote : "",
-      );
-      window.scrollTo({ top: 0, behavior: "auto" });
+      const nextTask = requestedTask && thoughtIds.current.has(requestedTask) ? requestedTask : "";
+      const nextBookNote =
+        requestedBookNote && bookNoteIds.current.has(requestedBookNote) ? requestedBookNote : "";
+      if ((nextTask || nextBookNote) && !detailOpen.current) workspaceScroll.current = window.scrollY;
+      setSelectedThoughtId(nextTask);
+      setSelectedBookNoteId(nextBookNote);
+      if (nextTask || nextBookNote) window.scrollTo({ top: 0, behavior: "auto" });
     };
 
     window.addEventListener("popstate", followHistory);
-    return () => window.removeEventListener("popstate", followHistory);
+    return () => {
+      window.removeEventListener("popstate", followHistory);
+      history.scrollRestoration = previousRestoration;
+    };
   }, []);
 
   const openCount = useMemo(() => thoughts.filter((thought) => !thought.done).length, [thoughts]);
@@ -450,8 +465,17 @@ export function SecondBrain() {
     : null;
   const showingDetail = Boolean(selectedThought || (selectedBookNote && selectedNoteBook));
 
+  // Runs after the workspace is visible again, so the scroll never moves while
+  // the outgoing detail is still the only painted view.
+  useEffect(() => {
+    detailOpen.current = showingDetail;
+    if (showingDetail) return;
+    window.scrollTo({ top: workspaceScroll.current, behavior: "auto" });
+  }, [showingDetail]);
+
   function openThought(id: string) {
     if (id === selectedThoughtId) return;
+    if (!showingDetail) workspaceScroll.current = window.scrollY;
     history.pushState(
       { ...historyStateWithoutDetail(), [TASK_HISTORY_KEY]: id },
       "",
@@ -469,11 +493,11 @@ export function SecondBrain() {
     }
     history.replaceState(historyStateWithoutDetail(), "", taskUrl());
     setSelectedThoughtId("");
-    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function openBookNote(note: BookNote) {
     if (note.id === selectedBookNoteId) return;
+    if (!showingDetail) workspaceScroll.current = window.scrollY;
     history.pushState(
       { ...historyStateWithoutDetail(), [BOOK_NOTE_HISTORY_KEY]: note.id },
       "",
@@ -486,13 +510,16 @@ export function SecondBrain() {
   }
 
   function closeBookNote() {
-    if (history.state?.[BOOK_NOTE_HISTORY_KEY] === selectedBookNoteId) {
+    const shouldReturnThroughHistory =
+      history.state?.[BOOK_NOTE_HISTORY_KEY] === selectedBookNoteId;
+    // Reveal the still-mounted book workspace immediately. Waiting for the
+    // asynchronous popstate event makes the back action feel like a refresh.
+    setSelectedBookNoteId("");
+    if (shouldReturnThroughHistory) {
       history.back();
       return;
     }
     history.replaceState(historyStateWithoutDetail(), "", bookNoteUrl());
-    setSelectedBookNoteId("");
-    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function selectDay(day: string) {
@@ -518,14 +545,23 @@ export function SecondBrain() {
         data-online={online}
       >
         {!showingDetail && (
-          <header className={`masthead ${scrolled ? "is-scrolled" : ""}`}>
-            <span className="brand">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
-              <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
-                Second Brain
-              </motion.span>
-            </span>
+          <motion.header
+            className={`masthead ${tab === "calendar" ? "masthead-home" : "masthead-section"} ${
+              scrolled ? "is-scrolled" : ""
+            }`}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={snappy}
+          >
+            {tab === "calendar" && (
+              <span className="brand">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
+                <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+                  Second Brain
+                </motion.span>
+              </span>
+            )}
             <div className="masthead-meta">
               <span className="masthead-date">
                 {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
@@ -550,7 +586,7 @@ export function SecondBrain() {
                 ))}
               </nav>
             </div>
-          </header>
+          </motion.header>
         )}
 
         <AnimatePresence initial={false}>
@@ -576,7 +612,111 @@ export function SecondBrain() {
         </AnimatePresence>
 
         <div className={`page ${showingDetail ? "page-task" : `page-${tab}`}`}>
-          <AnimatePresence mode="wait" initial={false}>
+          {/* Keep the workspace mounted while a canvas is open so closing a
+              reading note reveals the same book page instead of rebuilding it. */}
+          <motion.div
+            key="workspace"
+            hidden={showingDetail}
+            aria-hidden={showingDetail || undefined}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={snappy}
+          >
+            {!today || loading ? (
+              <LoadingState />
+            ) : !ready ? (
+              <QuietState
+                className="open-failure card"
+                icon={online ? <AlertIcon size={20} /> : <OfflineIcon size={20} />}
+                title={online ? "Second Brain didn’t open" : "Your connection is quiet"}
+                action={{ label: "Try again", onClick: retryLoad }}
+              >
+                {online
+                  ? error?.message || "Try opening it again."
+                  : "Reconnect, then try opening your thoughts and notes again."}
+              </QuietState>
+            ) : (
+              <>
+                {tab === "calendar" && (
+                  <Briefing
+                    thoughts={thoughts}
+                    books={books}
+                    notes={notes}
+                    today={today}
+                    onOpenDetail={openThought}
+                  />
+                )}
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={tab}
+                    initial={{ opacity: 0, x: 28 * tabDirection }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -28 * tabDirection }}
+                    transition={gentle}
+                  >
+                    {tab === "calendar" ? (
+                      <CalendarTab
+                        thoughts={thoughts}
+                        notes={notes}
+                        books={books}
+                        today={today}
+                        month={activeMonth}
+                        selectedDay={activeDay}
+                        onMonthChange={(direction) =>
+                          setMonth(shiftMonth(activeMonth, direction === "next" ? 1 : -1))
+                        }
+                        onSelectDay={selectDay}
+                        onUpdate={updateThought}
+                        onDelete={deleteThought}
+                        onOpenDetail={openThought}
+                        deletingIds={deletingIds}
+                        readOnly={!online}
+                      />
+                    ) : tab === "thoughts" ? (
+                      <MatrixTab
+                        thoughts={thoughts}
+                        today={today}
+                        busy={busy || !online}
+                        readOnly={!online}
+                        onCapture={captureThought}
+                        onUpdate={updateThought}
+                        onDelete={deleteThought}
+                        onOpenDetail={openThought}
+                        deletingIds={deletingIds}
+                      />
+                    ) : tab === "books" ? (
+                      <BooksTab
+                        books={books}
+                        notes={notes}
+                        today={today}
+                        busy={busy || !online}
+                        readOnly={!online}
+                        selectedBookId={selectedBookId}
+                        onSelectBook={setSelectedBookId}
+                        onAddBook={addBook}
+                        onUpdateBook={updateBook}
+                        onDeleteBook={deleteBook}
+                        onAddNote={addNote}
+                        onOpenNote={openBookNote}
+                        onDeleteNote={deleteNote}
+                        deletingIds={deletingIds}
+                      />
+                    ) : (
+                      <ReviewTab
+                        thoughts={thoughts}
+                        books={books}
+                        notes={notes}
+                        today={today}
+                        onOpenDetail={openThought}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </>
+            )}
+          </motion.div>
+
+          <AnimatePresence initial={false}>
             {selectedThought ? (
               <TaskDetail
                 key={`task-${selectedThought.id}`}
@@ -594,113 +734,20 @@ export function SecondBrain() {
                 onBack={closeBookNote}
                 onUpdate={updateNote}
               />
-            ) : (
-              <motion.div
-                key="workspace"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={gentle}
-              >
-                {!today || loading ? (
-                  <LoadingState />
-                ) : !ready ? (
-                  <QuietState
-                    className="open-failure card"
-                    icon={online ? <AlertIcon size={20} /> : <OfflineIcon size={20} />}
-                    title={online ? "Second Brain didn’t open" : "Your connection is quiet"}
-                    action={{ label: "Try again", onClick: retryLoad }}
-                  >
-                    {online
-                      ? error?.message || "Try opening it again."
-                      : "Reconnect, then try opening your thoughts and notes again."}
-                  </QuietState>
-                ) : (
-                  <>
-                    {tab === "calendar" && (
-                      <Briefing
-                        thoughts={thoughts}
-                        books={books}
-                        notes={notes}
-                        today={today}
-                        onOpenDetail={openThought}
-                      />
-                    )}
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.div
-                        key={tab}
-                        initial={{ opacity: 0, x: 28 * tabDirection }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -28 * tabDirection }}
-                        transition={gentle}
-                      >
-                        {tab === "calendar" ? (
-                          <CalendarTab
-                            thoughts={thoughts}
-                            notes={notes}
-                            books={books}
-                            today={today}
-                            month={activeMonth}
-                            selectedDay={activeDay}
-                            onMonthChange={(direction) =>
-                              setMonth(shiftMonth(activeMonth, direction === "next" ? 1 : -1))
-                            }
-                            onSelectDay={selectDay}
-                            onUpdate={updateThought}
-                            onDelete={deleteThought}
-                            onOpenDetail={openThought}
-                            deletingIds={deletingIds}
-                            readOnly={!online}
-                          />
-                        ) : tab === "thoughts" ? (
-                          <MatrixTab
-                            thoughts={thoughts}
-                            today={today}
-                            busy={busy || !online}
-                            readOnly={!online}
-                            onCapture={captureThought}
-                            onUpdate={updateThought}
-                            onDelete={deleteThought}
-                            onOpenDetail={openThought}
-                            deletingIds={deletingIds}
-                          />
-                        ) : tab === "books" ? (
-                          <BooksTab
-                            books={books}
-                            notes={notes}
-                            today={today}
-                            busy={busy || !online}
-                            readOnly={!online}
-                            selectedBookId={selectedBookId}
-                            onSelectBook={setSelectedBookId}
-                            onAddBook={addBook}
-                            onUpdateBook={updateBook}
-                            onDeleteBook={deleteBook}
-                            onAddNote={addNote}
-                            onOpenNote={openBookNote}
-                            onDeleteNote={deleteNote}
-                            deletingIds={deletingIds}
-                          />
-                        ) : (
-                          <ReviewTab
-                            thoughts={thoughts}
-                            books={books}
-                            notes={notes}
-                            today={today}
-                            onOpenDetail={openThought}
-                          />
-                        )}
-                      </motion.div>
-                    </AnimatePresence>
-                  </>
-                )}
-              </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
 
         {!showingDetail && (
-          <nav className="tabbar" aria-label="Sections">
+          // x repeats the stylesheet's centering translate, which motion would
+          // otherwise drop when it takes over the transform to animate y.
+          <motion.nav
+            className="tabbar"
+            aria-label="Sections"
+            initial={{ opacity: 0, x: "-50%", y: 14 }}
+            animate={{ opacity: 1, x: "-50%", y: 0 }}
+            transition={snappy}
+          >
             {TABS.map(({ value, label, glyph: Glyph }) => (
               <button
                 key={value}
@@ -716,7 +763,7 @@ export function SecondBrain() {
                 {value === "thoughts" && openCount > 0 && <span className="tab-badge">{openCount}</span>}
               </button>
             ))}
-          </nav>
+          </motion.nav>
         )}
       </main>
     </MotionConfig>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { BookGlyph, ChevronLeftIcon, NoteIcon } from "./icons";
 import { formatDate } from "@/lib/date-keys";
-import { gentle } from "@/lib/springs";
+import { snappy } from "@/lib/springs";
 import type { Book, BookNote } from "@/lib/types";
 
 type SaveState = "saved" | "unsaved" | "saving" | "error";
@@ -270,14 +270,17 @@ export function BookNoteDetail({ book, note, readOnly, onBack, onUpdate }: Props
     void flushDocument();
   }
 
-  async function goBack(): Promise<void> {
+  // Leaving is immediate: the save runs alongside the transition instead of
+  // holding the tap until the network answers. The draft is already on this
+  // device, and a failed save still reports through the app-level banner.
+  function goBack(): void {
     if (!draftDocument.current.body.trim()) {
       const restored = savedDocument.current.body;
       setBody(restored);
       draftDocument.current = { ...draftDocument.current, body: restored };
       storeDraft(note.id, draftDocument.current);
     }
-    if (!readOnlyValue.current && !(await flushDocument())) return;
+    if (!readOnlyValue.current) void flushDocument();
     onBack();
   }
 
@@ -328,12 +331,12 @@ export function BookNoteDetail({ book, note, readOnly, onBack, onUpdate }: Props
       className="reading-detail"
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={gentle}
+      exit={{ opacity: 0 }}
+      transition={snappy}
       aria-label={`Reading note for ${book.title}: ${note.body}`}
     >
       <header className="task-detail-bar reading-detail-bar">
-        <button className="task-back pressable" onClick={() => void goBack()} aria-label={`Back to ${book.title}`}>
+        <button className="task-back pressable" onClick={goBack} aria-label={`Back to ${book.title}`}>
           <ChevronLeftIcon size={17} />
           <span>Back to book</span>
         </button>
