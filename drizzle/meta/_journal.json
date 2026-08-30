@@ -22,6 +22,13 @@
       "when": 1788031433199,
       "tag": "0002_striped_menace",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788067677156,
+      "tag": "0003_woozy_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }

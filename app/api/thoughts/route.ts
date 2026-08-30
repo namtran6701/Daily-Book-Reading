@@ -20,12 +20,13 @@ type ThoughtRow = {
   quadrant: string;
   status: string;
   day_key: string;
+  scheduled_day_key: string | null;
   done_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-const COLUMNS = "id, body, notes, quadrant, status, day_key, done_at, created_at, updated_at";
+const COLUMNS = "id, body, notes, quadrant, status, day_key, scheduled_day_key, done_at, created_at, updated_at";
 
 function serialize(row: ThoughtRow) {
   return {
@@ -34,7 +35,12 @@ function serialize(row: ThoughtRow) {
     notes: row.notes,
     quadrant: row.quadrant,
     done: row.status === "done",
-    dayKey: row.day_key,
+    capturedDayKey: row.day_key,
+    scheduledDayKey: row.scheduled_day_key,
+    // Cached versions of the PWA used `dayKey` as an editable task date. Keep
+    // returning it during the transition so those clients can still render;
+    // new clients use the two explicit fields above.
+    dayKey: row.scheduled_day_key ?? row.day_key,
     doneAt: row.done_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -61,7 +67,12 @@ export async function POST(request: Request) {
   try {
     const payload = await readJsonBody(request);
     if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
-    if (!validDate(payload.dayKey)) {
+    const capturedDayKey = validDate(payload.capturedDayKey)
+      ? payload.capturedDayKey
+      : validDate(payload.dayKey)
+        ? payload.dayKey
+        : "";
+    if (!capturedDayKey) {
       return Response.json({ error: "A valid capture date is required." }, { status: 400 });
     }
     if (!isQuadrant(payload.quadrant)) {
@@ -78,15 +89,15 @@ export async function POST(request: Request) {
       lines.map((body, index) =>
         db
           .prepare(`INSERT INTO thoughts (
-              id, user_id, body, notes, quadrant, status, day_key, done_at, created_at, updated_at
-            ) VALUES (?, ?, ?, '', ?, 'open', ?, NULL, ?, ?)
+              id, user_id, body, notes, quadrant, status, day_key, scheduled_day_key, done_at, created_at, updated_at
+            ) VALUES (?, ?, ?, '', ?, 'open', ?, NULL, NULL, ?, ?)
             RETURNING ${COLUMNS}`)
           .bind(
             crypto.randomUUID(),
             OWNER_ID,
             body,
             payload.quadrant,
-            payload.dayKey,
+            capturedDayKey,
             timestamps[index],
             timestamps[index],
           ),
@@ -113,6 +124,18 @@ export async function PATCH(request: Request) {
         { status: 400 },
       );
     }
+    const hasScheduledDayKey = Object.prototype.hasOwnProperty.call(payload, "scheduledDayKey");
+    const hasLegacyDayKey = Object.prototype.hasOwnProperty.call(payload, "dayKey");
+    if (
+      hasScheduledDayKey &&
+      payload.scheduledDayKey !== null &&
+      !validDate(payload.scheduledDayKey)
+    ) {
+      return Response.json({ error: "Choose a valid scheduled date or clear it." }, { status: 400 });
+    }
+    if (!hasScheduledDayKey && hasLegacyDayKey && !validDate(payload.dayKey)) {
+      return Response.json({ error: "Choose a valid scheduled date." }, { status: 400 });
+    }
 
     await ensureSchema();
     const db = getD1();
@@ -126,10 +149,16 @@ export async function PATCH(request: Request) {
     const done = typeof payload.done === "boolean" ? payload.done : current.status === "done";
 
     const notes = typeof payload.notes === "string" ? payload.notes : current.notes;
-    const dayKey = validDate(payload.dayKey) ? payload.dayKey : current.day_key;
+    const scheduledDayKey = hasScheduledDayKey
+      ? payload.scheduledDayKey === null
+        ? null
+        : payload.scheduledDayKey as string
+      : hasLegacyDayKey && validDate(payload.dayKey)
+        ? payload.dayKey
+        : current.scheduled_day_key;
 
     const row = await db
-      .prepare(`UPDATE thoughts SET body = ?, notes = ?, quadrant = ?, status = ?, day_key = ?, done_at = ?, updated_at = ?
+      .prepare(`UPDATE thoughts SET body = ?, notes = ?, quadrant = ?, status = ?, scheduled_day_key = ?, done_at = ?, updated_at = ?
         WHERE id = ? AND user_id = ?
         RETURNING ${COLUMNS}`)
       .bind(
@@ -137,7 +166,7 @@ export async function PATCH(request: Request) {
         notes,
         isQuadrant(payload.quadrant) ? payload.quadrant : current.quadrant,
         done ? "done" : "open",
-        dayKey,
+        scheduledDayKey,
         done ? (current.done_at ?? timestamp) : null,
         timestamp,
         id,

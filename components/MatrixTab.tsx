@@ -32,7 +32,7 @@ const PREVIEW_COUNT = 2;
 const STORE_KEY = "sb-last-quadrant";
 
 function byNewest(a: Thought, b: Thought): number {
-  return b.dayKey.localeCompare(a.dayKey) || b.createdAt.localeCompare(a.createdAt);
+  return b.capturedDayKey.localeCompare(a.capturedDayKey) || b.createdAt.localeCompare(a.createdAt);
 }
 
 function readStoredQuadrant(): Quadrant {

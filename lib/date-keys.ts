@@ -48,6 +48,14 @@ export function ageLabel(dayKey: string, today: string): string {
   return formatDate(dayKey, { month: "short", day: "numeric" });
 }
 
+export function scheduleLabel(dayKey: string, today: string): string {
+  const age = daysBetween(dayKey, today);
+  if (age > 0) return `${age}d overdue`;
+  if (age === 0) return "Today";
+  if (age === -1) return "Tomorrow";
+  return formatDate(dayKey, { month: "short", day: "numeric" });
+}
+
 export function monthKey(dayKey: string): string {
   return dayKey.slice(0, 7);
 }

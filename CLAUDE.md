@@ -71,7 +71,9 @@ The schema has two representations that must stay synchronized by hand:
 - `db/index.ts` is the live source of truth. `ensureSchema()` is memoized per
   Worker isolate and creates or migrates `thoughts`, `books`, and `book_notes`
   on first use. Thought rows include a long-form `notes` field linked to the
-  compact matrix title. It also removes retired `chapters` and `daily_notes`
+  compact matrix title. Their existing `day_key` is the immutable local capture
+  day; the nullable `scheduled_day_key` can be changed or cleared without
+  rewriting capture history. It also removes retired `chapters` and `daily_notes`
   tables, folds legacy thought metadata into the body, and removes the retired
   book `author` column when those older shapes are encountered.
 - `db/schema.ts` describes the same final three-table shape for Drizzle only.
@@ -118,8 +120,9 @@ period completion statistics.
   passes state, read-only status, and callbacks to the tab components.
 - `TaskDetail` is the focused document view opened from matrix, Calendar,
   Review, and urgent Briefing thought-title links. It auto-saves long-form
-  notes, title, and date through a serialized update queue without creating a
-  separate note row. Every edit is
+  notes, title, and the optional scheduled day through a serialized update
+  queue without creating a separate note row. It displays the immutable capture
+  day alongside that control. Every edit is
   first mirrored to a per-task `localStorage` recovery draft, and lifecycle
   events flush the latest draft with a keepalive request. The quadrant is
   context, not an editable property, in this view.

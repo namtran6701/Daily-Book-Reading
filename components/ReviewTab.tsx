@@ -5,7 +5,7 @@ import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react
 import { QuadrantGlyph, ReviewGlyph } from "./icons";
 import { QuietState } from "./UiState";
 import { QUADRANTS, QUADRANT_LABELS, Quadrant } from "@/lib/quadrants";
-import { ageLabel, formatDate, localDayFromInstant, monthLabel, monthKey, rangeDays, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
+import { ageLabel, formatDate, localDayFromInstant, monthLabel, monthKey, rangeDays, scheduleLabel, shiftDate, shiftMonth, startOfMonth, startOfWeek } from "@/lib/date-keys";
 import { gentle } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
 
@@ -61,7 +61,7 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
       (thought) => thought.done && inRange(doneDay(thought), prevStart, prevEnd),
     ).length;
 
-    const captured = thoughts.filter((thought) => inRange(thought.dayKey, start, today)).length;
+    const captured = thoughts.filter((thought) => inRange(thought.capturedDayKey, start, today)).length;
     const notesInRange = notes.filter((note) => inRange(note.dayKey, start, today)).length;
     const booksFinished = books.filter(
       (book) => book.finishedAt && inRange(localDayFromInstant(book.finishedAt), start, today),
@@ -78,7 +78,7 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
     const maxBar = Math.max(1, ...byQuadrant.map((row) => row.done + row.open));
 
     const dayCount = (day: string) =>
-      thoughts.filter((thought) => thought.dayKey === day || doneDay(thought) === day).length +
+      thoughts.filter((thought) => thought.capturedDayKey === day || doneDay(thought) === day).length +
       notes.filter((note) => note.dayKey === day).length;
 
     let activity: { day: string; count: number; inMonth: boolean }[];
@@ -100,13 +100,15 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
     const maxActivity = Math.max(1, ...activity.filter((cell) => cell.inMonth).map((cell) => cell.count));
 
     const carryover = open
-      .filter((thought) => thought.dayKey < start)
-      .sort((a, b) => a.dayKey.localeCompare(b.dayKey));
+      .filter((thought) => thought.capturedDayKey < start)
+      .sort((a, b) => a.capturedDayKey.localeCompare(b.capturedDayKey));
 
     const upNext = [...open]
       .sort(
         (a, b) =>
-          QUADRANT_ORDER[a.quadrant] - QUADRANT_ORDER[b.quadrant] || a.dayKey.localeCompare(b.dayKey),
+          QUADRANT_ORDER[a.quadrant] - QUADRANT_ORDER[b.quadrant] ||
+          (a.scheduledDayKey ?? "9999-12-31").localeCompare(b.scheduledDayKey ?? "9999-12-31") ||
+          a.capturedDayKey.localeCompare(b.capturedDayKey),
       )
       .slice(0, 6);
 
@@ -315,7 +317,7 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
                     >
                       {thought.body}
                     </button>
-                    <span className="carry-age">{ageLabel(thought.dayKey, today)}</span>
+                    <span className="carry-age">{ageLabel(thought.capturedDayKey, today)}</span>
                   </li>
                 ))}
               </ul>
@@ -350,7 +352,11 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
                     >
                       {thought.body}
                     </button>
-                    <span className="carry-age">{ageLabel(thought.dayKey, today)}</span>
+                    <span className="carry-age">
+                      {thought.scheduledDayKey
+                        ? scheduleLabel(thought.scheduledDayKey, today)
+                        : ageLabel(thought.capturedDayKey, today)}
+                    </span>
                   </li>
                 ))}
               </ul>

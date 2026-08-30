@@ -26,6 +26,9 @@ async function migrateThoughts(db: D1Database): Promise<void> {
   if (!columns.has("notes")) {
     await db.prepare("ALTER TABLE thoughts ADD COLUMN notes TEXT NOT NULL DEFAULT ''").run();
   }
+  if (!columns.has("scheduled_day_key")) {
+    await db.prepare("ALTER TABLE thoughts ADD COLUMN scheduled_day_key TEXT").run();
+  }
   if (columns.has("tags") && columns.has("source")) {
     await db
       .prepare(`UPDATE thoughts SET
@@ -75,6 +78,7 @@ export async function ensureSchema(): Promise<void> {
         quadrant TEXT NOT NULL DEFAULT 'later',
         status TEXT NOT NULL DEFAULT 'open',
         day_key TEXT NOT NULL,
+        scheduled_day_key TEXT,
         done_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -114,6 +118,9 @@ export async function ensureSchema(): Promise<void> {
     await migrateBookNotes(db);
     await db
       .prepare("CREATE INDEX IF NOT EXISTS idx_thoughts_user_quadrant ON thoughts(user_id, quadrant, status)")
+      .run();
+    await db
+      .prepare("CREATE INDEX IF NOT EXISTS idx_thoughts_user_scheduled ON thoughts(user_id, scheduled_day_key)")
       .run();
     await db.prepare("PRAGMA optimize").run();
   })().catch((error) => {

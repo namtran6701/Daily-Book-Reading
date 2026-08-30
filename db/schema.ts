@@ -9,13 +9,15 @@ export const thoughts = sqliteTable(
     notes: text("notes").notNull().default(""),
     quadrant: text("quadrant").notNull().default("later"),
     status: text("status").notNull().default("open"),
-    dayKey: text("day_key").notNull(),
+    capturedDayKey: text("day_key").notNull(),
+    scheduledDayKey: text("scheduled_day_key"),
     doneAt: text("done_at"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
   (table) => [
-    index("idx_thoughts_user_day").on(table.userId, table.dayKey),
+    index("idx_thoughts_user_day").on(table.userId, table.capturedDayKey),
+    index("idx_thoughts_user_scheduled").on(table.userId, table.scheduledDayKey),
     index("idx_thoughts_user_quadrant").on(table.userId, table.quadrant, table.status),
   ],
 );

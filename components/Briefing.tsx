@@ -30,16 +30,26 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
   const { headline, alert, chips } = useMemo(() => {
     const open = thoughts.filter((thought) => !thought.done);
     const capturedToday =
-      thoughts.filter((thought) => thought.dayKey === today).length +
+      thoughts.filter((thought) => thought.capturedDayKey === today).length +
       notes.filter((note) => note.dayKey === today).length;
 
-    const oldestUrgent = open
-      .filter((thought) => thought.quadrant === "do")
-      .reduce<Thought | null>(
-        (oldest, thought) => (!oldest || thought.dayKey < oldest.dayKey ? thought : oldest),
-        null,
-      );
-    const urgentAge = oldestUrgent ? daysBetween(oldestUrgent.dayKey, today) : 0;
+    const urgent = open.filter((thought) => thought.quadrant === "do");
+    const overdueUrgent = urgent
+      .filter((thought) => thought.scheduledDayKey && thought.scheduledDayKey < today)
+      .sort((a, b) => a.scheduledDayKey!.localeCompare(b.scheduledDayKey!));
+    const oldestUrgent = overdueUrgent[0] ?? [...urgent].sort(
+      (a, b) => a.capturedDayKey.localeCompare(b.capturedDayKey),
+    )[0] ?? null;
+    const urgentIsOverdue = Boolean(
+      oldestUrgent?.scheduledDayKey && oldestUrgent.scheduledDayKey < today,
+    );
+    const urgentAge = oldestUrgent
+      ? daysBetween(
+          urgentIsOverdue ? oldestUrgent.scheduledDayKey! : oldestUrgent.capturedDayKey,
+          today,
+        )
+      : 0;
+    const urgentNeedsAttention = urgentAge >= (urgentIsOverdue ? 1 : 2);
 
     const reading = books.filter((book) => !book.finishedAt);
     const latestNote = [...notes]
@@ -49,10 +59,13 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
 
     let headline: React.ReactNode;
     let alert = false;
-    if (oldestUrgent && urgentAge >= 2) {
+    if (oldestUrgent && urgentNeedsAttention) {
       headline = (
         <>
-          An urgent item has waited <strong>{urgentAge} days</strong>.{" "}
+          An urgent item {urgentIsOverdue ? "is" : "has waited"}{" "}
+          <strong>
+            {urgentAge} {urgentAge === 1 ? "day" : "days"}{urgentIsOverdue ? " overdue" : ""}
+          </strong>.{" "}
           <button
             className="briefing-task-link"
             type="button"
@@ -96,14 +109,15 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
       },
     ];
 
-    if (urgentAge >= 2) {
+    if (urgentNeedsAttention) {
       chips.push({
         key: "urgent",
         tone: "b-red",
         icon: <FlameIcon size={13} />,
         text: (
           <>
-            urgent for <strong>{urgentAge} days</strong>
+            {urgentIsOverdue ? "overdue by" : "urgent for"}{" "}
+            <strong>{urgentAge} {urgentAge === 1 ? "day" : "days"}</strong>
           </>
         ),
       });

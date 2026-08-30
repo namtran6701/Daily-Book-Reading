@@ -6,7 +6,8 @@ export type Thought = {
   notes: string;
   quadrant: Quadrant;
   done: boolean;
-  dayKey: string;
+  capturedDayKey: string;
+  scheduledDayKey: string | null;
   doneAt: string | null;
   createdAt: string;
   updatedAt: string;

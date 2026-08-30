@@ -1404,6 +1404,18 @@ input:focus {
   color: var(--secondary);
 }
 
+.thought-schedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--blue);
+  font-weight: 570;
+}
+
+.thought-schedule.overdue {
+  color: var(--danger-ink);
+}
+
 /* the quadrant tag doubles as the move control when interactive */
 .quadrant-tag {
   display: inline-flex;
@@ -1693,6 +1705,29 @@ button.quadrant-tag .caret {
 
 .task-meta-field input:disabled {
   opacity: 0.58;
+}
+
+.task-schedule-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-meta-clear {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--secondary);
+}
+
+.task-meta-clear:hover {
+  color: var(--label);
+  background: var(--fill-strong);
 }
 
 .task-meta-note {
@@ -2050,14 +2085,25 @@ button.quadrant-tag .caret {
   min-height: 5px;
 }
 
-.day-dots i {
+.day-dots i,
+.calendar-legend i {
   width: 4px;
   height: 4px;
   border-radius: 50%;
+}
+
+.day-dots i.scheduled,
+.calendar-legend i.scheduled {
   background: var(--tint);
 }
 
-.day-dots i.hollow {
+.day-dots i.captured,
+.calendar-legend i.captured {
+  background: var(--tertiary);
+}
+
+.day-dots i.reading,
+.calendar-legend i.reading {
   background: transparent;
   border: 1px solid var(--orange);
 }
@@ -2067,6 +2113,29 @@ button.quadrant-tag .caret {
   font-size: 9px;
   color: var(--tertiary);
   line-height: 1;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 9px 4px 0;
+  color: var(--tertiary);
+  font-size: 10.5px;
+  font-weight: 560;
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.calendar-legend i {
+  display: inline-block;
+  flex: none;
 }
 
 .day-panel {

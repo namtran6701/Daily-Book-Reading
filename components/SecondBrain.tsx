@@ -214,7 +214,7 @@ export function SecondBrain() {
         const response = await apiFetch("/api/thoughts", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text, quadrant, dayKey: today }),
+          body: JSON.stringify({ text, quadrant, capturedDayKey: today }),
         });
         const payload = await readJson<{ thoughts: Thought[] }>(response, "Could not keep that.");
         setThoughts((current) => [...payload.thoughts, ...current]);

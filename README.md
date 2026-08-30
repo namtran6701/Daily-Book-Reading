@@ -10,10 +10,11 @@ The home screen opens with a daily briefing: open-thought and capture counts,
 the current book, and a warning when an urgent item has been waiting for at
 least two days.
 
-The calendar shows one month at a time. Today is marked, solid dots represent
-thoughts, and hollow dots represent book notes. Select a date to read its
-thoughts and book notes together; thoughts can also be completed, edited, or
-deleted from the day panel.
+The calendar shows one month at a time. Today is marked, and a small legend
+distinguishes scheduled tasks, captured thoughts, and reading notes. A task can
+appear on both its immutable capture day and its optional scheduled day without
+being duplicated when those dates match. Select a date to work with its entries;
+thoughts can also be completed, edited, or deleted from the day panel.
 
 ## Thoughts
 
@@ -33,15 +34,15 @@ quadrant's **Show done** control.
 Select a thought's linked title to open its task detail page. The short title
 stays compact in the matrix while the linked page provides a large, auto-saving
 notes canvas for context, links, and working notes. The same page can change
-the due date and title; its quadrant remains fixed while the canvas is open.
-Notes remain attached to that thought and are available from both the matrix
-and Calendar.
+the optional scheduled date and title while showing the immutable capture date;
+its quadrant remains fixed while the canvas is open. Notes remain attached to
+that thought and are available from both the matrix and Calendar.
 
 Task-canvas edits are copied immediately to a per-task draft in the browser,
 then sent to D1 after a short pause. Back navigation, backgrounding, and page
 exit also trigger a final save attempt. The browser draft is removed after D1
-confirms the latest title, notes, and due date; if that request is interrupted,
-the draft is restored and retried the next time the task opens.
+confirms the latest title, notes, and scheduled date; if that request is
+interrupted, the draft is restored and retried the next time the task opens.
 
 Deletion requests are sent immediately, and the row remains visible with a
 progress indicator until the server confirms the removal. There is no Undo
@@ -62,8 +63,10 @@ Book notes also appear on the Calendar and contribute to Review activity.
 Review summarizes either the current week or current month from the data
 already loaded by the app. It shows completion progress, thoughts captured,
 book notes, finished books, activity by day and quadrant, older open carryover,
-and the next open items by priority. Review is computed entirely in the
-browser; it does not have a separate API or table.
+and the next open items by priority and schedule. Capture statistics always use
+the original capture day, so rescheduling a task cannot rewrite past reviews.
+Review is computed entirely in the browser; it does not have a separate API or
+table.
 
 ## Installable app and offline behavior
 
@@ -161,8 +164,9 @@ npx wrangler deploy --config dist/server/wrangler.json
 ```
 
 The first API request in each Worker isolate runs `ensureSchema()` against the
-bound database. Existing databases receive the additive task-notes column
-automatically; existing thoughts start with an empty note.
+bound database. Existing databases receive additive task-notes and scheduled-day
+columns automatically. Existing thoughts keep their current day as the immutable
+capture day and begin without a schedule.
 
 > [!IMPORTANT]
 > The app does not implement authentication. Every request uses the fixed

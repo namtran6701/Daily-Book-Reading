@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ChevronLeftIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
+import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
 import { formatDate } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
 import { gentle } from "@/lib/springs";
@@ -29,8 +29,10 @@ type Props = {
 type DocumentDraft = {
   title: string;
   notes: string;
-  dayKey: string;
+  scheduledDayKey: string | null;
 };
+
+type StoredDocumentDraft = Partial<DocumentDraft> & { dayKey?: unknown };
 
 const SAVE_DELAY = 700;
 const DRAFT_PREFIX = "second-brain-task-draft:";
@@ -39,16 +41,24 @@ function draftKey(id: string): string {
   return `${DRAFT_PREFIX}${id}`;
 }
 
-function readDraft(id: string, fallback: DocumentDraft): DocumentDraft {
+function readDraft(id: string, fallback: DocumentDraft, capturedDayKey: string): DocumentDraft {
   try {
     const value = localStorage.getItem(draftKey(id));
     if (!value) return fallback;
-    const parsed = JSON.parse(value) as Partial<DocumentDraft>;
+    const parsed = JSON.parse(value) as StoredDocumentDraft;
     if (typeof parsed.title !== "string" || typeof parsed.notes !== "string") return fallback;
+    const scheduledDayKey =
+      parsed.scheduledDayKey === null
+        ? null
+        : typeof parsed.scheduledDayKey === "string"
+          ? parsed.scheduledDayKey || null
+          : typeof parsed.dayKey === "string" && parsed.dayKey !== capturedDayKey
+            ? parsed.dayKey
+            : fallback.scheduledDayKey;
     return {
       title: parsed.title,
       notes: parsed.notes,
-      dayKey: typeof parsed.dayKey === "string" ? parsed.dayKey : fallback.dayKey,
+      scheduledDayKey,
     };
   } catch {
     return fallback;
@@ -75,26 +85,38 @@ function isClean(draft: DocumentDraft, saved: DocumentDraft): boolean {
   return (
     draft.title.trim() === saved.title &&
     draft.notes === saved.notes &&
-    draft.dayKey === saved.dayKey
+    draft.scheduledDayKey === saved.scheduledDayKey
   );
 }
 
 export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
   const [initialDraft] = useState(() =>
-    readDraft(thought.id, { title: thought.body, notes: thought.notes, dayKey: thought.dayKey }),
+    readDraft(
+      thought.id,
+      {
+        title: thought.body,
+        notes: thought.notes,
+        scheduledDayKey: thought.scheduledDayKey,
+      },
+      thought.capturedDayKey,
+    ),
   );
   const [title, setTitle] = useState(initialDraft.title);
   const [notes, setNotes] = useState(initialDraft.notes);
-  const [dueDate, setDueDate] = useState(initialDraft.dayKey);
+  const [scheduledDate, setScheduledDate] = useState(initialDraft.scheduledDayKey ?? "");
   const [saveState, setSaveState] = useState<SaveState>(() =>
-    isClean(initialDraft, { title: thought.body, notes: thought.notes, dayKey: thought.dayKey })
+    isClean(initialDraft, {
+      title: thought.body,
+      notes: thought.notes,
+      scheduledDayKey: thought.scheduledDayKey,
+    })
       ? "saved"
       : "unsaved",
   );
   const savedDocument = useRef<DocumentDraft>({
     title: thought.body,
     notes: thought.notes,
-    dayKey: thought.dayKey,
+    scheduledDayKey: thought.scheduledDayKey,
   });
   const draftDocument = useRef<DocumentDraft>(initialDraft);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,9 +170,9 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
         const nextTitle = draft.title.trim();
         const titleChanged = Boolean(nextTitle) && nextTitle !== saved.title;
         const notesChanged = draft.notes !== saved.notes;
-        const dueDateChanged = draft.dayKey !== saved.dayKey;
+        const scheduledDateChanged = draft.scheduledDayKey !== saved.scheduledDayKey;
 
-        if (!titleChanged && !notesChanged && !dueDateChanged) {
+        if (!titleChanged && !notesChanged && !scheduledDateChanged) {
           if (nextTitle && isClean(draft, saved)) removeDraft(thought.id);
           break;
         }
@@ -158,7 +180,7 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
         const patch: Partial<Thought> = {};
         if (titleChanged) patch.body = nextTitle;
         if (notesChanged) patch.notes = draft.notes;
-        if (dueDateChanged) patch.dayKey = draft.dayKey;
+        if (scheduledDateChanged) patch.scheduledDayKey = draft.scheduledDayKey;
 
         if (Object.keys(patch).length === 0) {
           lastSaveWorked = false;
@@ -175,7 +197,9 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
         finishSuccessfulSave({
           title: titleChanged ? nextTitle : saved.title,
           notes: notesChanged ? draft.notes : saved.notes,
-          dayKey: dueDateChanged ? draft.dayKey : saved.dayKey,
+          scheduledDayKey: scheduledDateChanged
+            ? draft.scheduledDayKey
+            : saved.scheduledDayKey,
         });
       }
 
@@ -215,9 +239,9 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
     changeDocument({ notes: value });
   }
 
-  function changeDueDate(value: string): void {
-    setDueDate(value);
-    changeDocument({ dayKey: value });
+  function changeScheduledDate(value: string): void {
+    setScheduledDate(value);
+    changeDocument({ scheduledDayKey: value || null });
   }
 
   function blurTitle(): void {
@@ -336,20 +360,32 @@ export function TaskDetail({ thought, readOnly, onBack, onUpdate }: Props) {
           />
 
           <div className="task-meta-row">
-            <label className="task-meta-field">
-              <TodayIcon size={14} />
-              <span>Due</span>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(event) => {
-                  if (event.target.value) changeDueDate(event.target.value);
-                }}
-                disabled={readOnly}
-              />
-            </label>
+            <span className="task-schedule-control">
+              <label className="task-meta-field">
+                <TodayIcon size={14} />
+                <span>Schedule</span>
+                <input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(event) => changeScheduledDate(event.target.value)}
+                  disabled={readOnly}
+                />
+              </label>
+              {scheduledDate && (
+                <button
+                  className="task-meta-clear pressable"
+                  type="button"
+                  onClick={() => changeScheduledDate("")}
+                  disabled={readOnly}
+                  aria-label="Clear scheduled date"
+                  title="Clear scheduled date"
+                >
+                  <CloseIcon size={13} />
+                </button>
+              )}
+            </span>
             <span className="task-meta-note">
-              Added {formatDate(thought.createdAt.slice(0, 10), { month: "short", day: "numeric", year: "numeric" })}
+              Captured {formatDate(thought.capturedDayKey, { month: "short", day: "numeric", year: "numeric" })}
             </span>
           </div>
 

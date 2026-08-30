@@ -46,23 +46,39 @@ export function CalendarTab({
   const [direction, setDirection] = useState(1);
 
   const activity = useMemo(() => {
-    const map = new Map<string, { thoughts: number; notes: number }>();
-    const bump = (day: string, field: "thoughts" | "notes") => {
-      const entry = map.get(day) ?? { thoughts: 0, notes: 0 };
+    const map = new Map<string, { scheduled: number; captured: number; notes: number }>();
+    const bump = (day: string, field: "scheduled" | "captured" | "notes") => {
+      const entry = map.get(day) ?? { scheduled: 0, captured: 0, notes: 0 };
       entry[field] += 1;
       map.set(day, entry);
     };
-    for (const thought of thoughts) bump(thought.dayKey, "thoughts");
+    for (const thought of thoughts) {
+      if (thought.scheduledDayKey) bump(thought.scheduledDayKey, "scheduled");
+      if (thought.capturedDayKey !== thought.scheduledDayKey) {
+        bump(thought.capturedDayKey, "captured");
+      }
+    }
     for (const note of notes) bump(note.dayKey, "notes");
     return map;
   }, [thoughts, notes]);
 
   const cells = useMemo(() => monthGrid(month), [month]);
 
-  const dayThoughts = useMemo(
+  const dayScheduled = useMemo(
     () =>
       thoughts
-        .filter((thought) => thought.dayKey === selectedDay)
+        .filter((thought) => thought.scheduledDayKey === selectedDay)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    [thoughts, selectedDay],
+  );
+
+  const dayCaptured = useMemo(
+    () =>
+      thoughts
+        .filter(
+          (thought) =>
+            thought.capturedDayKey === selectedDay && thought.scheduledDayKey !== selectedDay,
+        )
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     [thoughts, selectedDay],
   );
@@ -158,7 +174,10 @@ export function CalendarTab({
               <div key={week} className="week-row" role="row">
                 {cells.slice(week * 7, week * 7 + 7).map(({ dayKey, inMonth }) => {
                   const counts = activity.get(dayKey);
-                  const total = (counts?.thoughts ?? 0) + (counts?.notes ?? 0);
+                  const total =
+                    (counts?.scheduled ?? 0) +
+                    (counts?.captured ?? 0) +
+                    (counts?.notes ?? 0);
                   const classes = [
                     "day-cell",
                     "pressable",
@@ -184,13 +203,34 @@ export function CalendarTab({
                       )}
                       <span className="day-number">{formatDate(dayKey, { day: "numeric" })}</span>
                       <span className="day-dots">
-                        {Array.from({ length: Math.min(counts?.thoughts ?? 0, MAX_DOTS) }, (_, index) => (
-                          <i key={`t${index}`} />
+                        {Array.from({ length: Math.min(counts?.scheduled ?? 0, MAX_DOTS) }, (_, index) => (
+                          <i key={`s${index}`} className="scheduled" />
                         ))}
                         {Array.from(
-                          { length: Math.min(counts?.notes ?? 0, Math.max(0, MAX_DOTS - (counts?.thoughts ?? 0))) },
+                          {
+                            length: Math.min(
+                              counts?.captured ?? 0,
+                              Math.max(0, MAX_DOTS - (counts?.scheduled ?? 0)),
+                            ),
+                          },
                           (_, index) => (
-                            <i key={`n${index}`} className="hollow" />
+                            <i key={`c${index}`} className="captured" />
+                          ),
+                        )}
+                        {Array.from(
+                          {
+                            length: Math.min(
+                              counts?.notes ?? 0,
+                              Math.max(
+                                0,
+                                MAX_DOTS -
+                                  (counts?.scheduled ?? 0) -
+                                  (counts?.captured ?? 0),
+                              ),
+                            ),
+                          },
+                          (_, index) => (
+                            <i key={`n${index}`} className="reading" />
                           ),
                         )}
                         {total > MAX_DOTS && <em>+</em>}
@@ -202,6 +242,11 @@ export function CalendarTab({
             ))}
           </motion.div>
         </AnimatePresence>
+      </div>
+      <div className="calendar-legend" aria-label="Calendar markers">
+        <span><i className="scheduled" /> Scheduled</span>
+        <span><i className="captured" /> Captured</span>
+        <span><i className="reading" /> Reading</span>
       </div>
       </div>
 
@@ -224,20 +269,43 @@ export function CalendarTab({
             </span>
           </header>
 
-          {dayThoughts.length === 0 && readingCount === 0 ? (
+          {dayScheduled.length === 0 && dayCaptured.length === 0 && readingCount === 0 ? (
             <QuietState compact icon={<TodayIcon size={17} />} title="A quiet day">
-              Nothing was captured here.
+              Nothing was captured or scheduled here.
             </QuietState>
           ) : (
             <>
-              {dayThoughts.length > 0 && (
+              {dayScheduled.length > 0 && (
                 <div className="day-section">
                   <h3>
-                    {dayThoughts.length} {dayThoughts.length === 1 ? "thought" : "thoughts"}
+                    {dayScheduled.length} scheduled
                   </h3>
                   <ul className="thought-list">
                     <AnimatePresence mode="popLayout" initial={false}>
-                      {dayThoughts.map((thought) => (
+                      {dayScheduled.map((thought) => (
+                        <ThoughtRow
+                          key={thought.id}
+                          thought={thought}
+                          today={today}
+                          showQuadrant
+                          onUpdate={onUpdate}
+                          onDelete={onDelete}
+                          deleting={deletingIds.has(thought.id)}
+                          readOnly={readOnly}
+                          onOpenDetail={onOpenDetail}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </div>
+              )}
+
+              {dayCaptured.length > 0 && (
+                <div className="day-section">
+                  <h3>{dayCaptured.length} captured</h3>
+                  <ul className="thought-list">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {dayCaptured.map((thought) => (
                         <ThoughtRow
                           key={thought.id}
                           thought={thought}

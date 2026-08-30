@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ageLabel, daysBetween } from "@/lib/date-keys";
-import { CheckIcon, CloseIcon, MoveIcon, NoteIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TrashIcon } from "./icons";
+import { ageLabel, daysBetween, scheduleLabel } from "@/lib/date-keys";
+import { CheckIcon, CloseIcon, MoveIcon, NoteIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TodayIcon, TrashIcon } from "./icons";
 import { QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -88,8 +88,13 @@ export function ThoughtRow({
     void onUpdate(thought.id, { done: !thought.done });
   }
 
-  const age = daysBetween(thought.dayKey, today);
+  const age = daysBetween(thought.capturedDayKey, today);
   const heat = thought.done || !showAge ? "" : age >= 7 ? "heat-2" : age >= 3 ? "heat-1" : "";
+  const scheduleIsOverdue = Boolean(
+    !thought.done &&
+      thought.scheduledDayKey &&
+      daysBetween(thought.scheduledDayKey, today) > 0,
+  );
   const movableTag = showQuadrant && onMove;
 
   return (
@@ -213,7 +218,13 @@ export function ThoughtRow({
                     {QUADRANT_LABELS[thought.quadrant]}
                   </span>
                 ))}
-              {showAge && <span className={`thought-age ${heat}`}>{ageLabel(thought.dayKey, today)}</span>}
+              {showAge && <span className={`thought-age ${heat}`}>{ageLabel(thought.capturedDayKey, today)}</span>}
+              {thought.scheduledDayKey && (
+                <span className={`thought-schedule ${scheduleIsOverdue ? "overdue" : ""}`}>
+                  <TodayIcon size={11} />
+                  {scheduleLabel(thought.scheduledDayKey, today)}
+                </span>
+              )}
               {thought.notes && (
                 <span className="thought-has-notes">
                   <NoteIcon size={11} />
