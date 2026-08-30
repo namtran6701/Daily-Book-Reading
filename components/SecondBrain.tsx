@@ -43,6 +43,8 @@ const TASK_QUERY = "task";
 const TASK_HISTORY_KEY = "secondBrainTask";
 const BOOK_NOTE_QUERY = "note";
 const BOOK_NOTE_HISTORY_KEY = "secondBrainBookNote";
+const BOOK_QUERY = "book";
+const BOOK_HISTORY_KEY = "secondBrainBook";
 
 // Hand the motion to the browser: settle immediately, no animation of our own.
 const INSTANT: Transition = { duration: 0 };
@@ -71,6 +73,11 @@ function readNetworkStatus(): boolean {
   return navigator.onLine;
 }
 
+// Every open view the browser can return to. A task and a reading note are
+// mutually exclusive; the book stays alongside a note because the book detail
+// is the surface that note sits on.
+type Detail = { task?: string; note?: string; book?: string };
+
 function taskIdFromUrl(): string {
   return new URL(window.location.href).searchParams.get(TASK_QUERY) ?? "";
 }
@@ -79,19 +86,21 @@ function bookNoteIdFromUrl(): string {
   return new URL(window.location.href).searchParams.get(BOOK_NOTE_QUERY) ?? "";
 }
 
-function taskUrl(id?: string): string {
-  const url = new URL(window.location.href);
-  url.searchParams.delete(BOOK_NOTE_QUERY);
-  if (id) url.searchParams.set(TASK_QUERY, id);
-  else url.searchParams.delete(TASK_QUERY);
-  return `${url.pathname}${url.search}${url.hash}`;
+function bookIdFromUrl(): string {
+  return new URL(window.location.href).searchParams.get(BOOK_QUERY) ?? "";
 }
 
-function bookNoteUrl(id?: string): string {
+function detailUrl(detail: Detail): string {
   const url = new URL(window.location.href);
-  url.searchParams.delete(TASK_QUERY);
-  if (id) url.searchParams.set(BOOK_NOTE_QUERY, id);
-  else url.searchParams.delete(BOOK_NOTE_QUERY);
+  const params: [string, string | undefined][] = [
+    [TASK_QUERY, detail.task],
+    [BOOK_NOTE_QUERY, detail.note],
+    [BOOK_QUERY, detail.book],
+  ];
+  for (const [key, value] of params) {
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+  }
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -104,6 +113,17 @@ function historyStateWithoutDetail(): Record<string, unknown> {
   const next = current && typeof current === "object" ? { ...current } : {};
   delete next[TASK_HISTORY_KEY];
   delete next[BOOK_NOTE_HISTORY_KEY];
+  delete next[BOOK_HISTORY_KEY];
+  return next;
+}
+
+// The entry marks which view it owns, so closing that view knows whether it can
+// step back through history rather than rewriting the current entry.
+function detailState(detail: Detail): Record<string, unknown> {
+  const next = historyStateWithoutDetail();
+  if (detail.task) next[TASK_HISTORY_KEY] = detail.task;
+  if (detail.note) next[BOOK_NOTE_HISTORY_KEY] = detail.note;
+  if (detail.book) next[BOOK_HISTORY_KEY] = detail.book;
   return next;
 }
 
@@ -163,6 +183,7 @@ export function SecondBrain() {
   const [selectedBookNoteId, setSelectedBookNoteId] = useState("");
   const thoughtIds = useRef<Set<string>>(new Set());
   const bookNoteIds = useRef<Set<string>>(new Set());
+  const bookIds = useRef<Set<string>>(new Set());
   // Where the workspace was left when a detail opened, so returning lands back
   // on the same row rather than at the top of the list.
   const workspaceScroll = useRef(0);
@@ -352,6 +373,7 @@ export function SecondBrain() {
         `/api/books?id=${encodeURIComponent(id)}`,
         () => {
           setSelectedBookId("");
+          history.replaceState(historyStateWithoutDetail(), "", detailUrl({}));
           setBooks((current) => current.filter((item) => item.id !== id));
           setNotes((current) => current.filter((item) => item.bookId !== id));
         },
@@ -420,31 +442,40 @@ export function SecondBrain() {
     [runDelete],
   );
 
-  /* eslint-disable react-hooks/set-state-in-effect -- URL detail state is reconciled after API data arrives. */
   useEffect(() => {
     thoughtIds.current = new Set(thoughts.map((thought) => thought.id));
     bookNoteIds.current = new Set(notes.map((note) => note.id));
+    bookIds.current = new Set(books.map((book) => book.id));
     if (!loaded) return;
 
     const requestedTask = taskIdFromUrl();
     const requestedBookNote = bookNoteIdFromUrl();
+    const requestedBook = bookIdFromUrl();
+    const nextBook = bookIds.current.has(requestedBook) ? requestedBook : "";
     if (requestedTask && thoughtIds.current.has(requestedTask)) {
       // A shared or restored task URL should open its canvas after data arrives.
       setSelectedThoughtId(requestedTask);
       setSelectedBookNoteId("");
+      setSelectedBookId(nextBook);
     } else if (requestedBookNote && bookNoteIds.current.has(requestedBookNote)) {
       const requestedNote = notes.find((note) => note.id === requestedBookNote);
       setSelectedThoughtId("");
       setSelectedBookNoteId(requestedBookNote);
       if (requestedNote) setSelectedBookId(requestedNote.bookId);
       setTab("books");
-    } else if (requestedTask || requestedBookNote) {
-      history.replaceState(historyStateWithoutDetail(), "", bookNoteUrl());
+    } else if (nextBook) {
+      // A restored book URL opens its shelf entry with the list still behind it.
       setSelectedThoughtId("");
       setSelectedBookNoteId("");
+      setSelectedBookId(nextBook);
+      setTab("books");
+    } else if (requestedTask || requestedBookNote || requestedBook) {
+      history.replaceState(historyStateWithoutDetail(), "", detailUrl({}));
+      setSelectedThoughtId("");
+      setSelectedBookNoteId("");
+      setSelectedBookId("");
     }
-  }, [loaded, notes, thoughts]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [books, loaded, notes, thoughts]);
 
   useEffect(() => {
     // Browser scroll restoration fires while the outgoing detail is still
@@ -460,9 +491,11 @@ export function SecondBrain() {
       const nextTask = requestedTask && thoughtIds.current.has(requestedTask) ? requestedTask : "";
       const nextBookNote =
         requestedBookNote && bookNoteIds.current.has(requestedBookNote) ? requestedBookNote : "";
+      const requestedBook = bookIdFromUrl();
       if ((nextTask || nextBookNote) && !detailOpen.current) workspaceScroll.current = window.scrollY;
       setSelectedThoughtId(nextTask);
       setSelectedBookNoteId(nextBookNote);
+      setSelectedBookId(bookIds.current.has(requestedBook) ? requestedBook : "");
       if (nextTask || nextBookNote) window.scrollTo({ top: 0, behavior: "auto" });
     };
 
@@ -503,11 +536,8 @@ export function SecondBrain() {
     setNavigationSource("app");
     if (id === selectedThoughtId) return;
     if (!showingDetail) workspaceScroll.current = window.scrollY;
-    history.pushState(
-      { ...historyStateWithoutDetail(), [TASK_HISTORY_KEY]: id },
-      "",
-      taskUrl(id),
-    );
+    const detail: Detail = { task: id, book: selectedBookId };
+    history.pushState(detailState(detail), "", detailUrl(detail));
     setSelectedBookNoteId("");
     setSelectedThoughtId(id);
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -523,18 +553,16 @@ export function SecondBrain() {
       history.back();
       return;
     }
-    history.replaceState(historyStateWithoutDetail(), "", taskUrl());
+    const detail: Detail = { book: selectedBookId };
+    history.replaceState(detailState(detail), "", detailUrl(detail));
   }
 
   function openBookNote(note: BookNote) {
     setNavigationSource("app");
     if (note.id === selectedBookNoteId) return;
     if (!showingDetail) workspaceScroll.current = window.scrollY;
-    history.pushState(
-      { ...historyStateWithoutDetail(), [BOOK_NOTE_HISTORY_KEY]: note.id },
-      "",
-      bookNoteUrl(note.id),
-    );
+    const detail: Detail = { note: note.id, book: note.bookId };
+    history.pushState(detailState(detail), "", detailUrl(detail));
     setSelectedThoughtId("");
     setSelectedBookId(note.bookId);
     setSelectedBookNoteId(note.id);
@@ -552,7 +580,28 @@ export function SecondBrain() {
       history.back();
       return;
     }
-    history.replaceState(historyStateWithoutDetail(), "", bookNoteUrl());
+    const detail: Detail = { book: selectedBookId };
+    history.replaceState(detailState(detail), "", detailUrl(detail));
+  }
+
+  // The book detail is its own history entry so an edge-swipe back returns to
+  // the shelf instead of leaving the app.
+  function selectBook(id: string) {
+    setNavigationSource("app");
+    if (id === selectedBookId) return;
+    if (!id) {
+      const shouldReturnThroughHistory = history.state?.[BOOK_HISTORY_KEY] === selectedBookId;
+      setSelectedBookId("");
+      if (shouldReturnThroughHistory) {
+        history.back();
+        return;
+      }
+      history.replaceState(historyStateWithoutDetail(), "", detailUrl({}));
+      return;
+    }
+    const detail: Detail = { book: id };
+    history.pushState(detailState(detail), "", detailUrl(detail));
+    setSelectedBookId(id);
   }
 
   function selectDay(day: string) {
@@ -728,7 +777,8 @@ export function SecondBrain() {
                         busy={busy || !online}
                         readOnly={!online}
                         selectedBookId={selectedBookId}
-                        onSelectBook={setSelectedBookId}
+                        transition={navigationTransition}
+                        onSelectBook={selectBook}
                         onAddBook={addBook}
                         onUpdateBook={updateBook}
                         onDeleteBook={deleteBook}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type Transition } from "motion/react";
 import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
 import { QuietState } from "./UiState";
 import {
@@ -27,6 +27,7 @@ type Props = {
   today: string;
   busy: boolean;
   selectedBookId: string;
+  transition?: Transition;
   onSelectBook: (id: string) => void;
   onAddBook: (title: string) => Promise<boolean>;
   onUpdateBook: (id: string, patch: { finished?: boolean }) => Promise<void>;
@@ -187,6 +188,7 @@ export function BooksTab({
   today,
   busy,
   selectedBookId,
+  transition,
   onSelectBook,
   onAddBook,
   onUpdateBook,
@@ -254,7 +256,7 @@ export function BooksTab({
           initial={{ opacity: 0, x: 44 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 44 }}
-          transition={snappy}
+          transition={transition ?? snappy}
         >
           <button
             className="back pressable"
@@ -395,7 +397,7 @@ export function BooksTab({
           initial={{ opacity: 0, x: -44 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -44 }}
-          transition={snappy}
+          transition={transition ?? snappy}
         >
           <section className="book-add card" aria-label="Add a book">
             <h2>What are you reading?</h2>
