@@ -2623,6 +2623,28 @@ button.quadrant-tag .caret {
   align-items: center;
   gap: 8px;
   margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.book-link-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.book-link-edit input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 13px;
+  font-size: 14px;
+}
+
+.book-link-edit .keep-button {
+  width: 40px;
+  height: 40px;
+  flex: none;
 }
 
 .note-capture {

@@ -4,6 +4,7 @@ export const MAX_ROW_LENGTH = 4000;
 export const MAX_TASK_NOTES_LENGTH = 100000;
 export const MAX_TITLE_LENGTH = 300;
 export const MAX_PAGE_LENGTH = 40;
+export const MAX_LINK_LENGTH = 2000;
 export const MAX_NOTES_PER_BOOK = 1000;
 
 // Single-user app: every request maps to the one owner. If this ever grows real

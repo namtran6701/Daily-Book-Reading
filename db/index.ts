@@ -52,6 +52,9 @@ async function migrateBooks(db: D1Database): Promise<void> {
   if (columns.has("author")) {
     await db.prepare("ALTER TABLE books DROP COLUMN author").run();
   }
+  if (!columns.has("link")) {
+    await db.prepare("ALTER TABLE books ADD COLUMN link TEXT NOT NULL DEFAULT ''").run();
+  }
 }
 
 async function migrateBookNotes(db: D1Database): Promise<void> {
@@ -92,6 +95,7 @@ export async function ensureSchema(): Promise<void> {
         id TEXT PRIMARY KEY NOT NULL,
         user_id TEXT NOT NULL,
         title TEXT NOT NULL,
+        link TEXT NOT NULL DEFAULT '',
         finished_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL

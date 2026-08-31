@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion, type Transition } from "motion/react";
 import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
 import { QuietState } from "./UiState";
@@ -10,7 +10,10 @@ import {
   ChevronRightIcon,
   CloseIcon,
   CheckIcon,
+  ExternalLinkIcon,
+  LinkIcon,
   NoteIcon,
+  PencilIcon,
   PlusIcon,
   SearchIcon,
   SpinnerIcon,
@@ -30,7 +33,7 @@ type Props = {
   transition?: Transition;
   onSelectBook: (id: string) => void;
   onAddBook: (title: string) => Promise<boolean>;
-  onUpdateBook: (id: string, patch: { finished?: boolean }) => Promise<void>;
+  onUpdateBook: (id: string, patch: { finished?: boolean; link?: string }) => Promise<void>;
   onDeleteBook: (id: string) => Promise<void>;
   onAddNote: (bookId: string, text: string) => Promise<BookNote | null>;
   onOpenNote: (note: BookNote) => void;
@@ -39,6 +42,15 @@ type Props = {
   deletingIds: Set<string>;
   readOnly?: boolean;
 };
+
+// Bare hosts (drive.google.com/...) get an https prefix; anything with a
+// non-http scheme, javascript: included, is forced onto https so the stored
+// value is always a safe, openable link.
+function normalizeUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, "")}`;
+}
 
 // A stable hash so every title always renders the same generated cover.
 function hashTitle(title: string): number {
@@ -202,6 +214,12 @@ export function BooksTab({
   const [title, setTitle] = useState("");
   const [noteText, setNoteText] = useState("");
   const [query, setQuery] = useState("");
+  // The editor is bound to the book it was opened for, so switching books
+  // closes it without any effect resetting state.
+  const [linkEditFor, setLinkEditFor] = useState<string | null>(null);
+  const [linkDraft, setLinkDraft] = useState("");
+  const linkOpen = linkEditFor === selectedBookId;
+  const focusOnMount = useCallback((el: HTMLInputElement | null) => el?.focus(), []);
 
   const notesByBook = useMemo(() => {
     const map = new Map<string, BookNote[]>();
@@ -243,6 +261,19 @@ export function BooksTab({
     onOpenNote(created);
   }
 
+  function openLinkEditor() {
+    if (readOnly || !book) return;
+    setLinkDraft(book.link);
+    setLinkEditFor(book.id);
+  }
+
+  async function saveLink() {
+    if (readOnly || !book) return;
+    const next = normalizeUrl(linkDraft);
+    setLinkEditFor(null);
+    if (next !== book.link) await onUpdateBook(book.id, { link: next });
+  }
+
   const reading = books.filter((entry) => !entry.finishedAt);
   const finished = books.filter((entry) => entry.finishedAt);
 
@@ -281,6 +312,39 @@ export function BooksTab({
                 {book.finishedAt && <span className="finished-tag">Finished</span>}
               </p>
               <div className="book-meta">
+                {book.link ? (
+                  <>
+                    <a
+                      className="text-button pressable"
+                      href={book.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLinkIcon />
+                      Open book
+                    </a>
+                    {!readOnly && (
+                      <button
+                        className="icon-action quiet pressable"
+                        onClick={openLinkEditor}
+                        aria-label="Edit book link"
+                        title="Edit link"
+                      >
+                        <PencilIcon />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    className="text-button pressable"
+                    onClick={openLinkEditor}
+                    disabled={readOnly}
+                    title="Add a link to open the book"
+                  >
+                    <LinkIcon />
+                    Add link
+                  </button>
+                )}
                 <button
                   className="text-button pressable"
                   onClick={() => void onUpdateBook(book.id, { finished: !book.finishedAt })}
@@ -299,6 +363,42 @@ export function BooksTab({
                   {deletingIds.has(book.id) ? <SpinnerIcon /> : <TrashIcon />}
                 </button>
               </div>
+              {linkOpen && (
+                <div className="book-link-edit">
+                  <input
+                    ref={focusOnMount}
+                    value={linkDraft}
+                    maxLength={2000}
+                    placeholder="Paste the book link (Google Drive)"
+                    aria-label="Book link"
+                    onChange={(event) => setLinkDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void saveLink();
+                      } else if (event.key === "Escape") {
+                        setLinkEditFor(null);
+                      }
+                    }}
+                  />
+                  <button
+                    className="keep-button"
+                    onClick={() => void saveLink()}
+                    aria-label="Save link"
+                    title="Save link"
+                  >
+                    <CheckIcon />
+                  </button>
+                  <button
+                    className="icon-action quiet pressable"
+                    onClick={() => setLinkEditFor(null)}
+                    aria-label="Cancel"
+                    title="Cancel"
+                  >
+                    <CloseIcon size={14} />
+                  </button>
+                </div>
+              )}
             </div>
           </header>
 

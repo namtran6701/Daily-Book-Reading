@@ -351,7 +351,7 @@ export function SecondBrain() {
     }
   }, [clearError, reportError]);
 
-  const updateBook = useCallback(async (id: string, patch: { finished?: boolean }) => {
+  const updateBook = useCallback(async (id: string, patch: { finished?: boolean; link?: string }) => {
     try {
       const response = await apiFetch("/api/books", {
         method: "PATCH",

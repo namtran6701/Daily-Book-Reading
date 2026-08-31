@@ -16,6 +16,7 @@ export type Thought = {
 export type Book = {
   id: string;
   title: string;
+  link: string;
   finishedAt: string | null;
   createdAt: string;
   updatedAt: string;

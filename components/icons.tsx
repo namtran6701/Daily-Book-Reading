@@ -48,6 +48,26 @@ export function PencilIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function LinkIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M9.5 14.5l5-5" />
+      <path d="M8.5 11.5l-2 2a3 3 0 004.2 4.2l2-2" />
+      <path d="M15.5 12.5l2-2a3 3 0 00-4.2-4.2l-2 2" />
+    </svg>
+  );
+}
+
+export function ExternalLinkIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M14 5h5v5" />
+      <path d="M19 5l-8 8" />
+      <path d="M18 13.5V19H5V6h5.5" />
+    </svg>
+  );
+}
+
 export function NoteIcon({ size = 15 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

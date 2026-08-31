@@ -1,20 +1,30 @@
 import { ensureSchema, getD1 } from "@/db";
-import { MAX_ROWS, MAX_TITLE_LENGTH, OWNER_ID, failure, readJsonBody, text } from "@/app/api/shared";
+import {
+  MAX_LINK_LENGTH,
+  MAX_ROWS,
+  MAX_TITLE_LENGTH,
+  OWNER_ID,
+  failure,
+  readJsonBody,
+  text,
+} from "@/app/api/shared";
 
 type BookRow = {
   id: string;
   title: string;
+  link: string;
   finished_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-const COLUMNS = "id, title, finished_at, created_at, updated_at";
+const COLUMNS = "id, title, link, finished_at, created_at, updated_at";
 
 function serialize(row: BookRow) {
   return {
     id: row.id,
     title: row.title,
+    link: row.link,
     finishedAt: row.finished_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -47,10 +57,17 @@ export async function POST(request: Request) {
     await ensureSchema();
     const timestamp = new Date().toISOString();
     const row = await getD1()
-      .prepare(`INSERT INTO books (id, user_id, title, finished_at, created_at, updated_at)
-        VALUES (?, ?, ?, NULL, ?, ?)
+      .prepare(`INSERT INTO books (id, user_id, title, link, finished_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NULL, ?, ?)
         RETURNING ${COLUMNS}`)
-      .bind(crypto.randomUUID(), OWNER_ID, title, timestamp, timestamp)
+      .bind(
+        crypto.randomUUID(),
+        OWNER_ID,
+        title,
+        text(payload.link).slice(0, MAX_LINK_LENGTH),
+        timestamp,
+        timestamp,
+      )
       .first<BookRow>();
     if (!row) throw new Error("The book was not returned after insert.");
     return Response.json({ book: serialize(row) }, { status: 201 });
@@ -79,11 +96,12 @@ export async function PATCH(request: Request) {
       typeof payload.finished === "boolean" ? payload.finished : current.finished_at !== null;
 
     const row = await db
-      .prepare(`UPDATE books SET title = ?, finished_at = ?, updated_at = ?
+      .prepare(`UPDATE books SET title = ?, link = ?, finished_at = ?, updated_at = ?
         WHERE id = ? AND user_id = ?
         RETURNING ${COLUMNS}`)
       .bind(
-        text(payload.title, current.title).slice(0, 300) || current.title,
+        text(payload.title, current.title).slice(0, MAX_TITLE_LENGTH) || current.title,
+        text(payload.link, current.link).slice(0, MAX_LINK_LENGTH),
         finished ? (current.finished_at ?? timestamp) : null,
         timestamp,
         id,
