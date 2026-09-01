@@ -337,7 +337,6 @@ export function TaskDetail({ thought, today, transition, readOnly, onBack, onUpd
       <header className="task-detail-bar">
         <button className="task-back pressable" onClick={goBack} aria-label="Back to Quadrant">
           <ChevronLeftIcon size={17} />
-          <span>Back to Quadrant</span>
         </button>
         <span className="task-context">
           <span className="q-glyph" aria-hidden="true">

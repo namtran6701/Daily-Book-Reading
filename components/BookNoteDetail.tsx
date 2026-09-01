@@ -347,7 +347,6 @@ export function BookNoteDetail({ book, note, today, transition, readOnly, onBack
       <header className="task-detail-bar reading-detail-bar">
         <button className="task-back pressable" onClick={goBack} aria-label={`Back to ${book.title}`}>
           <ChevronLeftIcon size={17} />
-          <span>Back to book</span>
         </button>
         <span className="task-context reading-context">
           <span className="q-glyph" aria-hidden="true">

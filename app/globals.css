@@ -1582,12 +1582,9 @@ button.quadrant-tag .caret {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  width: 38px;
   min-height: 38px;
-  padding: 0 13px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 620;
 }
 
 .task-back {
@@ -3547,10 +3544,6 @@ button.quadrant-tag .caret {
   .task-back {
     min-width: 44px;
     min-height: 44px;
-  }
-
-  .task-back span {
-    display: none;
   }
 
   .task-save-state {
