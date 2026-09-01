@@ -48,6 +48,16 @@ export function PencilIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function MoreIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function LinkIcon({ size = 15 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

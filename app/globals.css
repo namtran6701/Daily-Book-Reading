@@ -676,6 +676,17 @@ ul {
   background: rgba(10, 10, 12, 0.12);
 }
 
+.text-button.strong {
+  padding: 9px 17px;
+  background: var(--tint);
+  color: var(--surface);
+  font-size: 13.5px;
+}
+
+.text-button.strong:hover {
+  background: var(--tint-hover);
+}
+
 .text-button:disabled,
 .pill:disabled,
 .q-add:disabled {
@@ -2144,6 +2155,53 @@ button.quadrant-tag .caret {
   text-transform: none;
 }
 
+.menu-list {
+  display: grid;
+  gap: 6px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  color: var(--label);
+  font-size: 14.5px;
+  font-weight: 560;
+  letter-spacing: -0.008em;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.menu-row svg {
+  flex: none;
+  color: var(--secondary);
+}
+
+.menu-row:hover {
+  background: var(--fill);
+}
+
+.menu-row.danger {
+  color: var(--danger-ink);
+}
+
+.menu-row.danger svg {
+  color: var(--danger-ink);
+}
+
+.menu-row.danger:hover {
+  background: var(--red-soft);
+}
+
+.menu-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .menu-option:hover {
   border-color: color-mix(in srgb, var(--q) 55%, transparent);
   background: var(--q-soft);
@@ -2586,10 +2644,30 @@ button.quadrant-tag .caret {
 /* book detail */
 
 .book-header {
+  position: relative;
   display: flex;
   gap: 20px;
   padding: 20px;
   margin-bottom: 20px;
+}
+
+.book-header-more {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  color: var(--tertiary);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.book-header-more:hover {
+  color: var(--label);
+  background: var(--fill);
 }
 
 .book-header-copy {
@@ -3556,6 +3634,13 @@ button.quadrant-tag .caret {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .book-header-more {
+    width: 44px;
+    height: 44px;
+    top: 8px;
+    right: 8px;
   }
 
   .quad-bar-row {

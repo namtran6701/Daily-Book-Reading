@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion, type Transition } from "motion/react";
 import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
 import { QuietState } from "./UiState";
+import { Overlay } from "./Overlay";
 import {
   BookGlyph,
   ChevronLeftIcon,
@@ -12,6 +13,7 @@ import {
   CheckIcon,
   ExternalLinkIcon,
   LinkIcon,
+  MoreIcon,
   NoteIcon,
   PencilIcon,
   PlusIcon,
@@ -218,7 +220,9 @@ export function BooksTab({
   // closes it without any effect resetting state.
   const [linkEditFor, setLinkEditFor] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const linkOpen = linkEditFor === selectedBookId;
+  const menuOpen = menuFor === selectedBookId;
   const focusOnMount = useCallback((el: HTMLInputElement | null) => el?.focus(), []);
 
   const notesByBook = useMemo(() => {
@@ -293,6 +297,7 @@ export function BooksTab({
             className="back pressable"
             onClick={() => {
               setQuery("");
+              setMenuFor(null);
               onSelectBook("");
             }}
             aria-label="All books"
@@ -313,30 +318,18 @@ export function BooksTab({
               </p>
               <div className="book-meta">
                 {book.link ? (
-                  <>
-                    <a
-                      className="text-button pressable"
-                      href={book.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLinkIcon />
-                      Open book
-                    </a>
-                    {!readOnly && (
-                      <button
-                        className="icon-action quiet pressable"
-                        onClick={openLinkEditor}
-                        aria-label="Edit book link"
-                        title="Edit link"
-                      >
-                        <PencilIcon />
-                      </button>
-                    )}
-                  </>
+                  <a
+                    className="text-button strong pressable"
+                    href={book.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLinkIcon />
+                    Open book
+                  </a>
                 ) : (
                   <button
-                    className="text-button pressable"
+                    className="text-button strong pressable"
                     onClick={openLinkEditor}
                     disabled={readOnly}
                     title="Add a link to open the book"
@@ -345,23 +338,6 @@ export function BooksTab({
                     Add link
                   </button>
                 )}
-                <button
-                  className="text-button pressable"
-                  onClick={() => void onUpdateBook(book.id, { finished: !book.finishedAt })}
-                  disabled={readOnly}
-                >
-                  {book.finishedAt ? <UndoIcon /> : <CheckIcon />}
-                  {book.finishedAt ? "Back to reading" : "Mark finished"}
-                </button>
-                <button
-                  className="icon-action danger pressable"
-                  onClick={() => void onDeleteBook(book.id)}
-                  disabled={deletingIds.has(book.id) || readOnly}
-                  aria-label={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
-                  title={deletingIds.has(book.id) ? "Deleting book" : "Delete book"}
-                >
-                  {deletingIds.has(book.id) ? <SpinnerIcon /> : <TrashIcon />}
-                </button>
               </div>
               {linkOpen && (
                 <div className="book-link-edit">
@@ -400,7 +376,68 @@ export function BooksTab({
                 </div>
               )}
             </div>
+            <button
+              className="book-header-more pressable"
+              onClick={() => setMenuFor(book.id)}
+              aria-label="Book options"
+              title="Book options"
+              aria-haspopup="dialog"
+            >
+              {deletingIds.has(book.id) ? <SpinnerIcon /> : <MoreIcon />}
+            </button>
           </header>
+
+          <AnimatePresence>
+            {menuOpen && (
+              <Overlay center label="Book options" onClose={() => setMenuFor(null)}>
+                <motion.div
+                  className="card menu"
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97, y: 6 }}
+                  transition={snappy}
+                >
+                  <h2>Book options</h2>
+                  <p className="menu-sub">{book.title}</p>
+                  <div className="menu-list">
+                    <button
+                      className="menu-row"
+                      onClick={() => {
+                        setMenuFor(null);
+                        openLinkEditor();
+                      }}
+                      disabled={readOnly}
+                    >
+                      {book.link ? <PencilIcon /> : <LinkIcon />}
+                      {book.link ? "Edit link" : "Add link"}
+                    </button>
+                    <button
+                      className="menu-row"
+                      onClick={() => {
+                        setMenuFor(null);
+                        void onUpdateBook(book.id, { finished: !book.finishedAt });
+                      }}
+                      disabled={readOnly}
+                    >
+                      {book.finishedAt ? <UndoIcon /> : <CheckIcon />}
+                      {book.finishedAt ? "Back to reading" : "Mark finished"}
+                    </button>
+                    <button
+                      className="menu-row danger"
+                      onClick={() => {
+                        setMenuFor(null);
+                        void onDeleteBook(book.id);
+                      }}
+                      disabled={deletingIds.has(book.id) || readOnly}
+                    >
+                      <TrashIcon />
+                      Delete book
+                    </button>
+                  </div>
+                </motion.div>
+              </Overlay>
+            )}
+          </AnimatePresence>
 
           <section className="note-capture card" aria-label="Start a reading note">
             <div className="note-capture-intro">
