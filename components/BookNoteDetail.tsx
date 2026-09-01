@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "motion/react";
 import { BookGlyph, ChevronLeftIcon, NoteIcon } from "./icons";
-import { formatDate, localDayFromInstant } from "@/lib/date-keys";
+import { documentDateLabels } from "@/lib/date-keys";
 import { snappy } from "@/lib/springs";
 import type { Book, BookNote } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export type BookNoteUpdateOptions = {
 type Props = {
   book: Book;
   note: BookNote;
+  today: string;
   transition?: Transition;
   readOnly?: boolean;
   onBack: () => void;
@@ -90,7 +91,7 @@ function isClean(draft: ReadingDraft, saved: ReadingDraft): boolean {
   );
 }
 
-export function BookNoteDetail({ book, note, transition, readOnly, onBack, onUpdate }: Props) {
+export function BookNoteDetail({ book, note, today, transition, readOnly, onBack, onUpdate }: Props) {
   const [initialDraft] = useState(() =>
     readDraft(note.id, {
       body: note.body,
@@ -126,6 +127,11 @@ export function BookNoteDetail({ book, note, transition, readOnly, onBack, onUpd
   const mounted = useRef(true);
   const readOnlyValue = useRef(Boolean(readOnly));
   const updateValue = useRef(onUpdate);
+  const { edited: editedLabel, captured: capturedLabel } = documentDateLabels(
+    note.dayKey,
+    note.updatedAt,
+    today,
+  );
 
   useEffect(() => {
     readOnlyValue.current = Boolean(readOnly);
@@ -401,10 +407,8 @@ export function BookNoteDetail({ book, note, transition, readOnly, onBack, onUpd
                 disabled={readOnly}
               />
             </span>
-            <span className="task-meta-note">
-              Captured {formatDate(note.dayKey, { month: "short", day: "numeric", year: "numeric" })}
-              {" · Modified "}
-              {formatDate(localDayFromInstant(note.updatedAt), { month: "short", day: "numeric", year: "numeric" })}
+            <span className="task-meta-note" title={capturedLabel} aria-label={`${editedLabel}. ${capturedLabel}`}>
+              {editedLabel}
             </span>
           </div>
 

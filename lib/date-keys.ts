@@ -101,3 +101,19 @@ export function monthGrid(month: string): { dayKey: string; inMonth: boolean }[]
   }
   return cells;
 }
+
+// The document canvases lead with the edit time, which is what matters while
+// writing, and keep the capture day in the hover. `today` is empty during
+// server rendering, where a relative label has nothing to be relative to.
+export function documentDateLabels(
+  capturedDayKey: string,
+  updatedAt: string,
+  today: string,
+): { edited: string; captured: string } {
+  const full: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
+  const modifiedDay = localDayFromInstant(updatedAt);
+  return {
+    edited: `Edited ${today ? ageLabel(modifiedDay, today) : formatDate(modifiedDay, full)}`,
+    captured: `Captured ${formatDate(capturedDayKey, full)}`,
+  };
+}

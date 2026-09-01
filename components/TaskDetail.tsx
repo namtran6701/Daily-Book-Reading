@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "motion/react";
 import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
-import { formatDate, localDayFromInstant } from "@/lib/date-keys";
+import { documentDateLabels, formatDate } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -17,6 +17,7 @@ export type ThoughtUpdateOptions = {
 
 type Props = {
   thought: Thought;
+  today: string;
   transition?: Transition;
   readOnly?: boolean;
   onBack: () => void;
@@ -90,7 +91,7 @@ function isClean(draft: DocumentDraft, saved: DocumentDraft): boolean {
   );
 }
 
-export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: Props) {
+export function TaskDetail({ thought, today, transition, readOnly, onBack, onUpdate }: Props) {
   const [initialDraft] = useState(() =>
     readDraft(
       thought.id,
@@ -126,6 +127,11 @@ export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: 
   const mounted = useRef(true);
   const readOnlyValue = useRef(Boolean(readOnly));
   const updateValue = useRef(onUpdate);
+  const { edited: editedLabel, captured: capturedLabel } = documentDateLabels(
+    thought.capturedDayKey,
+    thought.updatedAt,
+    today,
+  );
 
   useEffect(() => {
     readOnlyValue.current = Boolean(readOnly);
@@ -404,10 +410,8 @@ export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: 
                 </button>
               )}
             </span>
-            <span className="task-meta-note">
-              Captured {formatDate(thought.capturedDayKey, { month: "short", day: "numeric", year: "numeric" })}
-              {" · Modified "}
-              {formatDate(localDayFromInstant(thought.updatedAt), { month: "short", day: "numeric", year: "numeric" })}
+            <span className="task-meta-note" title={capturedLabel} aria-label={`${editedLabel}. ${capturedLabel}`}>
+              {editedLabel}
             </span>
           </div>
 

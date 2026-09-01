@@ -44,6 +44,17 @@ async function migrateThoughts(db: D1Database): Promise<void> {
   }
   // 'filed' was the resting status for reading notes, which no longer exist.
   await db.prepare("UPDATE thoughts SET status = 'open' WHERE status = 'filed'").run();
+  // `day_key` used to be the editable task date, so rows touched before
+  // `scheduled_day_key` existed hold a plan in the capture column. A capture day
+  // can never run ahead of the row's own creation, and no timezone shifts a
+  // local day by more than one, so anything further out is a stranded plan:
+  // move it where it belongs and recover the capture day from `created_at`.
+  await db
+    .prepare(`UPDATE thoughts
+      SET scheduled_day_key = COALESCE(scheduled_day_key, day_key),
+          day_key = date(created_at)
+      WHERE day_key > date(created_at, '+1 day')`)
+    .run();
 }
 
 // Books used to carry an author, which the app no longer records or shows.

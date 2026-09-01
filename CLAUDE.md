@@ -76,7 +76,11 @@ The schema has two representations that must stay synchronized by hand:
   rewriting capture history. Book-note rows likewise include a long-form `notes`
   field linked to their compact main idea. It also removes retired `chapters` and `daily_notes`
   tables, folds legacy thought metadata into the body, and removes the retired
-  book `author` column when those older shapes are encountered.
+  book `author` column when those older shapes are encountered. It also repairs
+  rows from before `scheduled_day_key` existed, where `day_key` was the editable
+  task date: any `day_key` running more than a day past `created_at` is a
+  stranded plan, so it moves to `scheduled_day_key` and the capture day is
+  recovered from `created_at`.
 - `db/schema.ts` describes the same final three-table shape for Drizzle only.
   `npm run db:generate` records changes under `drizzle/`; those generated SQL
   files are not executed by the app at runtime.
@@ -122,8 +126,9 @@ period completion statistics.
 - `TaskDetail` is the focused document view opened from matrix, Calendar,
   Review, and urgent Briefing thought-title links. It auto-saves long-form
   notes, title, and the optional scheduled day through a serialized update
-  queue without creating a separate note row. It displays the immutable capture
-  day and latest modification day alongside that control. Every edit is
+  queue without creating a separate note row. It leads with the latest edit as
+  a relative label and keeps the immutable capture day in that label's hover
+  title, so the canvas states the fact that changes while writing. Every edit is
   first mirrored to a per-task `localStorage` recovery draft, and lifecycle
   events flush the latest draft with a keepalive request. The quadrant is
   context, not an editable property, in this view.
@@ -131,8 +136,8 @@ period completion statistics.
   compact main idea opens into an auto-saving canvas with long-form content and
   optional start/end pages. It intentionally has no scheduling control. Like
   task detail, it serializes updates, uses a per-note `localStorage` recovery
-  draft, displays capture and latest modification days, flushes with keepalive
-  on lifecycle events, and can be restored from its `?note=` URL.
+  draft, shows the same edit-led date label, flushes with keepalive on
+  lifecycle events, and can be restored from its `?note=` URL.
 - Data fetching uses plain `fetch`, `cache: "no-store"`, and React state.
   Same-origin API redirects are handled manually so an expired Cloudflare
   Access session can reload into its login flow. Thought/note PATCH actions

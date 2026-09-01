@@ -807,6 +807,7 @@ export function SecondBrain() {
               <TaskDetail
                 key={`task-${selectedThought.id}`}
                 thought={selectedThought}
+                today={today}
                 transition={navigationTransition}
                 readOnly={!online}
                 onBack={closeThought}
@@ -817,6 +818,7 @@ export function SecondBrain() {
                 key={`book-note-${selectedBookNote.id}`}
                 book={selectedNoteBook}
                 note={selectedBookNote}
+                today={today}
                 transition={navigationTransition}
                 readOnly={!online}
                 onBack={closeBookNote}

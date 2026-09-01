@@ -29,9 +29,14 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: {
+      // Vite 8 turns console forwarding on whenever it detects a coding agent.
+      // When the HMR socket is down its own send failure is an unhandled
+      // rejection, which it then tries to forward, so one error becomes
+      // hundreds and the overlay buries whatever actually broke.
+      forwardConsole: false,
+      ...(isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : {}),
+    },
     plugins: [
       vinext(),
       cloudflare({
