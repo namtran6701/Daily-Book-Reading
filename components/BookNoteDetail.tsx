@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "motion/react";
 import { BookGlyph, ChevronLeftIcon, NoteIcon } from "./icons";
-import { formatDate } from "@/lib/date-keys";
+import { formatDate, localDayFromInstant } from "@/lib/date-keys";
 import { snappy } from "@/lib/springs";
 import type { Book, BookNote } from "@/lib/types";
 
@@ -403,6 +403,8 @@ export function BookNoteDetail({ book, note, transition, readOnly, onBack, onUpd
             </span>
             <span className="task-meta-note">
               Captured {formatDate(note.dayKey, { month: "short", day: "numeric", year: "numeric" })}
+              {" · Modified "}
+              {formatDate(localDayFromInstant(note.updatedAt), { month: "short", day: "numeric", year: "numeric" })}
             </span>
           </div>
 

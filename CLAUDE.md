@@ -123,7 +123,7 @@ period completion statistics.
   Review, and urgent Briefing thought-title links. It auto-saves long-form
   notes, title, and the optional scheduled day through a serialized update
   queue without creating a separate note row. It displays the immutable capture
-  day alongside that control. Every edit is
+  day and latest modification day alongside that control. Every edit is
   first mirrored to a per-task `localStorage` recovery draft, and lifecycle
   events flush the latest draft with a keepalive request. The quadrant is
   context, not an editable property, in this view.
@@ -131,8 +131,8 @@ period completion statistics.
   compact main idea opens into an auto-saving canvas with long-form content and
   optional start/end pages. It intentionally has no scheduling control. Like
   task detail, it serializes updates, uses a per-note `localStorage` recovery
-  draft, flushes with keepalive on lifecycle events, and can be restored from
-  its `?note=` URL.
+  draft, displays capture and latest modification days, flushes with keepalive
+  on lifecycle events, and can be restored from its `?note=` URL.
 - Data fetching uses plain `fetch`, `cache: "no-store"`, and React state.
   Same-origin API redirects are handled manually so an expired Cloudflare
   Access session can reload into its login flow. Thought/note PATCH actions

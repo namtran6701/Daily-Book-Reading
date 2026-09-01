@@ -1731,6 +1731,18 @@ button.quadrant-tag .caret {
   -webkit-appearance: none;
 }
 
+/* Some desktop browsers do not expose showPicker(). Stretching WebKit's
+   native indicator across the transparent input keeps the whole pill clickable. */
+.task-date-field input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .task-date-field:focus-within {
   outline: 2px solid var(--tint);
   outline-offset: 2px;

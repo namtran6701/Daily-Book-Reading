@@ -34,9 +34,10 @@ quadrant's **Show done** control.
 Select a thought's linked title to open its task detail page. The short title
 stays compact in the matrix while the linked page provides a large, auto-saving
 notes canvas for context, links, and working notes. The same page can change
-the optional scheduled date and title while showing the immutable capture date;
-its quadrant remains fixed while the canvas is open. Notes remain attached to
-that thought and are available from both the matrix and Calendar.
+the optional scheduled date and title while showing the immutable capture date
+and the latest modification date; its quadrant remains fixed while the canvas
+is open. Notes remain attached to that thought and are available from both the
+matrix and Calendar.
 
 Task-canvas edits are copied immediately to a per-task draft in the browser,
 then sent to D1 after a short pause. Back navigation, backgrounding, and page
@@ -54,7 +55,8 @@ Add books to the **Reading now** shelf, open a book, and begin each reading note
 with one clear main idea. Saving that first line opens a focused reading canvas
 where the idea can be expanded with long-form content and optional page numbers.
 The canvas auto-saves the title, pages, and content, keeps a local recovery draft,
-and deliberately has no due-date control. Existing notes open in the same canvas.
+shows its capture and latest modification dates, and deliberately has no due-date
+control. Existing notes open in the same canvas.
 Notes are grouped by day, can be deleted, and search covers both their main idea
 and expanded content once a book has more than four notes. Finished books can be
 moved back to the reading shelf.

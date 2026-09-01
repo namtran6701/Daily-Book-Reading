@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "motion/react";
 import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
-import { formatDate } from "@/lib/date-keys";
+import { formatDate, localDayFromInstant } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
 import type { Thought } from "@/lib/types";
@@ -379,6 +379,13 @@ export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: 
                 <input
                   type="date"
                   value={scheduledDate}
+                  onClick={(event) => {
+                    try {
+                      event.currentTarget.showPicker();
+                    } catch {
+                      // Browsers without showPicker still keep their native date-input behavior.
+                    }
+                  }}
                   onChange={(event) => changeScheduledDate(event.target.value)}
                   disabled={readOnly}
                   aria-label={scheduledDate ? `Scheduled for ${scheduledDate}` : "Choose a scheduled date"}
@@ -399,6 +406,8 @@ export function TaskDetail({ thought, transition, readOnly, onBack, onUpdate }: 
             </span>
             <span className="task-meta-note">
               Captured {formatDate(thought.capturedDayKey, { month: "short", day: "numeric", year: "numeric" })}
+              {" · Modified "}
+              {formatDate(localDayFromInstant(thought.updatedAt), { month: "short", day: "numeric", year: "numeric" })}
             </span>
           </div>
 
