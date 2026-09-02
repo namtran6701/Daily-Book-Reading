@@ -7,6 +7,7 @@ import {
   captureError,
   captureLines,
   failure,
+  json,
   readJsonBody,
   stagger,
   text,
@@ -57,7 +58,7 @@ export async function GET() {
         LIMIT ?`)
       .bind(OWNER_ID, MAX_ROWS)
       .all<ThoughtRow>();
-    return Response.json({ thoughts: result.results.map(serialize) });
+    return json({ thoughts: result.results.map(serialize) });
   } catch (error) {
     return failure("Thoughts", error);
   }
@@ -66,21 +67,21 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const capturedDayKey = validDate(payload.capturedDayKey)
       ? payload.capturedDayKey
       : validDate(payload.dayKey)
         ? payload.dayKey
         : "";
     if (!capturedDayKey) {
-      return Response.json({ error: "A valid capture date is required." }, { status: 400 });
+      return json({ error: "A valid capture date is required." }, { status: 400 });
     }
     if (!isQuadrant(payload.quadrant)) {
-      return Response.json({ error: "Pick where this belongs first." }, { status: 400 });
+      return json({ error: "Pick where this belongs first." }, { status: 400 });
     }
     const lines = captureLines(payload.text);
     const problem = captureError(lines);
-    if (problem) return Response.json({ error: problem }, { status: 400 });
+    if (problem) return json({ error: problem }, { status: 400 });
 
     await ensureSchema();
     const db = getD1();
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
           ),
       ),
     );
-    return Response.json(
+    return json(
       { thoughts: results.flatMap((result) => result.results.map(serialize)) },
       { status: 201 },
     );
@@ -115,11 +116,11 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
-    if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });
+    if (!id) return json({ error: "A thought id is required." }, { status: 400 });
     if (typeof payload.notes === "string" && payload.notes.length > MAX_TASK_NOTES_LENGTH) {
-      return Response.json(
+      return json(
         { error: `Task notes cannot exceed ${MAX_TASK_NOTES_LENGTH.toLocaleString("en-US")} characters.` },
         { status: 400 },
       );
@@ -131,10 +132,10 @@ export async function PATCH(request: Request) {
       payload.scheduledDayKey !== null &&
       !validDate(payload.scheduledDayKey)
     ) {
-      return Response.json({ error: "Choose a valid scheduled date or clear it." }, { status: 400 });
+      return json({ error: "Choose a valid scheduled date or clear it." }, { status: 400 });
     }
     if (!hasScheduledDayKey && hasLegacyDayKey && !validDate(payload.dayKey)) {
-      return Response.json({ error: "Choose a valid scheduled date." }, { status: 400 });
+      return json({ error: "Choose a valid scheduled date." }, { status: 400 });
     }
 
     await ensureSchema();
@@ -143,7 +144,7 @@ export async function PATCH(request: Request) {
       .prepare(`SELECT ${COLUMNS} FROM thoughts WHERE id = ? AND user_id = ?`)
       .bind(id, OWNER_ID)
       .first<ThoughtRow>();
-    if (!current) return Response.json({ error: "Thought not found." }, { status: 404 });
+    if (!current) return json({ error: "Thought not found." }, { status: 404 });
 
     const timestamp = new Date().toISOString();
     const done = typeof payload.done === "boolean" ? payload.done : current.status === "done";
@@ -174,7 +175,7 @@ export async function PATCH(request: Request) {
       )
       .first<ThoughtRow>();
     if (!row) throw new Error("The thought was not returned after update.");
-    return Response.json({ thought: serialize(row) });
+    return json({ thought: serialize(row) });
   } catch (error) {
     return failure("Thoughts", error);
   }
@@ -183,14 +184,14 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
-    if (!id) return Response.json({ error: "A thought id is required." }, { status: 400 });
+    if (!id) return json({ error: "A thought id is required." }, { status: 400 });
     await ensureSchema();
     const result = await getD1()
       .prepare("DELETE FROM thoughts WHERE id = ? AND user_id = ?")
       .bind(id, OWNER_ID)
       .run();
-    if (!result.meta.changes) return Response.json({ error: "Thought not found." }, { status: 404 });
-    return Response.json({ deleted: true });
+    if (!result.meta.changes) return json({ error: "Thought not found." }, { status: 404 });
+    return json({ deleted: true });
   } catch (error) {
     return failure("Thoughts", error);
   }

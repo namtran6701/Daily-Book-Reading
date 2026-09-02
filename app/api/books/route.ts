@@ -5,6 +5,7 @@ import {
   MAX_TITLE_LENGTH,
   OWNER_ID,
   failure,
+  json,
   readJsonBody,
   text,
 } from "@/app/api/shared";
@@ -38,7 +39,7 @@ export async function GET() {
       .prepare(`SELECT ${COLUMNS} FROM books WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`)
       .bind(OWNER_ID, MAX_ROWS)
       .all<BookRow>();
-    return Response.json({ books: result.results.map(serialize) });
+    return json({ books: result.results.map(serialize) });
   } catch (error) {
     return failure("Books", error);
   }
@@ -47,11 +48,11 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const title = text(payload.title);
-    if (!title) return Response.json({ error: "A book needs a title." }, { status: 400 });
+    if (!title) return json({ error: "A book needs a title." }, { status: 400 });
     if (title.length > MAX_TITLE_LENGTH) {
-      return Response.json({ error: `A title is too long: ${MAX_TITLE_LENGTH} characters max.` }, { status: 400 });
+      return json({ error: `A title is too long: ${MAX_TITLE_LENGTH} characters max.` }, { status: 400 });
     }
 
     await ensureSchema();
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
       )
       .first<BookRow>();
     if (!row) throw new Error("The book was not returned after insert.");
-    return Response.json({ book: serialize(row) }, { status: 201 });
+    return json({ book: serialize(row) }, { status: 201 });
   } catch (error) {
     return failure("Books", error);
   }
@@ -79,9 +80,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
-    if (!id) return Response.json({ error: "A book id is required." }, { status: 400 });
+    if (!id) return json({ error: "A book id is required." }, { status: 400 });
 
     await ensureSchema();
     const db = getD1();
@@ -89,7 +90,7 @@ export async function PATCH(request: Request) {
       .prepare(`SELECT ${COLUMNS} FROM books WHERE id = ? AND user_id = ?`)
       .bind(id, OWNER_ID)
       .first<BookRow>();
-    if (!current) return Response.json({ error: "Book not found." }, { status: 404 });
+    if (!current) return json({ error: "Book not found." }, { status: 404 });
 
     const timestamp = new Date().toISOString();
     const finished =
@@ -109,7 +110,7 @@ export async function PATCH(request: Request) {
       )
       .first<BookRow>();
     if (!row) throw new Error("The book was not returned after update.");
-    return Response.json({ book: serialize(row) });
+    return json({ book: serialize(row) });
   } catch (error) {
     return failure("Books", error);
   }
@@ -118,7 +119,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
-    if (!id) return Response.json({ error: "A book id is required." }, { status: 400 });
+    if (!id) return json({ error: "A book id is required." }, { status: 400 });
 
     await ensureSchema();
     const db = getD1();
@@ -126,8 +127,8 @@ export async function DELETE(request: Request) {
       db.prepare("DELETE FROM book_notes WHERE book_id = ? AND user_id = ?").bind(id, OWNER_ID),
       db.prepare("DELETE FROM books WHERE id = ? AND user_id = ?").bind(id, OWNER_ID),
     ]);
-    if (!removal.meta.changes) return Response.json({ error: "Book not found." }, { status: 404 });
-    return Response.json({ deleted: true });
+    if (!removal.meta.changes) return json({ error: "Book not found." }, { status: 404 });
+    return json({ deleted: true });
   } catch (error) {
     return failure("Books", error);
   }

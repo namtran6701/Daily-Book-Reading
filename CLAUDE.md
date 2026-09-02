@@ -51,8 +51,12 @@ loading-state copy.
   the entry point. It also moves Wrangler/Miniflare logs and state under the
   ignored `.wrangler/` directory; Codex Seatbelt previews use polling for HMR.
 - `wrangler.jsonc` owns the Worker name, compatibility settings, static-assets
-  binding, asset-cache setting, and source entry point. The build merges this
-  with the Vite D1 binding into `dist/server/wrangler.json`.
+  binding, Workers Caching (`cache.enabled`), and source entry point. The build
+  merges this with the Vite D1 binding into `dist/server/wrangler.json`.
+  Workers Caching sits in front of the whole Worker, API routes included, and
+  stores any `200` that lacks a `Cache-Control` header for two hours. API
+  responses must therefore always set `Cache-Control: private, no-store`, or a
+  cached list will hide new rows and resurrect deleted ones until it expires.
 - `.github/workflows/deploy.yml` installs with Node 22, builds on every push to
   `main`, and deploys the generated Wrangler config. It requires the GitHub
   secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
@@ -98,8 +102,11 @@ The three route handlers are `app/api/thoughts/route.ts`,
 - uses prepared raw SQL from `getD1()`;
 - scopes every query to the fixed `OWNER_ID` exported by
   `app/api/shared.ts`;
-- catches failures and returns the shared generic 500 response; and
-- caps list responses with the shared `MAX_ROWS` limit.
+- catches failures and returns the shared generic 500 response;
+- caps list responses with the shared `MAX_ROWS` limit; and
+- builds every response with the shared `json()` helper, never bare
+  `Response.json()`, so each one carries `Cache-Control: private, no-store`
+  and is never stored by Workers Caching.
 
 There is no login, cookie session, or multi-user isolation: all traffic shares
 `local-preview-user`. If authentication is added, resolve the identity once in

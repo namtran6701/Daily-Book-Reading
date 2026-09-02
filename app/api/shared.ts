@@ -57,9 +57,20 @@ export function stagger(count: number): string[] {
   return Array.from({ length: count }, (_, index) => new Date(start + index).toISOString());
 }
 
+// Every API response carries one owner's private data. Workers Caching
+// (`cache.enabled` in wrangler.jsonc) sits in front of the entrypoint, and a
+// response with no freshness headers is heuristically cacheable, so a list
+// response would be stored at the edge and replayed after a write: new rows
+// stay invisible and deleted rows come back until the entry expires.
+export function json(data: unknown, init?: ResponseInit): Response {
+  const response = Response.json(data, init);
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+
 export function failure(label: string, error: unknown) {
   console.error(`${label} error`, error);
-  return Response.json(
+  return json(
     { error: "That is temporarily unavailable. Please try again." },
     { status: 500 },
   );

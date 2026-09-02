@@ -8,6 +8,7 @@ import {
   captureError,
   captureLines,
   failure,
+  json,
   readJsonBody,
   stagger,
   text,
@@ -57,7 +58,7 @@ export async function GET() {
         LIMIT ?`)
       .bind(OWNER_ID, MAX_NOTES_PER_BOOK, MAX_ROWS)
       .all<BookNoteRow>();
-    return Response.json({ notes: result.results.map(serialize) });
+    return json({ notes: result.results.map(serialize) });
   } catch (error) {
     return failure("Book notes", error);
   }
@@ -66,19 +67,19 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const bookId = text(payload.bookId);
-    if (!bookId) return Response.json({ error: "A book is required." }, { status: 400 });
+    if (!bookId) return json({ error: "A book is required." }, { status: 400 });
     if (!validDate(payload.dayKey)) {
-      return Response.json({ error: "A valid capture date is required." }, { status: 400 });
+      return json({ error: "A valid capture date is required." }, { status: 400 });
     }
     const lines = captureLines(payload.text);
     const problem = captureError(lines);
-    if (problem) return Response.json({ error: problem }, { status: 400 });
+    if (problem) return json({ error: problem }, { status: 400 });
     const page = text(payload.page);
     const pageEnd = text(payload.pageEnd);
     if (page.length > MAX_PAGE_LENGTH || pageEnd.length > MAX_PAGE_LENGTH) {
-      return Response.json({ error: `Page is too long: ${MAX_PAGE_LENGTH} characters max.` }, { status: 400 });
+      return json({ error: `Page is too long: ${MAX_PAGE_LENGTH} characters max.` }, { status: 400 });
     }
 
     await ensureSchema();
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
       .prepare("SELECT id FROM books WHERE id = ? AND user_id = ?")
       .bind(bookId, OWNER_ID)
       .first<{ id: string }>();
-    if (!book) return Response.json({ error: "Book not found." }, { status: 404 });
+    if (!book) return json({ error: "Book not found." }, { status: 404 });
 
     const timestamps = stagger(lines.length);
     const results = await db.batch<BookNoteRow>(
@@ -110,7 +111,7 @@ export async function POST(request: Request) {
           ),
       ),
     );
-    return Response.json(
+    return json(
       { notes: results.flatMap((result) => result.results.map(serialize)) },
       { status: 201 },
     );
@@ -122,11 +123,11 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const payload = await readJsonBody(request);
-    if (!payload) return Response.json({ error: "Send a valid JSON body." }, { status: 400 });
+    if (!payload) return json({ error: "Send a valid JSON body." }, { status: 400 });
     const id = text(payload.id);
-    if (!id) return Response.json({ error: "A note id is required." }, { status: 400 });
+    if (!id) return json({ error: "A note id is required." }, { status: 400 });
     if (typeof payload.notes === "string" && payload.notes.length > MAX_TASK_NOTES_LENGTH) {
-      return Response.json(
+      return json(
         { error: `Reading note content cannot exceed ${MAX_TASK_NOTES_LENGTH.toLocaleString("en-US")} characters.` },
         { status: 400 },
       );
@@ -138,7 +139,7 @@ export async function PATCH(request: Request) {
       .prepare(`SELECT ${COLUMNS} FROM book_notes WHERE id = ? AND user_id = ?`)
       .bind(id, OWNER_ID)
       .first<BookNoteRow>();
-    if (!current) return Response.json({ error: "Note not found." }, { status: 404 });
+    if (!current) return json({ error: "Note not found." }, { status: 404 });
 
     const row = await db
       .prepare(`UPDATE book_notes SET body = ?, notes = ?, page = ?, page_end = ?, updated_at = ?
@@ -155,7 +156,7 @@ export async function PATCH(request: Request) {
       )
       .first<BookNoteRow>();
     if (!row) throw new Error("The note was not returned after update.");
-    return Response.json({ note: serialize(row) });
+    return json({ note: serialize(row) });
   } catch (error) {
     return failure("Book notes", error);
   }
@@ -164,14 +165,14 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const id = new URL(request.url).searchParams.get("id")?.trim();
-    if (!id) return Response.json({ error: "A note id is required." }, { status: 400 });
+    if (!id) return json({ error: "A note id is required." }, { status: 400 });
     await ensureSchema();
     const result = await getD1()
       .prepare("DELETE FROM book_notes WHERE id = ? AND user_id = ?")
       .bind(id, OWNER_ID)
       .run();
-    if (!result.meta.changes) return Response.json({ error: "Note not found." }, { status: 404 });
-    return Response.json({ deleted: true });
+    if (!result.meta.changes) return json({ error: "Note not found." }, { status: 404 });
+    return json({ deleted: true });
   } catch (error) {
     return failure("Book notes", error);
   }
