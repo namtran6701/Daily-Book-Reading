@@ -282,15 +282,24 @@ export function BooksTab({
   const finished = books.filter((entry) => entry.finishedAt);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    // Removed children retain their old props. Pass the current transition
+    // through presence so browser Back/Forward also makes the exit instant.
+    <AnimatePresence mode="wait" initial={false} custom={transition ?? snappy}>
       {book ? (
         <motion.section
           key={`detail-${book.id}`}
           className="book-detail"
           aria-label={book.title}
-          initial={{ opacity: 0, x: 44 }}
+          initial={transition?.duration === 0 ? false : { opacity: 0, x: 44 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 44 }}
+          exit="exit"
+          variants={{
+            exit: (currentTransition: Transition) => ({
+              opacity: 0,
+              x: 44,
+              transition: currentTransition,
+            }),
+          }}
           transition={transition ?? snappy}
         >
           <button
@@ -531,9 +540,16 @@ export function BooksTab({
       ) : (
         <motion.div
           key="list"
-          initial={{ opacity: 0, x: -44 }}
+          initial={transition?.duration === 0 ? false : { opacity: 0, x: -44 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -44 }}
+          exit="exit"
+          variants={{
+            exit: (currentTransition: Transition) => ({
+              opacity: 0,
+              x: -44,
+              transition: currentTransition,
+            }),
+          }}
           transition={transition ?? snappy}
         >
           <section className="book-add card" aria-label="Add a book">
