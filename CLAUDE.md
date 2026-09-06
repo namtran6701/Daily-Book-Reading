@@ -95,7 +95,7 @@ For a schema change, implement safe runtime creation/migration in
 
 ## API and identity
 
-The three route handlers are `app/api/thoughts/route.ts`,
+The three data route handlers are `app/api/thoughts/route.ts`,
 `app/api/books/route.ts`, and `app/api/book-notes/route.ts`. Each handler:
 
 - calls `ensureSchema()` before accessing D1;
@@ -111,6 +111,17 @@ The three route handlers are `app/api/thoughts/route.ts`,
 There is no login, cookie session, or multi-user isolation: all traffic shares
 `local-preview-user`. If authentication is added, resolve the identity once in
 `app/api/shared.ts` and keep every query owner-scoped.
+
+`app/api/mcp/route.ts` is the fourth route: a stateless Model Context Protocol
+server over Streamable HTTP, so an AI client can read and write the same data.
+It never touches D1 itself. Every tool calls the three data handlers above with
+a synthetic `Request`, which keeps capture splitting, the `MAX_*` caps, quadrant
+validation and owner scoping defined in exactly one place; a new rule in a data
+handler applies to the tools for free. List tools omit long-form notes and
+filter in memory, because a bare list can return `MAX_ROWS` rows. Capture tools
+take an explicit day key: the Worker runs in UTC and would otherwise file a
+late-evening capture to the wrong local day. The endpoint is unauthenticated by
+choice, so anyone who reaches it can read and delete everything.
 
 Thought and book-note POST handlers pass input through `captureLines()` and
 `stagger()`: each non-empty line becomes a row, and strictly increasing
