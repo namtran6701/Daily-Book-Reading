@@ -82,9 +82,13 @@ function removeDraft(id: string): void {
   }
 }
 
+// An empty main idea is a transient editing state, never a value that saves:
+// blur and the way out both restore the last saved one. Comparing against that
+// keeps a cleared field from stranding the status on "unsaved" with nothing to
+// send.
 function isClean(draft: ReadingDraft, saved: ReadingDraft): boolean {
   return (
-    draft.body.trim() === saved.body &&
+    (draft.body.trim() || saved.body) === saved.body &&
     draft.notes === saved.notes &&
     draft.page.trim() === saved.page &&
     draft.pageEnd.trim() === saved.pageEnd
@@ -185,7 +189,7 @@ export function BookNoteDetail({ book, note, today, transition, readOnly, onBack
         const pageEndChanged = nextPageEnd !== saved.pageEnd;
 
         if (!bodyChanged && !notesChanged && !pageChanged && !pageEndChanged) {
-          if (nextBody && isClean(draft, saved)) removeDraft(note.id);
+          if (isClean(draft, saved)) removeDraft(note.id);
           break;
         }
 
@@ -235,7 +239,9 @@ export function BookNoteDetail({ book, note, today, transition, readOnly, onBack
   function changeDocument(patch: Partial<ReadingDraft>): void {
     const next = { ...draftDocument.current, ...patch };
     draftDocument.current = next;
-    storeDraft(note.id, next);
+    // The recovery draft keeps the last saved main idea behind a cleared field,
+    // so reopening after a crash restores the note rather than a nameless one.
+    storeDraft(note.id, next.body.trim() ? next : { ...next, body: savedDocument.current.body });
     if (readOnlyValue.current) return;
     setStatus(isClean(next, savedDocument.current) ? "saved" : "unsaved");
     scheduleSave();

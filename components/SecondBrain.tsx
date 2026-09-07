@@ -117,6 +117,18 @@ function historyStateWithoutDetail(): Record<string, unknown> {
   return next;
 }
 
+// Drop only the ids the entry can no longer open, leaving the rest of the state
+// alone. A restored URL must not gain ownership keys it never had: those decide
+// whether closing a view can step back through history.
+function prunedHistoryState(detail: Detail): Record<string, unknown> {
+  const current = history.state;
+  const next = current && typeof current === "object" ? { ...current } : {};
+  if (next[TASK_HISTORY_KEY] !== detail.task) delete next[TASK_HISTORY_KEY];
+  if (next[BOOK_NOTE_HISTORY_KEY] !== detail.note) delete next[BOOK_NOTE_HISTORY_KEY];
+  if (next[BOOK_HISTORY_KEY] !== detail.book) delete next[BOOK_HISTORY_KEY];
+  return next;
+}
+
 // The entry marks which view it owns, so closing that view knows whether it can
 // step back through history rather than rewriting the current entry.
 function detailState(detail: Detail): Record<string, unknown> {
@@ -181,6 +193,8 @@ export function SecondBrain() {
   // own back/forward, which decides if the views animate themselves.
   const [navigationSource, setNavigationSource] = useState<"app" | "history">("app");
   const [selectedBookNoteId, setSelectedBookNoteId] = useState("");
+  // Whether the opening URL has been resolved against loaded data yet.
+  const restored = useRef(false);
   const thoughtIds = useRef<Set<string>>(new Set());
   const bookNoteIds = useRef<Set<string>>(new Set());
   const bookIds = useRef<Set<string>>(new Set());
@@ -442,38 +456,44 @@ export function SecondBrain() {
     [runDelete],
   );
 
+  // Browser back/forward resolves ids against whatever is loaded right now, so
+  // these sets follow every change to the data.
   useEffect(() => {
     thoughtIds.current = new Set(thoughts.map((thought) => thought.id));
     bookNoteIds.current = new Set(notes.map((note) => note.id));
     bookIds.current = new Set(books.map((book) => book.id));
-    if (!loaded) return;
+  }, [books, notes, thoughts]);
+
+  // Open what the URL asks for once, when the data first arrives. Repeating it
+  // on every later change would drag the app back to whichever view the URL
+  // still names each time a row is captured, edited or completed.
+  useEffect(() => {
+    if (!loaded || restored.current) return;
+    restored.current = true;
 
     const requestedTask = taskIdFromUrl();
-    const requestedBookNote = bookNoteIdFromUrl();
+    const requestedNote = bookNoteIdFromUrl();
     const requestedBook = bookIdFromUrl();
-    const nextBook = bookIds.current.has(requestedBook) ? requestedBook : "";
-    if (requestedTask && thoughtIds.current.has(requestedTask)) {
-      // A shared or restored task URL should open its canvas after data arrives.
-      setSelectedThoughtId(requestedTask);
-      setSelectedBookNoteId("");
-      setSelectedBookId(nextBook);
-    } else if (requestedBookNote && bookNoteIds.current.has(requestedBookNote)) {
-      const requestedNote = notes.find((note) => note.id === requestedBookNote);
-      setSelectedThoughtId("");
-      setSelectedBookNoteId(requestedBookNote);
-      if (requestedNote) setSelectedBookId(requestedNote.bookId);
-      setTab("books");
-    } else if (nextBook) {
-      // A restored book URL opens its shelf entry with the list still behind it.
-      setSelectedThoughtId("");
-      setSelectedBookNoteId("");
-      setSelectedBookId(nextBook);
-      setTab("books");
-    } else if (requestedTask || requestedBookNote || requestedBook) {
-      history.replaceState(historyStateWithoutDetail(), "", detailUrl({}));
-      setSelectedThoughtId("");
-      setSelectedBookNoteId("");
-      setSelectedBookId("");
+    // A task and a reading note are mutually exclusive; a resolved task wins.
+    const task = thoughts.some((thought) => thought.id === requestedTask) ? requestedTask : "";
+    const note = task ? undefined : notes.find((row) => row.id === requestedNote);
+    const shelved = books.some((book) => book.id === requestedBook) ? requestedBook : "";
+    const detail: Detail = { task, note: note?.id, book: note ? note.bookId : shelved };
+
+    setSelectedThoughtId(detail.task ?? "");
+    setSelectedBookNoteId(detail.note ?? "");
+    setSelectedBookId(detail.book ?? "");
+    // A restored note or book opens on its own shelf; a task keeps the tab it
+    // was shared from, since its canvas covers the workspace anyway. This is a
+    // one-shot sync from an external system (the URL), not a derived value.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!detail.task && (detail.note || detail.book)) setTab("books");
+
+    // An id the data no longer holds is dropped from the URL rather than left
+    // pointing at a row that is gone.
+    const url = detailUrl(detail);
+    if (url !== `${location.pathname}${location.search}${location.hash}`) {
+      history.replaceState(prunedHistoryState(detail), "", url);
     }
   }, [books, loaded, notes, thoughts]);
 

@@ -83,9 +83,12 @@ function removeDraft(id: string): void {
   }
 }
 
+// An empty title is a transient editing state, never a value that saves: blur
+// and the way out both restore the last saved one. Comparing against that keeps
+// a cleared field from stranding the status on "unsaved" with nothing to send.
 function isClean(draft: DocumentDraft, saved: DocumentDraft): boolean {
   return (
-    draft.title.trim() === saved.title &&
+    (draft.title.trim() || saved.title) === saved.title &&
     draft.notes === saved.notes &&
     draft.scheduledDayKey === saved.scheduledDayKey
   );
@@ -180,7 +183,7 @@ export function TaskDetail({ thought, today, transition, readOnly, onBack, onUpd
         const scheduledDateChanged = draft.scheduledDayKey !== saved.scheduledDayKey;
 
         if (!titleChanged && !notesChanged && !scheduledDateChanged) {
-          if (nextTitle && isClean(draft, saved)) removeDraft(thought.id);
+          if (isClean(draft, saved)) removeDraft(thought.id);
           break;
         }
 
@@ -230,7 +233,9 @@ export function TaskDetail({ thought, today, transition, readOnly, onBack, onUpd
   function changeDocument(patch: Partial<DocumentDraft>): void {
     const next = { ...draftDocument.current, ...patch };
     draftDocument.current = next;
-    storeDraft(thought.id, next);
+    // The recovery draft keeps the last saved title behind a cleared field, so
+    // reopening after a crash restores the document rather than a nameless one.
+    storeDraft(thought.id, next.title.trim() ? next : { ...next, title: savedDocument.current.title });
     if (readOnlyValue.current) return;
     setStatus(isClean(next, savedDocument.current) ? "saved" : "unsaved");
     scheduleSave();

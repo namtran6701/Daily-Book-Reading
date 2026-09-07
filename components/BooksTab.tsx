@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion, type Transition } from "motion/react";
-import { ageLabel, dayTitle, formatDate } from "@/lib/date-keys";
+import { ageLabel, dayTitle, formatDate, localDayFromInstant } from "@/lib/date-keys";
 import { QuietState } from "./UiState";
 import { Overlay } from "./Overlay";
 import {
@@ -322,7 +322,7 @@ export function BooksTab({
               <p className="book-header-stats">
                 {bookNotes.length} {bookNotes.length === 1 ? "note" : "notes"}
                 {" · started "}
-                {formatDate(book.createdAt.slice(0, 10), { month: "short", day: "numeric" })}
+                {formatDate(localDayFromInstant(book.createdAt), { month: "short", day: "numeric" })}
                 {book.finishedAt && <span className="finished-tag">Finished</span>}
               </p>
               <div className="book-meta">
