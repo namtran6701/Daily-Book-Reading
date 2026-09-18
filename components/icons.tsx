@@ -239,15 +239,6 @@ export function SunIcon({ size = 15 }: IconProps) {
   );
 }
 
-export function ContrastIcon({ size = 15 }: IconProps) {
-  return (
-    <svg {...stroke} width={size} height={size}>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 export function MoveIcon({ size = 15 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

@@ -308,7 +308,7 @@ ul {
   white-space: nowrap;
 }
 
-/* theme switch: cycles system, light, dark */
+/* theme switch: flips light and dark */
 .theme-toggle {
   display: inline-flex;
   align-items: center;

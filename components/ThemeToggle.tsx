@@ -1,37 +1,42 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { ContrastIcon, MoonIcon, SunIcon } from "./icons";
+import { MoonIcon, SunIcon } from "./icons";
 
-type Theme = "system" | "light" | "dark";
+type Theme = "light" | "dark";
 
 const STORE_KEY = "sb-theme";
-const ORDER: Theme[] = ["system", "light", "dark"];
-const LABEL: Record<Theme, string> = { system: "Match system", light: "Light", dark: "Dark" };
+const LABEL: Record<Theme, string> = { light: "Light", dark: "Dark" };
 const listeners = new Set<() => void>();
 
+// Until a choice is stored the app follows the device, so the button shows
+// whichever look is currently on screen and the first tap flips it.
 function readTheme(): Theme {
   try {
     const value = localStorage.getItem(STORE_KEY);
-    return value === "light" || value === "dark" ? value : "system";
+    if (value === "light" || value === "dark") return value;
   } catch {
-    return "system";
+    // Without storage the device setting decides.
   }
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function subscribe(callback: () => void): () => void {
   listeners.add(callback);
-  return () => listeners.delete(callback);
+  const media = matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", callback);
+  return () => {
+    listeners.delete(callback);
+    media.removeEventListener("change", callback);
+  };
 }
 
 // The inline script in the layout applies the stored choice before first
 // paint; this keeps the attribute and storage in step afterwards.
 function applyTheme(theme: Theme): void {
-  if (theme === "system") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.theme = theme;
   try {
-    if (theme === "system") localStorage.removeItem(STORE_KEY);
-    else localStorage.setItem(STORE_KEY, theme);
+    localStorage.setItem(STORE_KEY, theme);
   } catch {
     // Without storage the choice lasts for this page only.
   }
@@ -39,9 +44,9 @@ function applyTheme(theme: Theme): void {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, readTheme, () => "system" as Theme);
-  const next = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length];
-  const Icon = theme === "light" ? SunIcon : theme === "dark" ? MoonIcon : ContrastIcon;
+  const theme = useSyncExternalStore(subscribe, readTheme, () => "light" as Theme);
+  const next: Theme = theme === "light" ? "dark" : "light";
+  const Icon = theme === "light" ? SunIcon : MoonIcon;
   return (
     <button
       className="theme-toggle pressable"
