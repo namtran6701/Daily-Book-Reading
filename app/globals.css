@@ -3851,38 +3851,84 @@ button.quadrant-tag .caret {
   }
 
   .briefing {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
     padding: 14px 2px 22px;
     margin-bottom: 20px;
   }
 
+  /* the number keeps only the eyebrow and greeting beside it; the sentence
+     gets the whole width below instead of wrapping in a narrow column */
   .dateline {
-    gap: 16px;
-  }
-
-  .dateline-day {
-    font-size: 80px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 14px;
   }
 
   .dateline-copy {
-    padding-top: 4px;
-    gap: 7px;
+    display: contents;
+  }
+
+  .dateline-day {
+    grid-row: 1 / 3;
+    font-size: 72px;
+  }
+
+  .dateline-when,
+  .briefing-greeting {
+    grid-column: 2;
+  }
+
+  .dateline-when {
+    align-self: end;
   }
 
   .briefing-greeting {
+    align-self: start;
     font-size: 30px;
   }
 
   .briefing-sub {
-    font-size: 15px;
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    max-width: none;
+    font-size: 16px;
+    line-height: 1.5;
   }
 
+  /* pills instead of a table of rows */
   .briefing-stats {
-    padding-left: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
     border-left: none;
-    padding-top: 4px;
-    border-top: 1px solid var(--separator-strong);
+  }
+
+  .b-stat {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 34px;
+    gap: 8px;
+    padding: 4px 12px 4px 5px;
+    border: 1px solid var(--separator);
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .b-stat:last-child {
+    border-bottom: 1px solid var(--separator);
+  }
+
+  .b-stat i {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* the headline already says how long it has waited */
+  .b-stat.b-red {
+    display: none;
   }
 
   .stat-grid {
