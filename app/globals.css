@@ -1538,12 +1538,18 @@ input:focus {
 
 .thought-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 2px 8px;
   margin-top: 4px;
   font-size: 12px;
   color: var(--tertiary);
   font-variant-numeric: tabular-nums;
+}
+
+/* a label wraps to the next line whole, never mid-date */
+.thought-meta > * {
+  white-space: nowrap;
 }
 
 .thought-age.heat-1 {
@@ -1686,6 +1692,43 @@ button.quadrant-tag .caret {
 
 .done-toggle-open svg {
   transform: rotate(180deg);
+}
+
+/* ---------- archive: every finished thought, by month ---------- */
+
+.archive-link {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 22px;
+  padding: 10px;
+  color: var(--tertiary);
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.archive-link:hover {
+  color: var(--secondary);
+}
+
+.archive-head {
+  margin-bottom: 18px;
+}
+
+.archive-head h2 {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.archive-head p {
+  margin-top: 2px;
+  color: var(--secondary);
+  font-size: 14px;
 }
 
 /* ---------- task detail: a focused document linked to one task ---------- */
@@ -2016,7 +2059,8 @@ button.quadrant-tag .caret {
   background-image: linear-gradient(to bottom, transparent calc(1.75em - 1px), var(--separator) calc(1.75em - 1px));
   background-size: 100% 1.75em;
   background-attachment: local;
-  background-position: 0 0.3em;
+  /* nudge up so the rule sits just under the baseline, like ruled paper */
+  background-position: 0 -0.3em;
 }
 
 .task-notes-editor::placeholder {
@@ -3690,7 +3734,8 @@ button.quadrant-tag .caret {
   .icon-button,
   .range-btn,
   .text-button,
-  .back {
+  .back,
+  .archive-link {
     min-height: 44px;
   }
 

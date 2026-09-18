@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ageLabel, daysBetween, scheduleLabel } from "@/lib/date-keys";
+import { ageLabel, daysBetween, formatDate, localDayFromInstant, scheduleLabel } from "@/lib/date-keys";
 import { CheckIcon, CloseIcon, MoveIcon, NoteIcon, PencilIcon, QuadrantGlyph, SpinnerIcon, TodayIcon, TrashIcon } from "./icons";
 import { QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
@@ -13,6 +13,8 @@ type Props = {
   today: string;
   showQuadrant?: boolean;
   showAge?: boolean;
+  // Archive rows lead with when the item was finished.
+  showDoneDay?: boolean;
   onUpdate: (id: string, patch: Partial<Thought>) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
   // True while its DELETE is in flight: the row dims and its controls lock
@@ -43,6 +45,7 @@ export function ThoughtRow({
   today,
   showQuadrant,
   showAge,
+  showDoneDay,
   onUpdate,
   onDelete,
   deleting,
@@ -96,6 +99,8 @@ export function ThoughtRow({
       daysBetween(thought.scheduledDayKey, today) > 0,
   );
   const movableTag = showQuadrant && onMove;
+  const shortDate = { month: "short", day: "numeric" } as const;
+  const doneDay = thought.done ? localDayFromInstant(thought.doneAt ?? thought.updatedAt) : "";
 
   return (
     <motion.li
@@ -219,10 +224,15 @@ export function ThoughtRow({
                   </span>
                 ))}
               {showAge && <span className={`thought-age ${heat}`}>{ageLabel(thought.capturedDayKey, today)}</span>}
+              {showDoneDay && doneDay && (
+                <span className="thought-age">Done {formatDate(doneDay, shortDate)}</span>
+              )}
               {thought.scheduledDayKey && (
                 <span className={`thought-schedule ${scheduleIsOverdue ? "overdue" : ""}`}>
                   <TodayIcon size={11} />
-                  {scheduleLabel(thought.scheduledDayKey, today)}
+                  {thought.done
+                    ? formatDate(thought.scheduledDayKey, shortDate)
+                    : scheduleLabel(thought.scheduledDayKey, today)}
                 </span>
               )}
               {thought.notes && (

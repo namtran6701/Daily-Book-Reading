@@ -4,7 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Overlay } from "./Overlay";
 import { ThoughtRow } from "./ThoughtRow";
-import { ChevronDownIcon, ChevronRightIcon, CloseIcon, PlusIcon, QuadrantGlyph, SubmitIcon } from "./icons";
+import { QuietState } from "./UiState";
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  PlusIcon,
+  QuadrantGlyph,
+  SearchIcon,
+  SubmitIcon,
+} from "./icons";
+import { daysBetween, localDayFromInstant, monthKey, monthLabel } from "@/lib/date-keys";
 import {
   QUADRANTS,
   QUADRANT_AXES,
@@ -31,9 +42,20 @@ type Props = {
 
 const PREVIEW_COUNT = 2;
 const STORE_KEY = "sb-last-quadrant";
+// A finished item earns a short stay in its quadrant, then lives in the archive.
+const RECENT_DONE_DAYS = 7;
 
 function byNewest(a: Thought, b: Thought): number {
   return b.capturedDayKey.localeCompare(a.capturedDayKey) || b.createdAt.localeCompare(a.createdAt);
+}
+
+// Rows completed before `done_at` existed fall back to their last edit.
+function doneDay(thought: Thought): string {
+  return localDayFromInstant(thought.doneAt ?? thought.updatedAt);
+}
+
+function byLatestDone(a: Thought, b: Thought): number {
+  return doneDay(b).localeCompare(doneDay(a)) || b.updatedAt.localeCompare(a.updatedAt);
 }
 
 function readStoredQuadrant(): Quadrant {
@@ -89,6 +111,8 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
   const [sheetQuad, setSheetQuad] = useState<Quadrant | null>(null);
   const [sheetText, setSheetText] = useState("");
   const [moveId, setMoveId] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveQuery, setArchiveQuery] = useState("");
 
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const composerCardRef = useRef<HTMLElement>(null);
@@ -124,14 +148,34 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
     );
     for (const thought of thoughts) {
       const bucket = map.get(thought.quadrant);
-      if (bucket) bucket[thought.done ? "done" : "open"].push(thought);
+      if (!bucket) continue;
+      if (!thought.done) bucket.open.push(thought);
+      else if (daysBetween(doneDay(thought), today) < RECENT_DONE_DAYS) bucket.done.push(thought);
     }
     for (const bucket of map.values()) {
       bucket.open.sort(byNewest);
       bucket.done.sort(byNewest);
     }
     return map;
-  }, [thoughts]);
+  }, [thoughts, today]);
+
+  const completed = useMemo(() => thoughts.filter((thought) => thought.done).sort(byLatestDone), [thoughts]);
+
+  const archive = useMemo(() => {
+    const needle = archiveQuery.trim().toLowerCase();
+    const visible = needle
+      ? completed.filter(
+          (thought) =>
+            thought.body.toLowerCase().includes(needle) || thought.notes.toLowerCase().includes(needle),
+        )
+      : completed;
+    const months = new Map<string, Thought[]>();
+    for (const thought of visible) {
+      const month = monthKey(doneDay(thought));
+      months.set(month, [...(months.get(month) ?? []), thought]);
+    }
+    return Array.from(months, ([month, rows]) => ({ month, rows }));
+  }, [completed, archiveQuery]);
 
   function endDrag() {
     setDragId(null);
@@ -220,6 +264,97 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
 
   return (
     <>
+      <AnimatePresence mode="wait" initial={false}>
+      {archiveOpen ? (
+        <motion.section
+          key="archive"
+          className="archive"
+          aria-label="Archive"
+          initial={{ opacity: 0, x: 44 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 44 }}
+          transition={snappy}
+        >
+          <button
+            className="back pressable"
+            onClick={() => {
+              setArchiveQuery("");
+              setArchiveOpen(false);
+            }}
+            aria-label="Back to thoughts"
+          >
+            <ChevronLeftIcon />
+            Thoughts
+          </button>
+
+          <header className="archive-head">
+            <h2>Archive</h2>
+            <p>
+              {completed.length} completed {completed.length === 1 ? "thought" : "thoughts"}
+            </p>
+          </header>
+
+          {completed.length > 4 && (
+            <label className="note-search">
+              <SearchIcon />
+              <input
+                value={archiveQuery}
+                onChange={(event) => setArchiveQuery(event.target.value)}
+                placeholder="Search titles and notes"
+                aria-label="Search completed thoughts"
+              />
+              {archiveQuery && (
+                <button
+                  className="icon-action quiet pressable"
+                  onClick={() => setArchiveQuery("")}
+                  aria-label="Clear search"
+                >
+                  <CloseIcon size={13} />
+                </button>
+              )}
+            </label>
+          )}
+
+          {archive.length === 0 ? (
+            <QuietState compact icon={<SearchIcon size={17} />} title="Nothing here">
+              {completed.length === 0 ? "Finished thoughts collect here." : "Try a different word or phrase."}
+            </QuietState>
+          ) : (
+            <div className="journal">
+              {archive.map(({ month, rows }) => (
+                <section key={month} className="journal-day" aria-label={monthLabel(month)}>
+                  <h3>{monthLabel(month)}</h3>
+                  <ul className="thought-list">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {rows.map((thought) => (
+                        <ThoughtRow
+                          key={thought.id}
+                          thought={thought}
+                          today={today}
+                          showQuadrant
+                          showDoneDay
+                          onUpdate={onUpdate}
+                          onDelete={onDelete}
+                          deleting={deletingIds.has(thought.id)}
+                          readOnly={readOnly}
+                          onOpenDetail={onOpenDetail}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </motion.section>
+      ) : (
+      <motion.div
+        key="matrix"
+        initial={{ opacity: 0, x: -44 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -44 }}
+        transition={snappy}
+      >
       <section
         ref={composerCardRef}
         className={`composer card capture-${quadrant}`}
@@ -346,7 +481,7 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
                       aria-expanded={done}
                     >
                       <ChevronDownIcon size={13} />
-                      <span>{bucket.done.length} done</span>
+                      <span>{bucket.done.length} done this week</span>
                     </button>
                     <AnimatePresence initial={false}>
                       {done && (
@@ -403,6 +538,15 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
           })}
         </div>
       </div>
+
+      {completed.length > 0 && (
+        <button className="archive-link pressable" onClick={() => setArchiveOpen(true)}>
+          Archive · {completed.length} done
+        </button>
+      )}
+      </motion.div>
+      )}
+      </AnimatePresence>
 
       {/* Mobile quadrant sheet */}
       <AnimatePresence>
@@ -490,7 +634,7 @@ export function MatrixTab({ thoughts, today, busy, canvasOpen, readOnly, onCaptu
                       aria-expanded={!!showDone[sheetQuad]}
                     >
                       <ChevronDownIcon size={13} />
-                      <span>{sheetBucket.done.length} done</span>
+                      <span>{sheetBucket.done.length} done this week</span>
                     </button>
                     <AnimatePresence initial={false}>
                       {showDone[sheetQuad] && (
