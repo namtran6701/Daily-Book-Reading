@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 /* =========================================================
-   Second Brain — calm, editorial productivity.
-   Apple-ink light theme (unchanged palette), SF system body,
-   Fraunces display for headings, a real 2x2 priority compass
-   that survives on the phone, and tap-first interactions.
+   Second Brain: calm, editorial productivity.
+   Warm paper in light and umber charcoal in dark, one ochre
+   accent, SF system body, Fraunces display for headings, a
+   real 2x2 priority compass that survives on the phone.
+
+   Type scale (px): 11 12 13 14 15 16 18 20 22 24 28 32 36 44.
+   Nothing in between; 11 is the floor and only for tracked
+   uppercase labels.
    ========================================================= */
 
 /* Fraunces: warm editorial serif, self-hosted so the PWA stays
@@ -25,44 +29,60 @@
 }
 
 :root {
-  color-scheme: light;
+  /* Follows the system unless the switch in the masthead pins a theme. Every
+     token carries both values, so the switch only changes color-scheme. */
+  color-scheme: light dark;
 
-  --bg: #fbfbfd;
-  --surface: #ffffff;
-  --surface-2: #f5f5f7;
-  --glass: rgba(251, 251, 253, 0.78);
+  /* Warm paper in light, umber charcoal in dark. Every surface is a shade of
+     cream or coffee so cards separate without a heavy border. Ink is warm too. */
+  --bg: light-dark(#f5f1ea, #161411);
+  --surface: light-dark(#fffdf8, #1f1c18);
+  --surface-2: light-dark(#efeae1, #29251f);
+  --surface-raised: light-dark(#ffffff, #312c25);
+  --glass: light-dark(rgba(245, 241, 234, 0.82), rgba(22, 20, 17, 0.8));
+  --halo: light-dark(#e9e2d6, #262119);
+  --paper: light-dark(#fffcf4, #221e19);
 
-  --label: #1d1d1f;
-  --secondary: #6e6e73;
-  --tertiary: #a1a1a6;
-  --separator: rgba(0, 0, 0, 0.08);
-  --separator-strong: rgba(0, 0, 0, 0.16);
-  --fill: rgba(120, 120, 128, 0.08);
-  --fill-strong: rgba(120, 120, 128, 0.16);
+  --label: light-dark(#1c1a16, #f1ebe1);
+  --secondary: light-dark(#5c574f, #aaa296);
+  --tertiary: light-dark(#8a847a, #7f786d);
+  --separator: light-dark(rgba(28, 26, 22, 0.1), rgba(241, 235, 225, 0.09));
+  --separator-strong: light-dark(rgba(28, 26, 22, 0.2), rgba(241, 235, 225, 0.18));
+  --fill: light-dark(rgba(92, 82, 66, 0.08), rgba(241, 235, 225, 0.07));
+  --fill-strong: light-dark(rgba(92, 82, 66, 0.15), rgba(241, 235, 225, 0.14));
 
-  --tint: #0a0a0c;
-  --tint-hover: #2c2c31;
-  --tint-soft: rgba(10, 10, 12, 0.07);
+  --tint: light-dark(#1c1a16, #f1ebe1);
+  --tint-hover: light-dark(#34302a, #ffffff);
+  --tint-soft: light-dark(rgba(28, 26, 22, 0.07), rgba(241, 235, 225, 0.1));
+  --on-tint: light-dark(#fffdf8, #161411);
 
-  /* quadrant identities: Apple system colors (unchanged) */
-  --red: #ff3b30;
-  --red-soft: rgba(255, 59, 48, 0.09);
-  --blue: #007aff;
-  --blue-soft: rgba(0, 122, 255, 0.09);
-  --green: #34c759;
-  --green-soft: rgba(52, 199, 89, 0.11);
-  --gray: #8e8e93;
-  --gray-soft: rgba(142, 142, 147, 0.11);
-  --orange: #ff9500;
-  --warning-ink: #8a5300;
-  --danger-ink: #d70015;
-  --success-ink: #1d8a3e;
-  --orange-soft: rgba(255, 149, 0, 0.1);
+  /* One brand accent: burnt ochre. Interactive highlights, the reading colour,
+     focus, the selected day, and the activity ramp all draw from it. */
+  --accent: light-dark(#b9611a, #e08a3c);
+  --accent-ink: light-dark(#8f4a11, #f0a865);
+  --accent-soft: light-dark(rgba(185, 97, 26, 0.12), rgba(224, 138, 60, 0.16));
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
-  --shadow-pill: 0 1px 4px rgba(0, 0, 0, 0.12);
-  --shadow-float: 0 18px 44px -10px rgba(0, 0, 0, 0.28);
-  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.16);
+  /* quadrant identities, tuned for paper rather than a white screen */
+  --red: light-dark(#d64534, #ee6b5b);
+  --red-soft: light-dark(rgba(214, 69, 52, 0.1), rgba(238, 107, 91, 0.14));
+  --blue: light-dark(#2f6fd0, #6f9ff0);
+  --blue-soft: light-dark(rgba(47, 111, 208, 0.1), rgba(111, 159, 240, 0.14));
+  --green: light-dark(#2f9a58, #5cc57e);
+  --green-soft: light-dark(rgba(47, 154, 88, 0.12), rgba(92, 197, 126, 0.14));
+  --gray: light-dark(#8a8378, #9a9386);
+  --gray-soft: light-dark(rgba(138, 131, 120, 0.13), rgba(154, 147, 134, 0.16));
+  --orange: var(--accent);
+  --orange-soft: var(--accent-soft);
+  --warning-ink: var(--accent-ink);
+  --danger-ink: light-dark(#b0301f, #f28b7d);
+  --success-ink: light-dark(#217a42, #7fd39c);
+
+  --shadow-card: 0 1px 2px light-dark(rgba(60, 45, 20, 0.05), rgba(0, 0, 0, 0.3)),
+    0 12px 32px -12px light-dark(rgba(60, 45, 20, 0.14), rgba(0, 0, 0, 0.5));
+  --shadow-pill: 0 1px 4px light-dark(rgba(60, 45, 20, 0.14), rgba(0, 0, 0, 0.4));
+  --shadow-float: 0 18px 44px -10px light-dark(rgba(40, 30, 15, 0.32), rgba(0, 0, 0, 0.7));
+  --shadow-lift: 0 2px 6px light-dark(rgba(60, 45, 20, 0.06), rgba(0, 0, 0, 0.3)),
+    0 20px 48px -12px light-dark(rgba(60, 45, 20, 0.2), rgba(0, 0, 0, 0.6));
 
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Helvetica Neue", "Segoe UI", sans-serif;
@@ -73,6 +93,14 @@
   --radius-lg: 26px;
 
   --tabbar-h: calc(58px + env(safe-area-inset-bottom));
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* per-quadrant hue, inherited by anything inside a q-* element */
@@ -93,21 +121,54 @@ html,
 body {
   min-height: 100%;
   margin: 0;
-  background: var(--bg);
   color: var(--label);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* soft neutral air at the top of the page, like a product hero */
+/* Only the root paints the page colour. A body background would sit on top of
+   the fixed halo and grain layers below and cut them off at the body's edge. */
+html {
+  background: var(--bg);
+}
+
+/* soft warm air at the top of the page, like light on a desk */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(112% 54% at 50% -8%, #ececef, rgba(236, 236, 239, 0) 72%);
+  background: radial-gradient(112% 54% at 50% -8%, var(--halo), transparent 72%);
+}
+
+/* paper grain: a fixed turbulence layer at a few percent so flat fills read
+   as material rather than screen white. Overlay lifts dark ground and dims
+   light ground, so one setting serves both themes. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* the brand mark is drawn in ink; on charcoal it becomes cream */
+:root[data-theme="dark"] .brand-mark,
+:root[data-theme="dark"] .loading-state img {
+  filter: invert(0.92) brightness(1.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand-mark,
+  :root:not([data-theme="light"]) .loading-state img {
+    filter: invert(0.92) brightness(1.05);
+  }
 }
 
 button,
@@ -140,13 +201,13 @@ ul {
 }
 
 :focus-visible {
-  outline: 2px solid var(--tint);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
 ::selection {
-  background: rgba(10, 10, 12, 0.14);
+  background: var(--accent-soft);
 }
 
 ::placeholder {
@@ -214,7 +275,7 @@ ul {
 
 .wordmark {
   font-family: var(--display);
-  font-size: 27px;
+  font-size: 28px;
   font-weight: 600;
   font-optical-sizing: auto;
   letter-spacing: -0.012em;
@@ -230,6 +291,10 @@ ul {
   gap: 16px;
 }
 
+.masthead-home .masthead-date {
+  display: none;
+}
+
 .masthead-date {
   font-size: 12px;
   font-weight: 500;
@@ -239,6 +304,24 @@ ul {
   white-space: nowrap;
 }
 
+/* theme switch: cycles system, light, dark */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--secondary);
+  background: var(--fill);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--label);
+  background: var(--fill-strong);
+}
+
 /* top segmented nav (desktop) */
 
 .nav-top {
@@ -246,7 +329,7 @@ ul {
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.1);
+  background: var(--fill);
 }
 
 .seg-btn {
@@ -269,7 +352,7 @@ ul {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--surface-raised);
   box-shadow: var(--shadow-pill);
 }
 
@@ -278,7 +361,7 @@ ul {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 590;
   letter-spacing: -0.006em;
 }
@@ -294,7 +377,7 @@ ul {
   border-radius: 999px;
   background: var(--red);
   color: #ffffff;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 650;
   text-align: center;
   line-height: 1.4;
@@ -349,7 +432,7 @@ ul {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--surface-raised);
   box-shadow: var(--shadow-pill);
 }
 
@@ -360,7 +443,7 @@ ul {
 
 .tab-text {
   position: relative;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.005em;
 }
@@ -375,7 +458,7 @@ ul {
   border-radius: 999px;
   background: var(--red);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 16px;
   text-align: center;
@@ -389,7 +472,7 @@ ul {
   position: relative;
   border-radius: var(--radius);
   background: var(--surface);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--separator-strong);
   box-shadow: var(--shadow-card);
 }
 
@@ -445,7 +528,7 @@ ul {
   display: flex;
   align-items: baseline;
   gap: 7px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.35;
 }
 
@@ -467,7 +550,7 @@ ul {
   background: var(--surface);
   box-shadow: var(--shadow-pill);
   color: currentColor;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 640;
 }
 
@@ -478,7 +561,7 @@ ul {
   width: 100%;
   padding: 20px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--surface-2), rgba(245, 245, 247, 0.45));
+  background: linear-gradient(135deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 45%, transparent));
   color: var(--secondary);
 }
 
@@ -492,7 +575,7 @@ ul {
   background: var(--surface);
   border: 1px solid var(--separator);
   color: var(--secondary);
-  box-shadow: 0 5px 16px -10px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-pill);
 }
 
 .quiet-state-copy {
@@ -502,7 +585,7 @@ ul {
 
 .quiet-state h3 {
   font-family: var(--display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--label);
@@ -510,7 +593,7 @@ ul {
 
 .quiet-state p {
   margin-top: 2px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
@@ -549,7 +632,7 @@ ul {
 
 .loading-state h2 {
   font-family: var(--display);
-  font-size: 23px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
@@ -635,7 +718,7 @@ ul {
 }
 
 .icon-action.danger:hover {
-  color: var(--red);
+  color: var(--danger-ink);
   background: var(--red-soft);
 }
 
@@ -673,14 +756,14 @@ ul {
 }
 
 .text-button:hover {
-  background: rgba(10, 10, 12, 0.12);
+  background: var(--fill-strong);
 }
 
 .text-button.strong {
   padding: 9px 17px;
   background: var(--tint);
   color: var(--surface);
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 .text-button.strong:hover {
@@ -705,10 +788,23 @@ ul {
 }
 
 .empty-line {
-  padding: 14px 2px;
-  color: var(--tertiary);
-  font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 0;
+  color: var(--secondary);
+  font-size: 15px;
   letter-spacing: -0.006em;
+}
+
+/* a dashed, unticked mark: the row that is not here yet */
+.empty-line::before {
+  content: "";
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.7px dashed color-mix(in srgb, var(--q, var(--tertiary)) 55%, transparent);
 }
 
 textarea,
@@ -734,8 +830,8 @@ input:disabled {
 textarea:focus,
 input:focus {
   outline: none;
-  border-color: rgba(10, 10, 12, 0.5);
-  box-shadow: 0 0 0 3.5px rgba(10, 10, 12, 0.09);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 3.5px var(--accent-soft);
 }
 
 /* Section eyebrow: a small tracked label reused across tabs */
@@ -747,46 +843,65 @@ input:focus {
   color: var(--tertiary);
 }
 
-/* ---------- briefing hero ---------- */
+/* ---------- briefing: a broadsheet dateline ---------- */
 
 .briefing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: 24px 44px;
+  align-items: center;
+  padding: 26px 4px 30px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--separator-strong);
+}
+
+.dateline {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  min-width: 0;
+}
+
+.dateline-day {
+  flex: none;
+  font-family: var(--display);
+  font-size: clamp(96px, 11vw, 136px);
+  font-weight: 500;
+  font-optical-sizing: auto;
+  line-height: 0.8;
+  letter-spacing: -0.055em;
+  color: var(--label);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.dateline-copy {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 34px 8px 34px;
+  gap: 9px;
+  min-width: 0;
+  padding-top: 8px;
 }
 
-.orb {
-  flex: none;
-  width: 70px;
-  height: 70px;
-  margin-bottom: 16px;
-  animation: orb-breathe 5.5s ease-in-out infinite;
-}
-
-@keyframes orb-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
+.dateline-when {
+  color: var(--accent-ink);
 }
 
 .briefing-greeting {
   font-family: var(--display);
-  font-size: 50px;
+  font-size: clamp(34px, 4vw, 44px);
   font-weight: 600;
   font-optical-sizing: auto;
-  letter-spacing: -0.014em;
-  line-height: 1.02;
+  letter-spacing: -0.016em;
+  line-height: 1;
   color: var(--label);
 }
 
 .briefing-sub {
-  margin-top: 12px;
-  max-width: 30ch;
+  max-width: 46ch;
   color: var(--secondary);
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.45;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.01em;
 }
 
 .briefing-sub strong {
@@ -815,56 +930,58 @@ input:focus {
   text-decoration-color: currentColor;
 }
 
-.briefing-chips {
+/* the day's numbers, stacked like a sidebar of a front page */
+.briefing-stats {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 22px;
+  flex-direction: column;
+  padding-left: 24px;
+  border-left: 1px solid var(--separator-strong);
 }
 
-.b-chip {
-  display: inline-flex;
+.b-stat {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 15px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--separator);
-  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.08);
-  font-size: 13.5px;
+  gap: 11px;
+  min-height: 42px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--separator);
+  font-size: 14px;
   font-weight: 520;
   letter-spacing: -0.006em;
   color: var(--secondary);
-  max-width: 320px;
 }
 
-.b-chip > span {
+.b-stat:last-child {
+  border-bottom: none;
+}
+
+.b-stat > span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.b-chip strong {
+.b-stat strong {
   color: var(--label);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
-.b-chip i {
+.b-stat i {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   flex: none;
 }
 
-.b-chip.b-blue i { background: var(--blue-soft); color: var(--blue); }
-.b-chip.b-green i { background: var(--green-soft); color: var(--success-ink); }
-.b-chip.b-red i { background: var(--red-soft); color: var(--red); }
-.b-chip.b-gray i { background: var(--gray-soft); color: var(--gray); }
+.b-stat.b-blue i { background: var(--blue-soft); color: var(--blue); }
+.b-stat.b-green i { background: var(--green-soft); color: var(--success-ink); }
+.b-stat.b-red i { background: var(--red-soft); color: var(--danger-ink); }
+.b-stat.b-gray i { background: var(--accent-soft); color: var(--accent-ink); }
 
 /* ---------- Thoughts: one-tap composer ---------- */
 
@@ -900,7 +1017,7 @@ input:focus {
   height: 46px;
   border-radius: 50%;
   background: var(--tint);
-  color: #fff;
+  color: var(--on-tint);
   transition: background 0.2s ease, opacity 0.25s ease, transform 0.2s ease;
 }
 
@@ -923,7 +1040,7 @@ input:focus {
   height: 44px;
   border-radius: 50%;
   background: var(--tint);
-  color: #ffffff;
+  color: var(--on-tint);
   transition: background 0.2s ease, opacity 0.25s ease;
 }
 
@@ -956,7 +1073,7 @@ input:focus {
   border-radius: 999px;
   background: var(--fill);
   color: var(--secondary);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 590;
   letter-spacing: -0.006em;
   border: 1.5px solid transparent;
@@ -1031,10 +1148,10 @@ input:focus {
 
 .matrix-frame {
   display: grid;
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 26px 1fr;
   grid-template-rows: auto 1fr;
-  column-gap: 10px;
-  row-gap: 8px;
+  column-gap: 12px;
+  row-gap: 10px;
 }
 
 .matrix-cols {
@@ -1046,12 +1163,30 @@ input:focus {
 
 .matrix-cols span,
 .matrix-rows span {
-  font-size: 10px;
-  font-weight: 620;
+  font-size: 12px;
+  font-weight: 640;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tertiary);
+  color: var(--secondary);
   text-align: center;
+}
+
+/* a short axis tick under each column label anchors it to the compass */
+.matrix-cols span {
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.matrix-cols span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  background: var(--separator-strong);
 }
 
 .matrix-rows {
@@ -1133,7 +1268,9 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 11px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--q) 32%, transparent);
 }
 
 .q-glyph {
@@ -1154,14 +1291,14 @@ input:focus {
 }
 
 .q-title h3 {
-  font-size: 16.5px;
+  font-size: 18px;
   font-weight: 660;
   letter-spacing: -0.016em;
 }
 
 .quadrant-axis {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 590;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1240,7 +1377,7 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.35;
   color: var(--label);
   letter-spacing: -0.006em;
@@ -1284,7 +1421,7 @@ input:focus {
   display: none;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--q);
 }
@@ -1369,7 +1506,7 @@ input:focus {
 
 .thought-body p,
 .thought-open {
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.45;
   letter-spacing: -0.006em;
   overflow-wrap: anywhere;
@@ -1411,12 +1548,12 @@ input:focus {
 }
 
 .thought-age.heat-1 {
-  color: var(--orange);
+  color: var(--accent-ink);
   font-weight: 560;
 }
 
 .thought-age.heat-2 {
-  color: var(--red);
+  color: var(--danger-ink);
   font-weight: 560;
 }
 
@@ -1611,7 +1748,7 @@ button.quadrant-tag .caret {
   width: 26px;
   height: 26px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
 }
 
 .task-context strong {
@@ -1621,7 +1758,7 @@ button.quadrant-tag .caret {
 
 .task-context em {
   color: var(--tertiary);
-  font-size: 9.5px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 620;
   letter-spacing: 0.07em;
@@ -1635,7 +1772,7 @@ button.quadrant-tag .caret {
   align-items: center;
   gap: 6px;
   color: var(--tertiary);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 560;
   white-space: nowrap;
 }
@@ -1645,6 +1782,40 @@ button.quadrant-tag .caret {
   height: 6px;
   border-radius: 50%;
   background: var(--green);
+}
+
+/* the one action the canvas owns: finish the task without going back */
+.task-done {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px 0 11px;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--q) 45%, transparent);
+  background: var(--q-soft);
+  color: var(--q);
+  font-size: 13px;
+  font-weight: 640;
+  letter-spacing: -0.004em;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.task-done:hover:not(:disabled) {
+  border-color: var(--q);
+}
+
+.task-done.is-done {
+  background: var(--q);
+  border-color: var(--q);
+  color: #ffffff;
+}
+
+.task-done:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .task-save-state.save-unsaved i,
@@ -1664,6 +1835,7 @@ button.quadrant-tag .caret {
   min-height: calc(100vh - 118px - env(safe-area-inset-top));
   margin: 18px 0 8px;
   overflow: hidden;
+  background: var(--paper);
 }
 
 .task-paper::before {
@@ -1682,7 +1854,7 @@ button.quadrant-tag .caret {
   max-width: 880px;
   margin: 0 auto;
   padding: 40px clamp(28px, 5vw, 56px) 56px;
-  background: var(--surface);
+  background: var(--paper);
 }
 
 .task-meta-row {
@@ -1790,7 +1962,7 @@ button.quadrant-tag .caret {
 
 .task-meta-note {
   color: var(--tertiary);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .task-title-editor,
@@ -1836,15 +2008,21 @@ button.quadrant-tag .caret {
 .task-notes-editor {
   flex: 1;
   min-height: 48vh;
-  color: #2b2b2e;
+  max-width: 68ch;
+  color: color-mix(in srgb, var(--label) 90%, var(--surface));
   font-size: 16px;
-  line-height: 1.72;
+  line-height: 1.75;
   letter-spacing: -0.004em;
   white-space: pre-wrap;
+  /* faint ruled lines, one per line of text, scrolling with the content */
+  background-image: linear-gradient(to bottom, transparent calc(1.75em - 1px), var(--separator) calc(1.75em - 1px));
+  background-size: 100% 1.75em;
+  background-attachment: local;
+  background-position: 0 0.3em;
 }
 
 .task-notes-editor::placeholder {
-  color: #b4b4b9;
+  color: var(--tertiary);
 }
 
 /* ---------- reading note detail: a bookish companion to the task canvas ---------- */
@@ -1874,7 +2052,7 @@ button.quadrant-tag .caret {
 }
 
 .reading-paper::before {
-  background: linear-gradient(90deg, #c77f12, #f0b54b 52%, #d99524);
+  background: linear-gradient(90deg, var(--accent-ink), var(--accent) 52%, var(--accent-ink));
 }
 
 .reading-document {
@@ -1899,7 +2077,7 @@ button.quadrant-tag .caret {
   gap: 8px;
   margin-bottom: 10px;
   color: var(--warning-ink);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 660;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1937,8 +2115,8 @@ button.quadrant-tag .caret {
 }
 
 .reading-page-control:focus-within {
-  border-color: rgba(10, 10, 12, 0.5);
-  box-shadow: 0 0 0 3.5px rgba(10, 10, 12, 0.09);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 3.5px var(--accent-soft);
 }
 
 .reading-pages-label {
@@ -2101,7 +2279,7 @@ button.quadrant-tag .caret {
 
 .menu h2 {
   font-family: var(--display);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.01em;
   margin-bottom: 4px;
@@ -2145,7 +2323,7 @@ button.quadrant-tag .caret {
 
 .menu-option small {
   display: block;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 590;
   letter-spacing: 0.02em;
   color: var(--tertiary);
@@ -2166,7 +2344,7 @@ button.quadrant-tag .caret {
   padding: 11px 13px;
   border-radius: 13px;
   color: var(--label);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 560;
   letter-spacing: -0.008em;
   text-align: left;
@@ -2246,6 +2424,24 @@ button.quadrant-tag .caret {
 .calendar-card {
   padding: 12px;
   overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* weekend columns sit back a step */
+.weekday-row span:first-child,
+.weekday-row span:last-child,
+.week-row > .day-cell:first-child .day-number,
+.week-row > .day-cell:last-child .day-number {
+  color: var(--tertiary);
+}
+
+/* activity tints the day itself, in the accent ramp the recap uses */
+.day-cell.act-1 { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.day-cell.act-2 { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.day-cell.act-3 { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+.day-cell.has-activity .day-number {
+  font-weight: 640;
 }
 
 .weekday-row {
@@ -2295,13 +2491,13 @@ button.quadrant-tag .caret {
 
 .day-number {
   position: relative;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 520;
   font-variant-numeric: tabular-nums;
 }
 
 .day-cell.is-today .day-number {
-  color: var(--tint);
+  color: var(--accent-ink);
   font-weight: 700;
 }
 
@@ -2309,8 +2505,8 @@ button.quadrant-tag .caret {
   position: absolute;
   inset: 1px;
   border-radius: 10px;
-  border: 1.6px solid var(--tint);
-  background: var(--tint-soft);
+  border: 1.6px solid var(--accent);
+  background: var(--accent-soft);
 }
 
 .day-dots {
@@ -2346,21 +2542,29 @@ button.quadrant-tag .caret {
 
 .day-dots em {
   font-style: normal;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--tertiary);
   line-height: 1;
 }
 
+/* the legend is the card's footer strip, not loose text under it */
 .calendar-legend {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  padding: 9px 4px 0;
-  color: var(--tertiary);
-  font-size: 10.5px;
-  font-weight: 560;
+  gap: 8px 16px;
+  margin-top: -1px;
+  padding: 9px 12px;
+  border: 1px solid var(--separator-strong);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--surface-2);
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 590;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .calendar-legend span {
@@ -2379,6 +2583,29 @@ button.quadrant-tag .caret {
   min-height: 200px;
 }
 
+.day-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 45%, transparent));
+}
+
+.day-empty h3 {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.day-empty p {
+  margin-top: 3px;
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .day-panel > header {
   display: flex;
   align-items: baseline;
@@ -2389,13 +2616,13 @@ button.quadrant-tag .caret {
 
 .day-panel h2 {
   font-family: var(--display);
-  font-size: 23px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
 
 .day-panel > header span {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 560;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -2407,7 +2634,7 @@ button.quadrant-tag .caret {
 }
 
 .day-section h3 {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 590;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -2418,7 +2645,7 @@ button.quadrant-tag .caret {
 .day-section .from-book {
   text-transform: none;
   letter-spacing: -0.006em;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 590;
   color: var(--secondary);
 }
@@ -2459,7 +2686,7 @@ button.quadrant-tag .caret {
   align-items: baseline;
   gap: 8px;
   font-family: var(--display);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.012em;
   margin-bottom: 14px;
@@ -2468,7 +2695,7 @@ button.quadrant-tag .caret {
 .shelf-label em {
   font-style: normal;
   font-family: var(--sans);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 560;
   color: var(--tertiary);
   font-variant-numeric: tabular-nums;
@@ -2478,6 +2705,25 @@ button.quadrant-tag .caret {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
   gap: 22px 18px;
+}
+
+/* each cover stands on a short plank so the row reads as a real shelf */
+.cover-stand {
+  position: relative;
+  display: block;
+  padding-bottom: 10px;
+}
+
+.cover-stand::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  bottom: 0;
+  height: 7px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--label) 16%, var(--surface)), color-mix(in srgb, var(--label) 9%, var(--surface)));
+  box-shadow: 0 6px 14px -6px rgba(60, 45, 20, 0.35);
 }
 
 .book-card {
@@ -2515,12 +2761,23 @@ button.quadrant-tag .caret {
   flex: none;
 }
 
-.book-cover.c0 { --cov1: #2b2a5e; --cov2: #6d5df0; --cov-ink: #efedff; }
-.book-cover.c1 { --cov1: #0e4a44; --cov2: #2fbfa5; --cov-ink: #eafff9; }
-.book-cover.c2 { --cov1: #5e2436; --cov2: #e56a54; --cov-ink: #fff0ea; }
-.book-cover.c3 { --cov1: #4a3413; --cov2: #d9a441; --cov-ink: #fff7e6; }
-.book-cover.c4 { --cov1: #16324f; --cov2: #4c9fd8; --cov-ink: #e9f5ff; }
-.book-cover.c5 { --cov1: #3d1f52; --cov2: #b268c9; --cov-ink: #f9edff; }
+/* cloth-bound tones that sit with the paper palette */
+.book-cover.c0 { --cov1: #1f2a44; --cov2: #4a5f8f; --cov-ink: #eef0f7; }
+.book-cover.c1 { --cov1: #1f3d2e; --cov2: #3f7a5b; --cov-ink: #edf5ef; }
+.book-cover.c2 { --cov1: #6b2a22; --cov2: #c96a4a; --cov-ink: #fbeee7; }
+.book-cover.c3 { --cov1: #5a3d10; --cov2: #d9a441; --cov-ink: #fff6e3; }
+.book-cover.c4 { --cov1: #2f3b47; --cov2: #6f8aa3; --cov-ink: #eef2f6; }
+.book-cover.c5 { --cov1: #3b2440; --cov2: #8f5b98; --cov-ink: #f7edf8; }
+
+.book-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 3px 0 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0.12), transparent 38%);
+}
 
 .cover-art {
   position: absolute;
@@ -2621,7 +2878,7 @@ button.quadrant-tag .caret {
 }
 
 .book-card-stats {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 520;
   color: var(--tertiary);
   font-variant-numeric: tabular-nums;
@@ -2629,7 +2886,7 @@ button.quadrant-tag .caret {
 
 .book-card-preview {
   color: var(--secondary);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   letter-spacing: -0.004em;
   display: -webkit-box;
@@ -2685,7 +2942,7 @@ button.quadrant-tag .caret {
 }
 
 .book-header-stats {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 560;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -2701,7 +2958,7 @@ button.quadrant-tag .caret {
   border-radius: 999px;
   background: var(--green-soft);
   color: var(--success-ink);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -2767,7 +3024,7 @@ button.quadrant-tag .caret {
 
 .note-capture-intro strong {
   font-family: var(--display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -2791,7 +3048,7 @@ button.quadrant-tag .caret {
   min-height: 48px;
   padding: 12px 15px;
   border-radius: 15px;
-  font-size: 15.5px;
+  font-size: 16px;
   letter-spacing: -0.008em;
 }
 
@@ -2836,7 +3093,7 @@ button.quadrant-tag .caret {
 }
 
 .journal-day h3 {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 590;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2885,7 +3142,7 @@ button.quadrant-tag .caret {
 
 .note-list p,
 .book-note p {
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.5;
   letter-spacing: -0.006em;
   overflow-wrap: anywhere;
@@ -2913,7 +3170,7 @@ button.quadrant-tag .caret {
 
 .reading-note-title {
   min-width: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 520;
   line-height: 1.5;
   letter-spacing: -0.006em;
@@ -2922,7 +3179,7 @@ button.quadrant-tag .caret {
 
 .reading-note-preview {
   color: var(--secondary);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.45;
   white-space: pre-wrap;
   display: -webkit-box;
@@ -2949,7 +3206,7 @@ button.quadrant-tag .caret {
   font-size: 11px;
   font-weight: 620;
   letter-spacing: 0.04em;
-  color: var(--orange);
+  color: var(--accent-ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -3001,7 +3258,7 @@ button.quadrant-tag .caret {
 .range-label {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 560;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3013,7 +3270,7 @@ button.quadrant-tag .caret {
   gap: 2px;
   padding: 3px;
   border-radius: 999px;
-  background: rgba(120, 120, 128, 0.1);
+  background: var(--fill);
 }
 
 .range-btn {
@@ -3038,15 +3295,52 @@ button.quadrant-tag .caret {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--surface-raised);
   box-shadow: var(--shadow-pill);
 }
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* three secondary numbers as a ledger beside the hero ring */
+.stat-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 24px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--separator);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row .stat-value {
+  font-size: 36px;
+  text-align: right;
+}
+
+.stat-row > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stat-quiet {
+  margin-bottom: 16px;
 }
 
 .stat-card {
@@ -3078,18 +3372,22 @@ button.quadrant-tag .caret {
 }
 
 .stat-foot {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tertiary);
 }
 
 .stat-foot.up { color: var(--success-ink); font-weight: 590; }
-.stat-foot.down { color: var(--red); font-weight: 590; }
+.stat-foot.down { color: var(--danger-ink); font-weight: 590; }
+
+.ring-card {
+  padding: 26px 20px;
+}
 
 .ring-wrap {
   position: relative;
-  width: 108px;
-  height: 108px;
-  margin-bottom: 6px;
+  width: 150px;
+  height: 150px;
+  margin-bottom: 10px;
 }
 
 .ring-svg {
@@ -3106,7 +3404,7 @@ button.quadrant-tag .caret {
 
 .ring-fill {
   fill: none;
-  stroke: var(--tint);
+  stroke: var(--accent);
   stroke-width: 7;
   stroke-linecap: round;
 }
@@ -3118,7 +3416,7 @@ button.quadrant-tag .caret {
   align-items: center;
   justify-content: center;
   font-family: var(--display);
-  font-size: 24px;
+  font-size: 36px;
   font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
@@ -3153,7 +3451,7 @@ button.quadrant-tag .caret {
 
 .review-section h3 {
   font-family: var(--display);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.01em;
   margin-bottom: 14px;
@@ -3183,7 +3481,7 @@ button.quadrant-tag .caret {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 620;
   color: var(--q);
 }
@@ -3215,10 +3513,57 @@ button.quadrant-tag .caret {
   font-variant-numeric: tabular-nums;
 }
 
-.heat-strip {
+/* twelve weeks of activity as columns; the current week in the accent */
+.week-bars {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  height: 118px;
+  align-items: end;
+}
+
+.week-bar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+
+.week-bar i {
+  display: block;
+  width: 100%;
+  min-height: 3px;
+  border-radius: 5px 5px 2px 2px;
+  background: var(--fill-strong);
+  transition: background 0.2s ease;
+}
+
+.week-bar:hover i {
+  background: color-mix(in srgb, var(--accent) 45%, var(--fill-strong));
+}
+
+.week-bar.current i {
+  background: var(--accent);
+}
+
+.week-bar em {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding-top: 6px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 590;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tertiary);
+  white-space: nowrap;
+}
+
+.week-bars-wrap {
+  padding-bottom: 26px;
 }
 
 .heat-graph {
@@ -3238,7 +3583,7 @@ button.quadrant-tag .caret {
 .heat-weekdays span {
   display: grid;
   place-items: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 560;
   color: var(--secondary);
 }
@@ -3281,21 +3626,21 @@ button.quadrant-tag .caret {
 
 .heat-cell em {
   font-style: normal;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 560;
   color: var(--secondary);
 }
 
 .heat-cell.level-0 { background: var(--surface-2); }
-.heat-cell.level-1 { background: #9be9a8; border-color: #86dd97; }
-.heat-cell.level-2 { background: #30a14e; border-color: #2c9548; }
-.heat-cell.level-3 { background: #216e39; border-color: #1d6234; }
+.heat-cell.level-1 { background: color-mix(in srgb, var(--accent) 28%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.heat-cell.level-2 { background: color-mix(in srgb, var(--accent) 62%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.heat-cell.level-3 { background: var(--accent); border-color: var(--accent); }
 
 .heat-cell.level-2 em,
 .heat-cell.level-3 em { color: #ffffff; font-weight: 640; }
 
 .heat-cell.today {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -3343,7 +3688,7 @@ button.quadrant-tag .caret {
 
 .carry-age {
   flex: none;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--tertiary);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -3351,7 +3696,7 @@ button.quadrant-tag .caret {
 
 .carry-more {
   margin-top: 10px;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--tertiary);
 }
 
@@ -3368,14 +3713,6 @@ button.quadrant-tag .caret {
 }
 
 @media (max-width: 860px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .ring-card {
-    grid-column: span 2;
-  }
-
   .review-duo {
     grid-template-columns: 1fr;
   }
@@ -3407,7 +3744,7 @@ button.quadrant-tag .caret {
   }
 
   .wordmark {
-    font-size: 23px;
+    font-size: 24px;
   }
 
   .status-copy {
@@ -3447,21 +3784,66 @@ button.quadrant-tag .caret {
   }
 
   .briefing {
-    padding: 24px 4px 26px;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px 2px 22px;
+    margin-bottom: 20px;
   }
 
-  .orb {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 12px;
+  .dateline {
+    gap: 16px;
+  }
+
+  .dateline-day {
+    font-size: 80px;
+  }
+
+  .dateline-copy {
+    padding-top: 4px;
+    gap: 7px;
   }
 
   .briefing-greeting {
-    font-size: 36px;
+    font-size: 30px;
   }
 
   .briefing-sub {
     font-size: 15px;
+  }
+
+  .briefing-stats {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 4px;
+    border-top: 1px solid var(--separator-strong);
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-list {
+    padding: 4px 18px;
+  }
+
+  .week-bars {
+    height: 96px;
+  }
+
+  .task-done {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index: 35;
+    height: 48px;
+    padding: 0 18px 0 14px;
+    font-size: 14px;
+    background: color-mix(in srgb, var(--q) 12%, var(--surface));
+    box-shadow: var(--shadow-float);
+  }
+
+  .task-done.is-done {
+    background: var(--q);
   }
 
   /* the compass: keep two columns, shrink, swap full list for preview + sheet */
@@ -3547,7 +3929,7 @@ button.quadrant-tag .caret {
   }
 
   .task-save-state {
-    font-size: 10.5px;
+    font-size: 11px;
   }
 
   .reading-context {
@@ -3654,6 +4036,15 @@ button.quadrant-tag .caret {
   .stat-value {
     font-size: 36px;
   }
+
+  .stat-row .stat-value {
+    font-size: 28px;
+  }
+
+  .ring-wrap {
+    width: 128px;
+    height: 128px;
+  }
 }
 
 /* wide screens: the sheet is only a phone affordance; never show it big */
@@ -3666,7 +4057,6 @@ button.quadrant-tag .caret {
 /* ---------- reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-  .orb,
   .loading-dots i {
     animation: none;
   }

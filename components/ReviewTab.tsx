@@ -103,6 +103,21 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
       .filter((thought) => thought.capturedDayKey < start)
       .sort((a, b) => a.capturedDayKey.localeCompare(b.capturedDayKey));
 
+    // Twelve weeks of activity, oldest first, so the recap has a shape even
+    // when the current range is quiet.
+    const thisWeek = startOfWeek(today);
+    const weeks = Array.from({ length: 12 }, (_, index) => {
+      const weekStart = shiftDate(thisWeek, -7 * (11 - index));
+      const count = rangeDays(weekStart, shiftDate(weekStart, 6)).reduce(
+        (total, day) => total + dayCount(day),
+        0,
+      );
+      return { weekStart, count, current: weekStart === thisWeek };
+    });
+    const maxWeek = Math.max(1, ...weeks.map((week) => week.count));
+
+    const quiet = completed.length === 0 && captured === 0 && notesInRange === 0;
+
     const upNext = [...open]
       .sort(
         (a, b) =>
@@ -127,6 +142,9 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
       maxActivity,
       carryover,
       upNext,
+      weeks,
+      maxWeek,
+      quiet,
     };
   }, [range, thoughts, books, notes, today]);
 
@@ -167,63 +185,79 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
           exit={{ opacity: 0, y: -10 }}
           transition={gentle}
         >
-          <div className="stat-grid">
-            <div className="stat-card ring-card card">
-              <span className="ring-wrap" aria-hidden="true">
-                <svg viewBox="0 0 120 120" className="ring-svg">
-                  <circle className="ring-track" cx="60" cy="60" r="52" />
-                  <motion.circle
-                    className="ring-fill"
-                    cx="60"
-                    cy="60"
-                    r="52"
-                    pathLength={1}
-                    strokeDasharray="1 1"
-                    initial={{ strokeDashoffset: 1 }}
-                    animate={{ strokeDashoffset: 1 - review.rate }}
-                    transition={{ type: "spring", stiffness: 60, damping: 20, delay: 0.15 }}
-                  />
-                </svg>
-                <span className="ring-value">
-                  <CountUp value={Math.round(review.rate * 100)} />%
+          {review.quiet ? (
+            <QuietState
+              className="stat-quiet card"
+              icon={<ReviewGlyph size={18} />}
+              title={`Nothing logged this ${range} yet`}
+            >
+              Capture one thought or note a few pages and the recap fills itself in.
+            </QuietState>
+          ) : (
+            <div className="stat-grid">
+              <div className="stat-card ring-card card">
+                <span className="ring-wrap" aria-hidden="true">
+                  <svg viewBox="0 0 120 120" className="ring-svg">
+                    <circle className="ring-track" cx="60" cy="60" r="52" />
+                    <motion.circle
+                      className="ring-fill"
+                      cx="60"
+                      cy="60"
+                      r="52"
+                      pathLength={1}
+                      strokeDasharray="1 1"
+                      initial={{ strokeDashoffset: 1 }}
+                      animate={{ strokeDashoffset: 1 - review.rate }}
+                      transition={{ type: "spring", stiffness: 60, damping: 20, delay: 0.15 }}
+                    />
+                  </svg>
+                  <span className="ring-value">
+                    <CountUp value={Math.round(review.rate * 100)} />%
+                  </span>
                 </span>
-              </span>
-              <span className="stat-label">of your plate cleared</span>
-              <span className="stat-foot">
-                {review.completed.length} done · {review.open.length} still open
-              </span>
-            </div>
+                <span className="stat-label">of your plate cleared</span>
+                <span className="stat-foot">
+                  {review.completed.length} done · {review.open.length} still open
+                </span>
+              </div>
 
-            <div className="stat-card card">
-              <span className="stat-value">
-                <CountUp value={review.completed.length} />
-              </span>
-              <span className="stat-label">completed</span>
-              <span className={`stat-foot ${delta > 0 ? "up" : delta < 0 ? "down" : ""}`}>
-                {delta === 0 ? `same as ${prevName}` : `${delta > 0 ? "+" : ""}${delta} vs ${prevName}`}
-              </span>
+              <div className="stat-list card">
+                <div className="stat-row">
+                  <span className="stat-value">
+                    <CountUp value={review.completed.length} />
+                  </span>
+                  <span>
+                    <span className="stat-label">completed</span>
+                    <span className={`stat-foot ${delta > 0 ? "up" : delta < 0 ? "down" : ""}`}>
+                      {delta === 0 ? `same as ${prevName}` : `${delta > 0 ? "+" : ""}${delta} vs ${prevName}`}
+                    </span>
+                  </span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-value">
+                    <CountUp value={review.captured} />
+                  </span>
+                  <span>
+                    <span className="stat-label">thoughts captured</span>
+                    <span className="stat-foot">out of your head</span>
+                  </span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-value">
+                    <CountUp value={review.notesInRange} />
+                  </span>
+                  <span>
+                    <span className="stat-label">book notes</span>
+                    <span className="stat-foot">
+                      {review.booksFinished > 0
+                        ? `${review.booksFinished} ${review.booksFinished === 1 ? "book" : "books"} finished`
+                        : "keep reading"}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
-
-            <div className="stat-card card">
-              <span className="stat-value">
-                <CountUp value={review.captured} />
-              </span>
-              <span className="stat-label">thoughts captured</span>
-              <span className="stat-foot">out of your head</span>
-            </div>
-
-            <div className="stat-card card">
-              <span className="stat-value">
-                <CountUp value={review.notesInRange} />
-              </span>
-              <span className="stat-label">book notes</span>
-              <span className="stat-foot">
-                {review.booksFinished > 0
-                  ? `${review.booksFinished} ${review.booksFinished === 1 ? "book" : "books"} finished`
-                  : "keep reading"}
-              </span>
-            </div>
-          </div>
+          )}
 
           <div className="review-duo">
           <section className="review-section card" aria-label="Progress by quadrant">
@@ -258,18 +292,31 @@ export function ReviewTab({ thoughts, books, notes, today, onOpenDetail }: Props
           </section>
 
           <section className="review-section card" aria-label="Daily activity">
-            <h3>Your rhythm</h3>
+            <h3>
+              Your rhythm <em>{range === "week" ? "last twelve weeks" : monthLabel(monthKey(today))}</em>
+            </h3>
             {range === "week" ? (
-              <div className="heat-strip">
-                {review.activity.map(({ day, count }) => (
-                  <span
-                    key={day}
-                    className={`heat-cell level-${count === 0 ? 0 : Math.ceil((count / review.maxActivity) * 3)}${day === today ? " today" : ""}`}
-                    title={`${formatDate(day, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}${day === today ? " · today" : ""}`}
-                  >
-                    <em>{formatDate(day, { weekday: "narrow" })}</em>
-                  </span>
-                ))}
+              <div className="week-bars-wrap">
+                <div className="week-bars" role="img" aria-label="Entries per week over the last twelve weeks">
+                  {review.weeks.map(({ weekStart, count, current }, index) => {
+                    const previous = review.weeks[index - 1];
+                    const newMonth = !previous || monthKey(previous.weekStart) !== monthKey(weekStart);
+                    return (
+                      <span
+                        key={weekStart}
+                        className={`week-bar ${current ? "current" : ""}`}
+                        title={`Week of ${formatDate(weekStart, { month: "short", day: "numeric" })}: ${count} ${count === 1 ? "entry" : "entries"}`}
+                      >
+                        <motion.i
+                          initial={{ height: 0 }}
+                          animate={{ height: `${Math.max(3, (count / review.maxWeek) * 100)}%` }}
+                          transition={{ type: "spring", stiffness: 90, damping: 22, delay: index * 0.03 }}
+                        />
+                        {newMonth && <em>{formatDate(weekStart, { month: "short" })}</em>}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="heat-graph">

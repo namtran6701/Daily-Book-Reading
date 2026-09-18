@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, type Transition } from "motion/react";
-import { ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
+import { CheckIcon, ChevronLeftIcon, CloseIcon, NoteIcon, QuadrantGlyph, TodayIcon } from "./icons";
 import { documentDateLabels, formatDate } from "@/lib/date-keys";
 import { QUADRANT_AXES, QUADRANT_LABELS } from "@/lib/quadrants";
 import { snappy } from "@/lib/springs";
@@ -354,6 +354,16 @@ export function TaskDetail({ thought, today, transition, readOnly, onBack, onUpd
           <i aria-hidden="true" />
           {statusCopy}
         </span>
+        <button
+          className={`task-done pressable ${thought.done ? "is-done" : ""}`}
+          type="button"
+          onClick={() => void enqueueUpdate({ done: !thought.done })}
+          disabled={readOnly}
+          aria-pressed={thought.done}
+        >
+          <CheckIcon size={14} />
+          {thought.done ? "Done" : "Mark done"}
+        </button>
       </header>
 
       <div className="task-paper card">

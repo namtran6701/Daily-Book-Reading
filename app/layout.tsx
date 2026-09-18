@@ -58,7 +58,16 @@ export default function RootLayout({
         />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#fbfbfd" />
+        {/* Apply a pinned theme before the first paint so the page never flashes
+            the other scheme. Mirrors the ThemeToggle component. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var t=localStorage.getItem("sb-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}',
+          }}
+        />
+        <meta name="theme-color" content="#f5f1ea" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#161411" media="(prefers-color-scheme: dark)" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

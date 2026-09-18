@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ThoughtRow } from "./ThoughtRow";
-import { QuietState } from "./UiState";
 import { WEEKDAY_INITIALS, dayTitle, formatDate, monthGrid, monthKey, monthLabel } from "@/lib/date-keys";
 import { TodayIcon } from "./icons";
 import { gentle, snappy } from "@/lib/springs";
@@ -183,7 +182,7 @@ export function CalendarTab({
                     "pressable",
                     inMonth ? "" : "outside",
                     dayKey === today ? "is-today" : "",
-                    total ? "has-activity" : "",
+                    total ? `has-activity act-${Math.min(total, 3)}` : "",
                   ]
                     .filter(Boolean)
                     .join(" ");
@@ -270,9 +269,19 @@ export function CalendarTab({
           </header>
 
           {dayScheduled.length === 0 && dayCaptured.length === 0 && readingCount === 0 ? (
-            <QuietState compact icon={<TodayIcon size={17} />} title="A quiet day">
-              Nothing was captured or scheduled here.
-            </QuietState>
+            <div className="day-empty">
+              <span className="quiet-state-glyph" aria-hidden="true">
+                <TodayIcon size={18} />
+              </span>
+              <div>
+                <h3>{selectedDay === today ? "A clear day so far" : selectedDay > today ? "Nothing planned yet" : "A quiet day"}</h3>
+                <p>
+                  {selectedDay >= today
+                    ? "Schedule a thought here from its canvas, or read a few pages and note one idea."
+                    : "Nothing was captured or scheduled here."}
+                </p>
+              </div>
+            </div>
           ) : (
             <>
               {dayScheduled.length > 0 && (

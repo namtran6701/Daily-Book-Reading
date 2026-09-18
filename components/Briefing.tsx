@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { daysBetween } from "@/lib/date-keys";
+import { motion } from "motion/react";
+import { daysBetween, formatDate } from "@/lib/date-keys";
 import { BookGlyph, FlameIcon, MatrixGlyph, PlusIcon } from "./icons";
 import { gentle } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
@@ -26,7 +26,6 @@ function greeting(): string {
 }
 
 export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props) {
-  const reduceMotion = useReducedMotion();
   const { headline, alert, chips } = useMemo(() => {
     const open = thoughts.filter((thought) => !thought.done);
     const capturedToday =
@@ -141,52 +140,49 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
     return { headline, alert, chips };
   }, [thoughts, books, notes, today, onOpenDetail]);
 
+  const rise = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+
   return (
     <motion.section
       className="briefing"
       aria-label="Daily briefing"
       initial="hidden"
       animate="show"
-      variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.08 } } }}
+      variants={{ show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } }}
     >
-      <motion.img
-        className="orb"
-        src={reduceMotion ? "/animated.svg" : "/hero_img.svg"}
-        alt=""
-        aria-hidden="true"
-        variants={{ hidden: { opacity: 0, scale: 0.4 }, show: { opacity: 1, scale: 1 } }}
-        transition={gentle}
-      />
-      <motion.h1
-        className="briefing-greeting"
-        variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
-        transition={gentle}
-      >
-        {greeting()}.
-      </motion.h1>
-      <motion.p
-        className={`briefing-sub ${alert ? "alert" : ""}`}
-        variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
-        transition={gentle}
-      >
-        {headline}
-      </motion.p>
-      <motion.div
-        className="briefing-chips"
+      <div className="dateline">
+        <motion.span
+          className="dateline-day"
+          aria-hidden="true"
+          variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+          transition={gentle}
+        >
+          {formatDate(today, { day: "numeric" })}
+        </motion.span>
+        <div className="dateline-copy">
+          <motion.span className="eyebrow dateline-when" variants={rise} transition={gentle}>
+            {formatDate(today, { weekday: "long" })} · {formatDate(today, { month: "long", year: "numeric" })}
+          </motion.span>
+          <motion.h1 className="briefing-greeting" variants={rise} transition={gentle}>
+            {greeting()}.
+          </motion.h1>
+          <motion.p className={`briefing-sub ${alert ? "alert" : ""}`} variants={rise} transition={gentle}>
+            {headline}
+          </motion.p>
+        </div>
+      </div>
+      <motion.ul
+        className="briefing-stats"
+        aria-label="Today at a glance"
         variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
       >
         {chips.map((chip) => (
-          <motion.span
-            key={chip.key}
-            className={`b-chip ${chip.tone}`}
-            variants={{ hidden: { opacity: 0, y: 10, scale: 0.94 }, show: { opacity: 1, y: 0, scale: 1 } }}
-            transition={gentle}
-          >
+          <motion.li key={chip.key} className={`b-stat ${chip.tone}`} variants={rise} transition={gentle}>
             <i aria-hidden="true">{chip.icon}</i>
             <span>{chip.text}</span>
-          </motion.span>
+          </motion.li>
         ))}
-      </motion.div>
+      </motion.ul>
     </motion.section>
   );
 }

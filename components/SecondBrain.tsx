@@ -25,6 +25,7 @@ import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
 import { ReviewTab } from "./ReviewTab";
 import { TaskDetail, type ThoughtUpdateOptions } from "./TaskDetail";
+import { ThemeToggle } from "./ThemeToggle";
 import { LoadingState, QuietState, StatusBanner } from "./UiState";
 import { formatDate, localDateKey, monthKey, shiftMonth } from "@/lib/date-keys";
 import { AlertIcon, BookGlyph, MatrixGlyph, OfflineIcon, ReviewGlyph, TodayIcon } from "./icons";
@@ -656,15 +657,13 @@ export function SecondBrain() {
           animate={{ opacity: 1, y: 0 }}
           transition={snappy}
         >
-          {tab === "calendar" && (
-            <span className="brand">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
-              <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
-                Second Brain
-              </motion.span>
-            </span>
-          )}
+          <span className="brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="brand-mark" src="/animated.svg" alt="" width={32} height={32} />
+            <motion.span className="wordmark" style={{ scale: wordmarkScale }}>
+              Second Brain
+            </motion.span>
+          </span>
           <div className="masthead-meta">
             <span className="masthead-date">
               {today ? formatDate(today, { weekday: "long", month: "long", day: "numeric" }) : " "}
@@ -688,6 +687,7 @@ export function SecondBrain() {
                 </button>
               ))}
             </nav>
+            <ThemeToggle />
           </div>
         </motion.header>
 
@@ -750,13 +750,15 @@ export function SecondBrain() {
                     onOpenDetail={openThought}
                   />
                 )}
-                <AnimatePresence mode="wait" initial={false}>
+                {/* popLayout lifts the leaving tab out of flow so the next one
+                    renders underneath it at once; the page never goes blank. */}
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div
                     key={tab}
-                    initial={{ opacity: 0, x: 28 * tabDirection }}
+                    initial={{ opacity: 0, x: 22 * tabDirection }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -28 * tabDirection }}
-                    transition={gentle}
+                    exit={{ opacity: 0, x: -14 * tabDirection, transition: { duration: 0.14, ease: "easeOut" } }}
+                    transition={snappy}
                   >
                     {tab === "calendar" ? (
                       <CalendarTab

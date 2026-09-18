@@ -176,12 +176,14 @@ function BookCard({
       transition={gentle}
     >
       <button className="book-card" onClick={onOpen}>
-        <BookCover title={book.title} />
-        {book.finishedAt && (
-          <span className="finished-badge" title="Finished">
-            <CheckIcon size={11} />
-          </span>
-        )}
+        <span className="cover-stand">
+          <BookCover title={book.title} />
+          {book.finishedAt && (
+            <span className="finished-badge" title="Finished">
+              <CheckIcon size={11} />
+            </span>
+          )}
+        </span>
         <span className="book-card-meta">
           <strong>{book.title}</strong>
           <span className="book-card-stats">
