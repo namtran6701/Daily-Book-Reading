@@ -53,44 +53,48 @@
 
   --tint: light-dark(#1c1a16, #f1ebe1);
   --tint-hover: light-dark(#34302a, #ffffff);
+  --hairline: light-dark(rgba(28, 26, 22, 0.16), rgba(241, 235, 225, 0.16));
   --tint-soft: light-dark(rgba(28, 26, 22, 0.07), rgba(241, 235, 225, 0.1));
   --on-tint: light-dark(#fffdf8, #161411);
 
-  /* One brand accent: burnt ochre. Interactive highlights, the reading colour,
-     focus, the selected day, and the activity ramp all draw from it. */
-  --accent: light-dark(#b9611a, #e08a3c);
-  --accent-ink: light-dark(#8f4a11, #f0a865);
-  --accent-soft: light-dark(rgba(185, 97, 26, 0.12), rgba(224, 138, 60, 0.16));
+  /* One brand accent: bronze in light, antique brass in dark. It reads like a
+     foil stamp, never a warning colour. Interactive highlights, the reading
+     colour, focus, the selected day, and the activity ramp all draw from it. */
+  --accent: light-dark(#8a5a2b, #c9a36a);
+  --accent-ink: light-dark(#6e4520, #dcbb85);
+  --accent-soft: light-dark(rgba(138, 90, 43, 0.1), rgba(201, 163, 106, 0.14));
 
-  /* quadrant identities, tuned for paper rather than a white screen */
-  --red: light-dark(#d64534, #ee6b5b);
-  --red-soft: light-dark(rgba(214, 69, 52, 0.1), rgba(238, 107, 91, 0.14));
-  --blue: light-dark(#2f6fd0, #6f9ff0);
-  --blue-soft: light-dark(rgba(47, 111, 208, 0.1), rgba(111, 159, 240, 0.14));
-  --green: light-dark(#2f9a58, #5cc57e);
-  --green-soft: light-dark(rgba(47, 154, 88, 0.12), rgba(92, 197, 126, 0.14));
-  --gray: light-dark(#8a8378, #9a9386);
-  --gray-soft: light-dark(rgba(138, 131, 120, 0.13), rgba(154, 147, 134, 0.16));
+  /* quadrant identities: garnet, Prussian slate, moss, warm stone. Deep and
+     desaturated so they sit in the paper like ink rather than on it. */
+  --red: light-dark(#8f2d3b, #cf8290);
+  --red-soft: light-dark(rgba(143, 45, 59, 0.08), rgba(207, 130, 144, 0.12));
+  --blue: light-dark(#2f4a6e, #8ea6c8);
+  --blue-soft: light-dark(rgba(47, 74, 110, 0.08), rgba(142, 166, 200, 0.12));
+  --green: light-dark(#4c6b3f, #9db88a);
+  --green-soft: light-dark(rgba(76, 107, 63, 0.09), rgba(157, 184, 138, 0.12));
+  --gray: light-dark(#7d766c, #948b7e);
+  --gray-soft: light-dark(rgba(125, 118, 108, 0.1), rgba(148, 139, 126, 0.12));
   --orange: var(--accent);
   --orange-soft: var(--accent-soft);
   --warning-ink: var(--accent-ink);
-  --danger-ink: light-dark(#b0301f, #f28b7d);
-  --success-ink: light-dark(#217a42, #7fd39c);
+  --danger-ink: light-dark(#7a2431, #e0a0ab);
+  --success-ink: light-dark(#3f5a34, #b3cba2);
 
-  --shadow-card: 0 1px 2px light-dark(rgba(60, 45, 20, 0.05), rgba(0, 0, 0, 0.3)),
-    0 12px 32px -12px light-dark(rgba(60, 45, 20, 0.14), rgba(0, 0, 0, 0.5));
-  --shadow-pill: 0 1px 4px light-dark(rgba(60, 45, 20, 0.14), rgba(0, 0, 0, 0.4));
-  --shadow-float: 0 18px 44px -10px light-dark(rgba(40, 30, 15, 0.32), rgba(0, 0, 0, 0.7));
-  --shadow-lift: 0 2px 6px light-dark(rgba(60, 45, 20, 0.06), rgba(0, 0, 0, 0.3)),
-    0 20px 48px -12px light-dark(rgba(60, 45, 20, 0.2), rgba(0, 0, 0, 0.6));
+  /* Depth comes from hairlines, not shadows. Cards carry a whisper of lift;
+     only floating layers cast a real, soft shadow. */
+  --shadow-card: 0 1px 2px light-dark(rgba(60, 45, 20, 0.04), rgba(0, 0, 0, 0.25));
+  --shadow-pill: 0 1px 2px light-dark(rgba(60, 45, 20, 0.08), rgba(0, 0, 0, 0.3));
+  --shadow-float: 0 14px 36px -16px light-dark(rgba(40, 30, 15, 0.28), rgba(0, 0, 0, 0.6));
+  --shadow-lift: 0 1px 2px light-dark(rgba(60, 45, 20, 0.05), rgba(0, 0, 0, 0.25)),
+    0 14px 36px -18px light-dark(rgba(60, 45, 20, 0.16), rgba(0, 0, 0, 0.5));
 
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Helvetica Neue", "Segoe UI", sans-serif;
   --display: "Fraunces", "Iowan Old Style", "Palatino", Georgia, serif;
 
-  --radius: 20px;
-  --radius-sm: 13px;
-  --radius-lg: 26px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 14px;
 
   --tabbar-h: calc(58px + env(safe-area-inset-bottom));
 }
@@ -313,29 +317,25 @@ ul {
   height: 36px;
   border-radius: 50%;
   color: var(--secondary);
-  background: var(--fill);
-  transition: color 0.2s ease, background 0.2s ease;
+  border: 1px solid var(--hairline);
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .theme-toggle:hover {
   color: var(--label);
-  background: var(--fill-strong);
+  border-color: var(--tint);
 }
 
 /* top segmented nav (desktop) */
 
 .nav-top {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--fill);
+  gap: 4px;
 }
 
 .seg-btn {
   position: relative;
-  padding: 8px 15px;
-  border-radius: 999px;
+  padding: 10px 12px;
   color: var(--secondary);
   transition: color 0.25s ease;
 }
@@ -350,10 +350,11 @@ ul {
 
 .seg-pill {
   position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-pill);
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--tint);
 }
 
 .seg-label {
@@ -372,14 +373,11 @@ ul {
 }
 
 .seg-badge {
-  min-width: 17px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: var(--red);
-  color: #ffffff;
+  margin-left: -2px;
+  align-self: flex-start;
+  color: var(--accent-ink);
   font-size: 11px;
-  font-weight: 650;
-  text-align: center;
+  font-weight: 620;
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
@@ -401,7 +399,7 @@ ul {
     gap: 2px;
     width: min(440px, calc(100vw - 24px));
     padding: 6px;
-    border-radius: 999px;
+    border-radius: 16px;
     background: var(--glass);
     backdrop-filter: blur(22px) saturate(1.8);
     -webkit-backdrop-filter: blur(22px) saturate(1.8);
@@ -419,7 +417,7 @@ ul {
   align-items: center;
   gap: 3px;
   padding: 7px 4px 6px;
-  border-radius: 999px;
+  border-radius: 11px;
   color: var(--secondary);
   transition: color 0.25s ease;
 }
@@ -431,7 +429,7 @@ ul {
 .tab-pill {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: 11px;
   background: var(--surface-raised);
   box-shadow: var(--shadow-pill);
 }
@@ -456,10 +454,10 @@ ul {
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--red);
-  color: #fff;
+  background: var(--tint);
+  color: var(--on-tint);
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 620;
   line-height: 16px;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -472,7 +470,7 @@ ul {
   position: relative;
   border-radius: var(--radius);
   background: var(--surface);
-  border: 1px solid var(--separator-strong);
+  border: 1px solid var(--hairline);
   box-shadow: var(--shadow-card);
 }
 
@@ -518,7 +516,7 @@ ul {
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, currentColor 9%, transparent);
 }
 
@@ -546,12 +544,11 @@ ul {
   flex: none;
   min-height: 34px;
   padding: 0 13px;
-  border-radius: 999px;
-  background: var(--surface);
-  box-shadow: var(--shadow-pill);
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
   color: currentColor;
   font-size: 13px;
-  font-weight: 640;
+  font-weight: 600;
 }
 
 .quiet-state {
@@ -560,7 +557,7 @@ ul {
   gap: 13px;
   width: 100%;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 45%, transparent));
   color: var(--secondary);
 }
@@ -571,7 +568,7 @@ ul {
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--surface);
   border: 1px solid var(--separator);
   color: var(--secondary);
@@ -604,7 +601,7 @@ ul {
 .quiet-state-compact .quiet-state-glyph {
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 8px;
 }
 
 .open-failure {
@@ -703,7 +700,7 @@ ul {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: 7px;
   color: var(--secondary);
   transition: color 0.2s ease, background 0.2s ease;
 }
@@ -729,17 +726,17 @@ ul {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
-  background: var(--fill);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
   color: var(--secondary);
   font-size: 18px;
   line-height: 1;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .icon-button:hover {
   color: var(--label);
-  background: var(--fill-strong);
+  border-color: var(--tint);
 }
 
 .text-button {
@@ -747,27 +744,29 @@ ul {
   align-items: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 999px;
-  background: var(--tint-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
   color: var(--tint);
   font-size: 13px;
   font-weight: 590;
-  transition: background 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .text-button:hover {
-  background: var(--fill-strong);
+  border-color: var(--tint);
 }
 
 .text-button.strong {
   padding: 9px 17px;
   background: var(--tint);
+  border-color: var(--tint);
   color: var(--surface);
   font-size: 14px;
 }
 
 .text-button.strong:hover {
   background: var(--tint-hover);
+  border-color: var(--tint-hover);
 }
 
 .text-button:disabled,
@@ -830,8 +829,8 @@ input:disabled {
 textarea:focus,
 input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3.5px var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 /* Section eyebrow: a small tracked label reused across tabs */
@@ -975,13 +974,14 @@ input:focus {
   width: 24px;
   height: 24px;
   border-radius: 50%;
+  border: 1px solid currentColor;
   flex: none;
 }
 
-.b-stat.b-blue i { background: var(--blue-soft); color: var(--blue); }
-.b-stat.b-green i { background: var(--green-soft); color: var(--success-ink); }
-.b-stat.b-red i { background: var(--red-soft); color: var(--danger-ink); }
-.b-stat.b-gray i { background: var(--accent-soft); color: var(--accent-ink); }
+.b-stat.b-blue i { color: var(--blue); }
+.b-stat.b-green i { color: var(--success-ink); }
+.b-stat.b-red i { color: var(--danger-ink); }
+.b-stat.b-gray i { color: var(--accent-ink); }
 
 /* ---------- Thoughts: one-tap composer ---------- */
 
@@ -1003,7 +1003,7 @@ input:focus {
 .composer-field textarea {
   flex: 1;
   min-width: 0;
-  border-radius: 14px;
+  border-radius: 10px;
   min-height: 46px;
   line-height: 1.4;
 }
@@ -1070,13 +1070,12 @@ input:focus {
   align-items: center;
   gap: 6px;
   padding: 6px 12px 6px 10px;
-  border-radius: 999px;
-  background: var(--fill);
+  border-radius: var(--radius-sm);
   color: var(--secondary);
   font-size: 13px;
   font-weight: 590;
   letter-spacing: -0.006em;
-  border: 1.5px solid transparent;
+  border: 1px solid var(--hairline);
   transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
@@ -1086,13 +1085,12 @@ input:focus {
 
 .pill:hover {
   color: var(--label);
-  background: var(--fill-strong);
+  border-color: var(--tint);
 }
 
 .pill.picked {
   color: var(--q);
-  background: var(--q-soft);
-  border-color: color-mix(in srgb, var(--q) 55%, transparent);
+  border-color: var(--q);
 }
 
 /* Only the current default pill is ever coloured; every other pill stays grey
@@ -1132,13 +1130,12 @@ input:focus {
    target on hover so the one-tap "send here" affordance reads clearly. */
 .composer-picker.armed .pill:hover {
   color: var(--q);
-  background: var(--q-soft);
-  border-color: color-mix(in srgb, var(--q) 45%, transparent);
+  border-color: var(--q);
 }
 
 .pill-dot {
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--q);
   flex: none;
@@ -1260,7 +1257,7 @@ input:focus {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(120% 56% at 50% -18%, var(--q-soft), transparent 62%);
+  background: radial-gradient(120% 56% at 50% -18%, var(--q-soft), transparent 56%);
 }
 
 .q-head {
@@ -1280,8 +1277,8 @@ input:focus {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
-  background: var(--q-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--q) 40%, transparent);
   color: var(--q);
 }
 
@@ -1322,13 +1319,13 @@ input:focus {
 .q-ring-track {
   fill: none;
   stroke: var(--fill-strong);
-  stroke-width: 2.5;
+  stroke-width: 1.5;
 }
 
 .q-ring-fill {
   fill: none;
   stroke: var(--q);
-  stroke-width: 2.5;
+  stroke-width: 1.5;
   stroke-linecap: round;
 }
 
@@ -1352,17 +1349,19 @@ input:focus {
   gap: 5px;
   margin-top: 10px;
   padding: 6px 12px 6px 9px;
-  border-radius: 999px;
-  color: var(--q);
-  background: var(--q-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  color: var(--secondary);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 590;
   letter-spacing: -0.004em;
-  opacity: 0.9;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.q-add:hover { opacity: 1; }
+.q-add:hover {
+  color: var(--q);
+  border-color: var(--q);
+}
 
 /* mobile-only: preview + whole-tile open button */
 .q-preview {
@@ -1456,7 +1455,7 @@ input:focus {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 1.7px solid color-mix(in srgb, var(--q, var(--tint)) 55%, transparent);
+  border: 1.25px solid color-mix(in srgb, var(--q, var(--tint)) 60%, transparent);
   color: transparent;
   display: inline-flex;
   align-items: center;
@@ -1581,12 +1580,12 @@ input:focus {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--q-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--q) 45%, transparent);
   color: var(--q);
   font-size: 11px;
-  font-weight: 640;
+  font-weight: 600;
   letter-spacing: -0.002em;
   white-space: nowrap;
 }
@@ -1747,7 +1746,7 @@ button.quadrant-tag .caret {
 .task-context .q-glyph {
   width: 26px;
   height: 26px;
-  border-radius: 9px;
+  border-radius: 7px;
   background: color-mix(in srgb, var(--surface) 78%, transparent);
 }
 
@@ -1792,12 +1791,11 @@ button.quadrant-tag .caret {
   gap: 6px;
   height: 36px;
   padding: 0 14px 0 11px;
-  border-radius: 999px;
-  border: 1.5px solid color-mix(in srgb, var(--q) 45%, transparent);
-  background: var(--q-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--q) 55%, transparent);
   color: var(--q);
   font-size: 13px;
-  font-weight: 640;
+  font-weight: 600;
   letter-spacing: -0.004em;
   white-space: nowrap;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -2115,8 +2113,8 @@ button.quadrant-tag .caret {
 }
 
 .reading-page-control:focus-within {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3.5px var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .reading-pages-label {
@@ -2204,7 +2202,7 @@ button.quadrant-tag .caret {
 .sheet-head .q-glyph {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 9px;
 }
 
 .sheet-title {
@@ -2258,7 +2256,7 @@ button.quadrant-tag .caret {
 .sheet-composer textarea {
   flex: 1;
   min-height: 44px;
-  border-radius: 13px;
+  border-radius: 9px;
 }
 
 /* move menu variant: a compact centered card */
@@ -2305,9 +2303,9 @@ button.quadrant-tag .caret {
   align-items: center;
   gap: 9px;
   padding: 13px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  border: 1.5px solid var(--separator);
+  border: 1px solid var(--hairline);
   color: var(--label);
   font-size: 14px;
   font-weight: 600;
@@ -2318,7 +2316,7 @@ button.quadrant-tag .caret {
 .menu-option .q-glyph {
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: 7px;
 }
 
 .menu-option small {
@@ -2342,7 +2340,7 @@ button.quadrant-tag .caret {
   width: 100%;
   min-height: 44px;
   padding: 11px 13px;
-  border-radius: 13px;
+  border-radius: 9px;
   color: var(--label);
   font-size: 15px;
   font-weight: 560;
@@ -2477,7 +2475,7 @@ button.quadrant-tag .caret {
   align-items: center;
   gap: 2px;
   padding: 7px 2px 6px;
-  border-radius: 11px;
+  border-radius: 8px;
   transition: background 0.2s ease;
 }
 
@@ -2504,8 +2502,8 @@ button.quadrant-tag .caret {
 .day-select-ring {
   position: absolute;
   inset: 1px;
-  border-radius: 10px;
-  border: 1.6px solid var(--accent);
+  border-radius: 7px;
+  border: 1px solid var(--accent);
   background: var(--accent-soft);
 }
 
@@ -2588,7 +2586,7 @@ button.quadrant-tag .caret {
   align-items: center;
   gap: 16px;
   padding: 22px 20px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 45%, transparent));
 }
 
@@ -2722,8 +2720,8 @@ button.quadrant-tag .caret {
   bottom: 0;
   height: 7px;
   border-radius: 2px;
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--label) 16%, var(--surface)), color-mix(in srgb, var(--label) 9%, var(--surface)));
-  box-shadow: 0 6px 14px -6px rgba(60, 45, 20, 0.35);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--label) 14%, var(--surface)), color-mix(in srgb, var(--label) 8%, var(--surface)));
+  box-shadow: 0 4px 10px -6px rgba(60, 45, 20, 0.25);
 }
 
 .book-card {
@@ -2733,12 +2731,12 @@ button.quadrant-tag .caret {
   gap: 10px;
   width: 100%;
   text-align: left;
-  border-radius: 14px;
+  border-radius: 10px;
 }
 
 .book-card:hover .book-cover {
-  transform: perspective(700px) rotateY(-9deg) translateY(-5px);
-  box-shadow: -12px 16px 30px -12px rgba(0, 0, 0, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 28px -14px rgba(0, 0, 0, 0.35);
 }
 
 /* generated covers */
@@ -2748,10 +2746,10 @@ button.quadrant-tag .caret {
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
-  border-radius: 4px 12px 12px 4px;
+  border-radius: 3px 8px 8px 3px;
   overflow: hidden;
-  background: linear-gradient(152deg, var(--cov1), var(--cov2));
-  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(to bottom, var(--cov1), color-mix(in srgb, var(--cov1) 86%, #000));
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.3);
   transition: transform 0.45s cubic-bezier(0.22, 1.2, 0.32, 1), box-shadow 0.45s ease;
   transform-origin: left center;
 }
@@ -2761,13 +2759,14 @@ button.quadrant-tag .caret {
   flex: none;
 }
 
-/* cloth-bound tones that sit with the paper palette */
-.book-cover.c0 { --cov1: #1f2a44; --cov2: #4a5f8f; --cov-ink: #eef0f7; }
-.book-cover.c1 { --cov1: #1f3d2e; --cov2: #3f7a5b; --cov-ink: #edf5ef; }
-.book-cover.c2 { --cov1: #6b2a22; --cov2: #c96a4a; --cov-ink: #fbeee7; }
-.book-cover.c3 { --cov1: #5a3d10; --cov2: #d9a441; --cov-ink: #fff6e3; }
-.book-cover.c4 { --cov1: #2f3b47; --cov2: #6f8aa3; --cov-ink: #eef2f6; }
-.book-cover.c5 { --cov1: #3b2440; --cov2: #8f5b98; --cov-ink: #f7edf8; }
+/* clothbound tones: navy, forest, oxblood, tobacco, charcoal, aubergine. One
+   flat colour each, with a hairline frame stamped in the cover ink. */
+.book-cover.c0 { --cov1: #1f2a3d; --cov-ink: #e7e4d8; }
+.book-cover.c1 { --cov1: #22382e; --cov-ink: #e4e6d8; }
+.book-cover.c2 { --cov1: #58272a; --cov-ink: #eee1d6; }
+.book-cover.c3 { --cov1: #3f3324; --cov-ink: #ece2cf; }
+.book-cover.c4 { --cov1: #2c3138; --cov-ink: #e6e4de; }
+.book-cover.c5 { --cov1: #352538; --cov-ink: #eadfe6; }
 
 .book-cover::after {
   content: "";
@@ -2775,34 +2774,14 @@ button.quadrant-tag .caret {
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 3px 0 0 rgba(255, 255, 255, 0.1);
-  background: linear-gradient(105deg, rgba(255, 255, 255, 0.12), transparent 38%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .cover-art {
   position: absolute;
-  inset: 0;
-}
-
-.book-cover.p0 .cover-art {
-  background:
-    linear-gradient(118deg, transparent 42%, rgba(255, 255, 255, 0.16) 42.5%, rgba(255, 255, 255, 0.16) 55%, transparent 55.5%),
-    linear-gradient(118deg, transparent 60%, rgba(0, 0, 0, 0.18) 60.5%, rgba(0, 0, 0, 0.18) 74%, transparent 74.5%);
-}
-
-.book-cover.p1 .cover-art {
-  background: repeating-radial-gradient(
-    circle at 82% 18%,
-    transparent 0 14px,
-    rgba(255, 255, 255, 0.1) 14px 15.5px
-  );
-}
-
-.book-cover.p2 .cover-art {
-  background:
-    radial-gradient(85% 42% at 50% 108%, rgba(255, 255, 255, 0.22), transparent 70%),
-    radial-gradient(3px 3px at 26% 22%, rgba(255, 255, 255, 0.7), transparent 100%),
-    radial-gradient(2px 2px at 66% 34%, rgba(255, 255, 255, 0.5), transparent 100%);
+  inset: 9px 9px 9px 16px;
+  border: 1px solid color-mix(in srgb, var(--cov-ink) 28%, transparent);
+  border-radius: 1px;
 }
 
 .cover-spine {
@@ -2810,17 +2789,17 @@ button.quadrant-tag .caret {
   top: 0;
   bottom: 0;
   left: 0;
-  width: 9px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.12) 70%, transparent);
+  width: 8px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.28), rgba(255, 255, 255, 0.08) 70%, transparent);
 }
 
 .cover-title {
   position: absolute;
-  top: 14%;
-  left: 17%;
-  right: 10%;
+  top: 16%;
+  left: 19%;
+  right: 14%;
   font-family: var(--display);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 15px;
   line-height: 1.24;
   letter-spacing: -0.008em;
@@ -2836,16 +2815,6 @@ button.quadrant-tag .caret {
   font-size: 12px;
 }
 
-.cover-mark {
-  position: absolute;
-  bottom: 9%;
-  left: 17%;
-  font-style: normal;
-  font-size: 11px;
-  color: var(--cov-ink);
-  opacity: 0.75;
-}
-
 .finished-badge {
   position: absolute;
   top: -7px;
@@ -2856,9 +2825,9 @@ button.quadrant-tag .caret {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--green);
-  color: #ffffff;
-  box-shadow: 0 3px 10px -2px rgba(52, 199, 89, 0.6);
+  background: var(--tint);
+  color: var(--on-tint);
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 .book-card-meta {
@@ -2914,7 +2883,7 @@ button.quadrant-tag .caret {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 8px;
   color: var(--tertiary);
   transition: color 0.2s ease, background 0.2s ease;
 }
@@ -3010,7 +2979,7 @@ button.quadrant-tag .caret {
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: 8px;
   color: var(--warning-ink);
   background: var(--orange-soft);
 }
@@ -3047,7 +3016,7 @@ button.quadrant-tag .caret {
   min-width: 0;
   min-height: 48px;
   padding: 12px 15px;
-  border-radius: 15px;
+  border-radius: 10px;
   font-size: 16px;
   letter-spacing: -0.008em;
 }
@@ -3267,16 +3236,12 @@ button.quadrant-tag .caret {
 
 .range-toggle {
   display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--fill);
+  gap: 6px;
 }
 
 .range-btn {
   position: relative;
-  padding: 7px 15px;
-  border-radius: 999px;
+  padding: 8px 10px;
   color: var(--secondary);
   font-size: 13px;
   font-weight: 590;
@@ -3293,10 +3258,11 @@ button.quadrant-tag .caret {
 
 .range-btn .range-pill {
   position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-pill);
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--tint);
 }
 
 .stat-grid {
@@ -3399,13 +3365,13 @@ button.quadrant-tag .caret {
 .ring-track {
   fill: none;
   stroke: var(--fill-strong);
-  stroke-width: 7;
+  stroke-width: 4;
 }
 
 .ring-fill {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 7;
+  stroke-width: 4;
   stroke-linecap: round;
 }
 
@@ -3488,8 +3454,8 @@ button.quadrant-tag .caret {
 
 .quad-bar-track {
   display: flex;
-  height: 10px;
-  border-radius: 999px;
+  height: 6px;
+  border-radius: 2px;
   background: var(--fill);
   overflow: hidden;
 }
@@ -3497,7 +3463,6 @@ button.quadrant-tag .caret {
 .quad-bar-fill {
   height: 100%;
   background: var(--q);
-  border-radius: 999px 0 0 999px;
 }
 
 .quad-bar-open {
@@ -3535,7 +3500,7 @@ button.quadrant-tag .caret {
   display: block;
   width: 100%;
   min-height: 3px;
-  border-radius: 5px 5px 2px 2px;
+  border-radius: 2px 2px 0 0;
   background: var(--fill-strong);
   transition: background 0.2s ease;
 }
@@ -3613,7 +3578,7 @@ button.quadrant-tag .caret {
   position: relative;
   aspect-ratio: 1;
   max-height: 52px;
-  border-radius: 9px;
+  border-radius: 7px;
   border: 1px solid var(--separator);
   display: grid;
   place-items: center;
@@ -3640,7 +3605,7 @@ button.quadrant-tag .caret {
 .heat-cell.level-3 em { color: #ffffff; font-weight: 640; }
 
 .heat-cell.today {
-  outline: 2px solid var(--accent);
+  outline: 1px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -3884,7 +3849,7 @@ button.quadrant-tag .caret {
   .q-glyph {
     width: 30px;
     height: 30px;
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .q-title h3 {

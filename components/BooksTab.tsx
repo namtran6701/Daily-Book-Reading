@@ -65,13 +65,12 @@ export function BookCover({ title, large }: { title: string; large?: boolean }) 
   const hash = hashTitle(title.trim().toLowerCase());
   return (
     <span
-      className={`book-cover c${hash % 6} p${(hash >> 4) % 3} ${large ? "cover-large" : ""}`}
+      className={`book-cover c${hash % 6} ${large ? "cover-large" : ""}`}
       aria-hidden="true"
     >
       <i className="cover-art" />
       <i className="cover-spine" />
       <b className="cover-title">{title}</b>
-      <em className="cover-mark">✦</em>
     </span>
   );
 }
