@@ -3718,6 +3718,28 @@ button.quadrant-tag .caret {
   }
 }
 
+/* touch targets: phones, and tablets that use the desktop layout without a
+   hover pointer, both get at least 44px on frequently used controls */
+@media (max-width: 759px), (hover: none) {
+  .status-action,
+  .icon-button,
+  .range-btn,
+  .text-button,
+  .back {
+    min-height: 44px;
+  }
+
+  .icon-button,
+  .book-header-more {
+    width: 44px;
+    height: 44px;
+  }
+
+  .day-cell {
+    min-height: 44px;
+  }
+}
+
 /* phone: bottom nav takes over, matrix stays a real 2x2 of compact tiles */
 @media (max-width: 759px) {
   .app {
@@ -3751,23 +3773,6 @@ button.quadrant-tag .caret {
     align-items: flex-start;
     flex-direction: column;
     gap: 1px;
-  }
-
-  .status-action,
-  .icon-button,
-  .range-btn,
-  .text-button,
-  .back {
-    min-height: 44px;
-  }
-
-  .icon-button {
-    width: 44px;
-    height: 44px;
-  }
-
-  .day-cell {
-    min-height: 44px;
   }
 
   .quiet-state {
@@ -3916,11 +3921,24 @@ button.quadrant-tag .caret {
     display: inline-flex;
   }
 
+  /* A backdrop-filter turns the bar into the containing block for the fixed
+     Mark done pill below, so on phones the blur lives on a pseudo-element. */
   .task-detail-bar {
     gap: 9px;
     min-height: 58px;
     margin: 0 -14px;
     padding: 7px 14px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .task-detail-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    backdrop-filter: blur(20px) saturate(1.7);
+    -webkit-backdrop-filter: blur(20px) saturate(1.7);
   }
 
   .task-back {
@@ -3987,6 +4005,10 @@ button.quadrant-tag .caret {
     font-size: 16px;
   }
 
+  .book-link-edit input {
+    font-size: 16px;
+  }
+
   .note-capture {
     padding: 15px;
   }
@@ -4012,8 +4034,6 @@ button.quadrant-tag .caret {
   }
 
   .book-header-more {
-    width: 44px;
-    height: 44px;
     top: 8px;
     right: 8px;
   }

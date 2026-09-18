@@ -636,6 +636,8 @@ export function SecondBrain() {
     const to = TABS.findIndex((entry) => entry.value === next);
     setTabDirection(to > from ? 1 : -1);
     setTab(next);
+    // A tab is a fresh page, not a continuation of the last scroll position.
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   const ready = Boolean(today) && loaded && !loading;
