@@ -45,10 +45,11 @@ export function Overlay({
     }
     const restoreFocus = document.activeElement as HTMLElement | null;
 
-    // Focus the first control (the close button), never the text field, so
-    // opening the sheet doesn't pop the keyboard. The keyboard opens only when
-    // the user taps the field themselves.
-    (focusable()[0] ?? scrimRef.current)?.focus();
+    // Focus the first button, never a form field, so opening the sheet doesn't
+    // pop the keyboard or a native picker (iOS opens a time input's picker on
+    // focus). Fields open only when the user taps them.
+    const items = focusable();
+    (items.find((el) => !el.matches("input, textarea, select")) ?? items[0] ?? scrimRef.current)?.focus();
 
     return () => {
       document.body.style.overflow = previous;
