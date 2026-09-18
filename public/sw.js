@@ -1,6 +1,6 @@
 // Second Brain service worker: offline app shell + fast static assets.
 // Bump CACHE when the shell or this file changes to evict the old cache.
-const CACHE = "second-brain-v15";
+const CACHE = "second-brain-v16";
 const SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -69,6 +69,43 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => cached);
       return cached || network;
+    })
+  );
+});
+
+// Push: the Worker sends { title, body, tag, url }. The tag lets a newer
+// briefing replace the last one instead of stacking.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // A non-JSON payload still deserves a notification with the fallback copy.
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Second Brain", {
+      body: data.body || "",
+      tag: data.tag || "briefing",
+      icon: "/icons/icon-192.png",
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+// Tapping the notification focuses an open app window if there is one,
+// otherwise opens a new one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((client) => client.url.startsWith(self.location.origin));
+      if (existing) {
+        return existing.focus().then((focused) =>
+          focused && focused.url !== url && "navigate" in focused ? focused.navigate(url) : focused
+        );
+      }
+      return self.clients.openWindow(url);
     })
   );
 });

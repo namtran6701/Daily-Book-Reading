@@ -19,6 +19,12 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+interface ScheduledController {
+  scheduledTime: number;
+  cron: string;
+  noRetry(): void;
+}
+
 // Image security config. SVG sources with .svg extension auto-skip the
 // optimization endpoint on the client side (served directly, no proxy).
 // To route SVGs through the optimizer (with security headers), set
@@ -41,6 +47,15 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+
+  // Cron Trigger entry. `scheduledTime` rather than `Date.now()` so the local
+  // test route's `?time=` override can simulate any moment. The import is
+  // deferred because the database module needs `cloudflare:workers`, which
+  // the rendered-HTML test cannot load when it imports this entry in Node.
+  async scheduled(controller: ScheduledController): Promise<void> {
+    const { runScheduledNotifications } = await import("./notifications");
+    await runScheduledNotifications(new Date(controller.scheduledTime));
   },
 };
 

@@ -213,6 +213,15 @@ export function BoltIcon({ size = 14 }: IconProps) {
   );
 }
 
+export function BellIcon({ size = 15 }: IconProps) {
+  return (
+    <svg {...stroke} width={size} height={size}>
+      <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5H4.5L6 16.5z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
 export function MoonIcon({ size = 14 }: IconProps) {
   return (
     <svg {...stroke} width={size} height={size}>

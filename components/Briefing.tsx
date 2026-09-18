@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { motion } from "motion/react";
-import { daysBetween, formatDate } from "@/lib/date-keys";
+import { greeting, summarizeThoughts } from "@/lib/briefing";
+import { formatDate } from "@/lib/date-keys";
 import { BookGlyph, FlameIcon, MatrixGlyph, PlusIcon } from "./icons";
 import { gentle } from "@/lib/springs";
 import type { Book, BookNote, Thought } from "@/lib/types";
@@ -17,38 +18,12 @@ type Props = {
 
 type Chip = { key: string; tone: string; icon: React.ReactNode; text: React.ReactNode };
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 5) return "Up late";
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
-
 export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props) {
   const { headline, alert, chips } = useMemo(() => {
-    const open = thoughts.filter((thought) => !thought.done);
+    const { open, urgent } = summarizeThoughts(thoughts, today);
     const capturedToday =
       thoughts.filter((thought) => thought.capturedDayKey === today).length +
       notes.filter((note) => note.dayKey === today).length;
-
-    const urgent = open.filter((thought) => thought.quadrant === "do");
-    const overdueUrgent = urgent
-      .filter((thought) => thought.scheduledDayKey && thought.scheduledDayKey < today)
-      .sort((a, b) => a.scheduledDayKey!.localeCompare(b.scheduledDayKey!));
-    const oldestUrgent = overdueUrgent[0] ?? [...urgent].sort(
-      (a, b) => a.capturedDayKey.localeCompare(b.capturedDayKey),
-    )[0] ?? null;
-    const urgentIsOverdue = Boolean(
-      oldestUrgent?.scheduledDayKey && oldestUrgent.scheduledDayKey < today,
-    );
-    const urgentAge = oldestUrgent
-      ? daysBetween(
-          urgentIsOverdue ? oldestUrgent.scheduledDayKey! : oldestUrgent.capturedDayKey,
-          today,
-        )
-      : 0;
-    const urgentNeedsAttention = urgentAge >= (urgentIsOverdue ? 1 : 2);
 
     const reading = books.filter((book) => !book.finishedAt);
     const latestNote = [...notes]
@@ -58,21 +33,22 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
 
     let headline: React.ReactNode;
     let alert = false;
-    if (oldestUrgent && urgentNeedsAttention) {
+    if (urgent) {
+      const { thought, age, overdue } = urgent;
       headline = (
         <>
-          An urgent item {urgentIsOverdue ? "is" : "has waited"}{" "}
+          An urgent item {overdue ? "is" : "has waited"}{" "}
           <strong>
-            {urgentAge} {urgentAge === 1 ? "day" : "days"}{urgentIsOverdue ? " overdue" : ""}
+            {age} {age === 1 ? "day" : "days"}{overdue ? " overdue" : ""}
           </strong>.{" "}
           <button
             className="briefing-task-link"
             type="button"
             role="link"
-            onClick={() => onOpenDetail(oldestUrgent.id)}
-            aria-label={`Open task details for ${oldestUrgent.body}`}
+            onClick={() => onOpenDetail(thought.id)}
+            aria-label={`Open task details for ${thought.body}`}
           >
-            {oldestUrgent.body}
+            {thought.body}
           </button>
         </>
       );
@@ -108,15 +84,15 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
       },
     ];
 
-    if (urgentNeedsAttention) {
+    if (urgent) {
       chips.push({
         key: "urgent",
         tone: "b-red",
         icon: <FlameIcon size={13} />,
         text: (
           <>
-            {urgentIsOverdue ? "overdue by" : "urgent for"}{" "}
-            <strong>{urgentAge} {urgentAge === 1 ? "day" : "days"}</strong>
+            {urgent.overdue ? "overdue by" : "urgent for"}{" "}
+            <strong>{urgent.age} {urgent.age === 1 ? "day" : "days"}</strong>
           </>
         ),
       });
@@ -164,7 +140,7 @@ export function Briefing({ thoughts, books, notes, today, onOpenDetail }: Props)
             {formatDate(today, { weekday: "long" })} · {formatDate(today, { month: "long", year: "numeric" })}
           </motion.span>
           <motion.h1 className="briefing-greeting" variants={rise} transition={gentle}>
-            {greeting()}.
+            {greeting(new Date().getHours())}.
           </motion.h1>
           <motion.p className={`briefing-sub ${alert ? "alert" : ""}`} variants={rise} transition={gentle}>
             {headline}

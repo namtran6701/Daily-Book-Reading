@@ -6,6 +6,11 @@
     "nodejs_compat"
   ],
   "main": "./worker/index.ts",
+  // Push notifications: the scheduled handler decides per device whether its
+  // local send time falls in this window. Keep in step with CRON_MINUTES.
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",

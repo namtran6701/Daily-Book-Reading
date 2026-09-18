@@ -43,6 +43,13 @@
       "when": 1788142040892,
       "tag": "0005_lying_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789763081466,
+      "tag": "0006_exotic_warstar",
+      "breakpoints": true
     }
   ]
 }

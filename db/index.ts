@@ -129,6 +129,30 @@ export async function ensureSchema(): Promise<void> {
         ON book_notes(user_id, book_id, created_at)`),
       db.prepare(`CREATE INDEX IF NOT EXISTS idx_book_notes_user_day
         ON book_notes(user_id, day_key)`),
+      // One row per device that opted into the morning push. `notify_minute` is
+      // minutes after local midnight in `time_zone`; 450 is 7:30.
+      db.prepare(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id TEXT PRIMARY KEY NOT NULL,
+        user_id TEXT NOT NULL,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        time_zone TEXT NOT NULL,
+        notify_minute INTEGER NOT NULL DEFAULT 450,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )`),
+      db.prepare(`CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+        ON push_subscriptions(user_id)`),
+      // The primary key is the idempotency guard: one send per device, kind,
+      // and local day, whatever the cron does.
+      db.prepare(`CREATE TABLE IF NOT EXISTS notification_log (
+        subscription_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        local_day_key TEXT NOT NULL,
+        sent_at TEXT NOT NULL,
+        PRIMARY KEY (subscription_id, kind, local_day_key)
+      )`),
     ]);
     // The quadrant index waits until the migration has guaranteed the column,
     // which an older thoughts table will not have.

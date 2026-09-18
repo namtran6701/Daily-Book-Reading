@@ -80,6 +80,13 @@ browser's **Install** or **Add to Home Screen** action after opening the app.
 It launches in a standalone window and includes install icons for desktop and
 mobile devices.
 
+The bell in the masthead turns on a daily push notification for the device in
+hand: one message at a time you choose (7:30 by default) with what is open and
+whether an urgent item has waited too long, the same headline the Calendar
+briefing shows. Each device opts in separately and keeps its own time. On
+iPhone and iPad the app must be on the Home Screen first; Safari alone cannot
+receive push. Nothing is sent on a day with nothing open.
+
 The service worker caches the app shell and static assets after the first
 successful visit. Navigations use the network when available and fall back to
 that cached shell offline. API responses are deliberately never cached, so
@@ -159,6 +166,13 @@ push to `main`. Configure these repository secrets before using it:
 - `CLOUDFLARE_API_TOKEN` with permission to deploy the Worker and use its D1
   database
 - `CLOUDFLARE_ACCOUNT_ID` for the target account
+
+Push notifications also need three Worker secrets, set once and kept across
+deploys. Generate a key pair with `node scripts/vapid-keys.mjs`, then run
+`npx wrangler secret put` for `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and
+`VAPID_SUBJECT` (a `mailto:` contact address). Locally the same three values
+go in the ignored `.dev.vars` file. Without them the bell still renders but
+turning notifications on reports that the server is not set up.
 
 To target a different D1 database, update `DATABASE_ID` and the database name
 in `vite.config.ts` before building. A local authenticated manual deployment

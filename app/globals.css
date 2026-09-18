@@ -326,6 +326,17 @@ ul {
   border-color: var(--tint);
 }
 
+/* push bell: same footprint as the theme switch, accent while a device is on */
+.bell-toggle.is-on {
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.bell-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* top segmented nav (desktop) */
 
 .nav-top {
@@ -2419,6 +2430,46 @@ button.quadrant-tag .caret {
   opacity: 0.42;
 }
 
+/* notification menu: a labelled time field above the on/off row */
+.menu-sub-wrap {
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.menu-copy {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--secondary);
+}
+
+.menu-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 13px;
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: -0.008em;
+  color: var(--label);
+}
+
+.menu-field input[type="time"] {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--separator);
+  background: var(--surface);
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--danger-ink);
+}
+
 .menu-option:hover {
   border-color: color-mix(in srgb, var(--q) 55%, transparent);
   background: var(--q-soft);
@@ -3740,7 +3791,8 @@ button.quadrant-tag .caret {
   }
 
   .icon-button,
-  .book-header-more {
+  .book-header-more,
+  .theme-toggle {
     width: 44px;
     height: 44px;
   }

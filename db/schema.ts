@@ -1,4 +1,4 @@
-import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const thoughts = sqliteTable(
   "thoughts",
@@ -54,4 +54,31 @@ export const bookNotes = sqliteTable(
     index("idx_book_notes_user_book").on(table.userId, table.bookId, table.createdAt),
     index("idx_book_notes_user_day").on(table.userId, table.dayKey),
   ],
+);
+
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    timeZone: text("time_zone").notNull(),
+    notifyMinute: integer("notify_minute").notNull().default(450),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("idx_push_subscriptions_user").on(table.userId)],
+);
+
+export const notificationLog = sqliteTable(
+  "notification_log",
+  {
+    subscriptionId: text("subscription_id").notNull(),
+    kind: text("kind").notNull(),
+    localDayKey: text("local_day_key").notNull(),
+    sentAt: text("sent_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.subscriptionId, table.kind, table.localDayKey] })],
 );

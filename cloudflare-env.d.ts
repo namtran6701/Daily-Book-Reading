@@ -23,5 +23,9 @@ interface D1Database {
 declare module "cloudflare:workers" {
   export const env: {
     DB: D1Database;
+    // Web Push signing keys, set as Worker secrets (locally in .dev.vars).
+    VAPID_PUBLIC_KEY?: string;
+    VAPID_PRIVATE_KEY?: string;
+    VAPID_SUBJECT?: string;
   };
 }

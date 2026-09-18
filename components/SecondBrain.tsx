@@ -23,6 +23,7 @@ import { BookNoteDetail, type BookNoteUpdateOptions } from "./BookNoteDetail";
 import { Briefing } from "./Briefing";
 import { CalendarTab } from "./CalendarTab";
 import { MatrixTab } from "./MatrixTab";
+import { NotificationToggle } from "./NotificationToggle";
 import { ReviewTab } from "./ReviewTab";
 import { TaskDetail, type ThoughtUpdateOptions } from "./TaskDetail";
 import { ThemeToggle } from "./ThemeToggle";
@@ -690,6 +691,7 @@ export function SecondBrain() {
               ))}
             </nav>
             <ThemeToggle />
+            <NotificationToggle readOnly={!online} />
           </div>
         </motion.header>
 
